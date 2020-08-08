@@ -176,6 +176,7 @@ class Board():
 
 
     def enumerate_all_future_states(self, depth=0):
+        """Generate all legal position from subgames"""
         accumulator = [] 
         currstate = (deepcopy(self.state_as_tup()), deepcopy(self.player_turn))
         accumulator += [currstate]
@@ -190,6 +191,21 @@ class Board():
 
             return list(set(accumulator))
 
+    def enum_all_future_actions(self, depth=0):
+        """move from state to next state"""
+        accumulator = [] 
+        currstate = (deepcopy(self.state_as_tup()), deepcopy(self.player_turn))
+        if self.game_over:
+            return accumulator
+        else:
+            for k, ((i,j), stt) in enumerate(self.pos_next_state):
+                cpy = deepcopy(self)
+                cpy.move(i,j)
+                futurestate = (deepcopy(cpy.state_as_tup()), deepcopy(cpy.player_turn))
+                accumulator += [(currstate, futurestate)]
+                accumulator += cpy.enumerate_all_future_states(depth+1) 
+
+            return list(set(accumulator))
 
 
 class RandomOpponent():
@@ -215,3 +231,14 @@ class RandomOpponent():
             pass
             
         
+
+if __name__ == "__main__":
+
+    print("setting up board")
+    brd = Board()
+    print("getting all states")
+    states = brd.enumerate_all_future_states()
+    print(f"Finished getting all states: {len(states)}")
+    print("getting all actions")
+    actions = brd.enum_all_future_actions()
+    print(f"Finished getting all actions: {len(actions)}")
