@@ -1,4 +1,3 @@
-#include <array>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -69,6 +68,7 @@ private:
 template <typename TYPE_T>
 class NormalPriorNormalMultiArmedBandit : public MultiArmedBandit<TYPE_T> {
 public:
+  NormalPriorNormalMultiArmedBandit() = default;
   NormalPriorNormalMultiArmedBandit(std::size_t n_bandits,
                                     std::minstd_rand &engine,
                                     TYPE_T prior_mu_ave = 0,
@@ -97,7 +97,7 @@ public:
 
   std::vector<TYPE_T> sample(std::minstd_rand &engine) {
     std::vector<TYPE_T> samples(n_bandits);
-    for (int i = 0; i < n_bandits; i++) {
+    for (std::size_t i = 0; i < n_bandits; i++) {
       samples[i] = this->bandits[i].sample(engine);
     }
     return samples;
