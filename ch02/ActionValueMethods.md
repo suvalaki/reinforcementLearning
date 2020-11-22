@@ -37,3 +37,17 @@ At each time period we pick an index. We are seeking to consistently pick $X_{i,
 The multi-armed bandit problem illustrates the tension between 
 
 - 
+
+## Gradient Bandits
+
+Rather than directly estimating the reward for a particular bandit selection or (or the probability that the bandit has the highest reward) we can instead learn some arbitrary "prefernce function"; a preference function can encode our relative selction.  We can then choose to select actions according to a softmax distribution. Hence:
+$$
+\text{prob of taking action a} = \pi_t(a)=\frac{\exp(H_t(A))}{\sum_{b=1}^{n}\exp(H_t(b))}
+$$
+To learn the preferences we:
+
+- Start by setting all preferences to the same value 0 (no preference).
+- 
+
+ 
+
