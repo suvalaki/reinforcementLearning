@@ -103,6 +103,8 @@ public:
     return samples;
   };
 
+  std::size_t getNBandits() { return n_bandits; };
+
 private:
   std::vector<NormalBandit<TYPE_T>> bandits;
   std::size_t n_bandits;
