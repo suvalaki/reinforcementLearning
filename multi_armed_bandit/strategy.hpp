@@ -59,6 +59,8 @@ public:
   virtual std::vector<TYPE_T> estimatedActionValue();
   virtual std::size_t explore();
   virtual std::size_t exploit();
+  virtual std::size_t getAction();
+  virtual void update(TYPE_T banditValue, std::size_t action);
 };
 
 template <typename TYPE_T>
@@ -94,6 +96,53 @@ public:
   std::vector<TYPE_T> estimatedActionValue() { return estActionValue; };
   std::size_t explore() { return bestIdx; };
   std::size_t exploit() { return bestIdx; };
+  std::size_t getAction() { return exploit(); };
+  void update(TYPE_T banditValue, std::size_t action){/* do nothing */};
+};
+
+template <typename TYPE_T>
+class EpsilonGreedyStrategy : public strategies::GreedyStrategy<Type_T> {
+
+private:
+  std::minstd_rand &generator;
+  double epsilon;
+  std::uniform_real_distribution<double> exploreExploitDist(0.0, 1.0);
+  std::uniform_int_distribution<std::size_t> exploreChoiceDist;
+
+public:
+  EpsilonGreedyStrategy(NormalPriorNormalMultiArmedBandit<TYPE_T> &bandits,
+                        std::minstd_rand &generator,
+                        std::vector<TYPE_T> initialActionValueEstimate,
+                        double epsilon)
+      : strategies::ActionValueStrategy(bandits), generator(generator),
+        exploreChoiceDist(std::uniform_int_distribution<std::size_t>(
+            0, bandits.getNBandits())),
+        estActionValue(initialActionValueEstimate), epsilon(epsilon){};
+  std::size_t exploit() {
+    return argmax(estActionValue.begin(), estActionValue.end(),
+                  [](TYPE_T x) { return x; });
+  }
+  std::size_t explore() {
+    // pick an index at random
+    return exploreChoiceDist(generator);
+  }
+  std::size_t getAction() {
+    return (exploreExploitDist(generator) < 1 - epsilon) ? exploit()
+                                                         : explore();
+  }
+  void update(TYPE_T banditValue, std::size_t action) {
+    // update the action value estimates
+    // Q(a, n+1) = sum_(n+1) [v(a, i) / (n+1)]
+    //           = sum_(n) [v(a, i) / (n+1)] + v(a, n+1) / (n+1)
+    //           = n * sum_(n) [v(a, i) / n] / (n+1) + v(a, n+1) / (n+1)
+    //           = n * Q(a, n) / (n + 1) + v(a, n+1) / (n+1)
+    //           = [n * Q(a, n) + v(a, n+1)] / (n+1)
+    estActionValue[action] =
+        (actionCnts[action] * estActionValue[action] + banditValue) /
+        (actionCnts[action] + 1);
+    ++actionCnts[action];
+    ++time_step;
+  };
 };
 
 } // namespace strategies
