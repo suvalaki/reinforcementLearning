@@ -1,12 +1,14 @@
+#pragma once
 #include "bandit.hpp"
+#include <algorithm>
 #include <limits>
 #include <numeric>
 
-template <typename Iter, typename Function>
-Iter argmax(Iter begin, Iter end, Function f) {
-  typedef typename std::iterator_traits<Iter>::value_type T;
-  return std::min_element(begin, end,
-                          [&f](const T &a, const T &b) { return f(a) < f(b); });
+template <typename TYPE_T>
+std::size_t argmax(std::vector<TYPE_T> &sampleArray) {
+  return std::distance(
+      sampleArray.begin(),
+      std::max_element(sampleArray.begin(), sampleArray.end()));
 }
 
 namespace value_estimate {
@@ -44,23 +46,23 @@ namespace strategies {
  *
  */
 template <typename TYPE_T> class ActionValueStrategy {
-private:
+protected:
   NormalPriorNormalMultiArmedBandit<TYPE_T> &bandits;
   std::size_t time_step;
 
 public:
-  MultiArmedBanditStrategy(NormalPriorNormalMultiArmedBandit<TYPE_T> &bandits)
+  ActionValueStrategy(NormalPriorNormalMultiArmedBandit<TYPE_T> &bandits)
       : bandits(bandits){};
-  virtual std::size_t actionChosenCount(std::size_t action);
+  virtual std::size_t actionChosenCount(std::size_t action) = 0;
   // vector of all actionChosen
-  virtual std::vector<std::size_t> actionChosenCount();
-  virtual TYPE_T estimatedActionValue(std::size_t action);
+  virtual std::vector<std::size_t> actionChosenCount() = 0;
+  virtual TYPE_T estimatedActionValue(std::size_t action) = 0;
   // vector of all estimatedActionValues
-  virtual std::vector<TYPE_T> estimatedActionValue();
-  virtual std::size_t explore();
-  virtual std::size_t exploit();
-  virtual std::size_t getAction();
-  virtual void update(TYPE_T banditValue, std::size_t action);
+  virtual std::vector<TYPE_T> estimatedActionValue() = 0;
+  virtual std::size_t explore() = 0;
+  virtual std::size_t exploit() = 0;
+  virtual std::size_t getAction() = 0;
+  virtual void update(TYPE_T banditValue, std::size_t action) = 0;
 };
 
 template <typename TYPE_T>
@@ -74,39 +76,42 @@ private:
    *      Q_t ()
    */
   std::size_t bestIdx;
-  std::vector<double> estActionValue;
+
+protected:
+  std::vector<TYPE_T> estActionValue;
   std::vector<std::size_t> actionCnts;
 
 public:
   GreedyStrategy(NormalPriorNormalMultiArmedBandit<TYPE_T> &bandits,
-                 std::vector<TYPE_T> estActionValue)
-      : ActionValueStrategy<Type_T>(bandits), estActionValue(estActionValue) {
-    estActionValue.resize(bandits.getNBandits);
-    actionCnts.resize(bandits.getNBandits);
-    bestIdx = argmax(estActionValue.begin(), estActionValue.end(),
-                     [](TYPE_T x) { return x; });
+                 std::vector<TYPE_T> &estActionValue)
+      : ActionValueStrategy<TYPE_T>(bandits), estActionValue(estActionValue) {
+    // estActionValue.resize(bandits.getNBandits);
+    actionCnts.resize(bandits.getNBandits());
+    bestIdx = argmax(estActionValue);
   };
-  std::size_t actionChosenCount(std::size_t action) {
+  std::size_t actionChosenCount(std::size_t action) override {
     return actionCnts[action];
   };
-  std::vector<std::size_t> actionChosenCount() { return actionCnts; };
-  TYPE_T estimatedActionValue(std::size_t action) {
+  std::vector<std::size_t> actionChosenCount() override { return actionCnts; };
+  TYPE_T estimatedActionValue(std::size_t action) override {
     return estActionValue[action];
   };
-  std::vector<TYPE_T> estimatedActionValue() { return estActionValue; };
-  std::size_t explore() { return bestIdx; };
-  std::size_t exploit() { return bestIdx; };
-  std::size_t getAction() { return exploit(); };
+  std::vector<TYPE_T> estimatedActionValue() override {
+    return estActionValue;
+  };
+  std::size_t explore() override { return bestIdx; };
+  std::size_t exploit() override { return bestIdx; };
+  std::size_t getAction() override { return exploit(); };
   void update(TYPE_T banditValue, std::size_t action){/* do nothing */};
 };
 
 template <typename TYPE_T>
-class EpsilonGreedyStrategy : public strategies::GreedyStrategy<Type_T> {
+class EpsilonGreedyStrategy : public strategies::GreedyStrategy<TYPE_T> {
 
 private:
   std::minstd_rand &generator;
   double epsilon;
-  std::uniform_real_distribution<double> exploreExploitDist(0.0, 1.0);
+  std::uniform_real_distribution<double> exploreExploitDist{0.0, 1.0};
   std::uniform_int_distribution<std::size_t> exploreChoiceDist;
 
 public:
@@ -114,21 +119,19 @@ public:
                         std::minstd_rand &generator,
                         std::vector<TYPE_T> initialActionValueEstimate,
                         double epsilon)
-      : strategies::ActionValueStrategy(bandits), generator(generator),
+      : strategies::GreedyStrategy<TYPE_T>(bandits, initialActionValueEstimate),
+        generator(generator),
         exploreChoiceDist(std::uniform_int_distribution<std::size_t>(
             0, bandits.getNBandits())),
-        estActionValue(initialActionValueEstimate), epsilon(epsilon){};
-  std::size_t exploit() {
-    return argmax(estActionValue.begin(), estActionValue.end(),
-                  [](TYPE_T x) { return x; });
-  }
+        epsilon(epsilon){};
+  std::size_t exploit() { return argmax(this->estActionValue); }
   std::size_t explore() {
     // pick an index at random
     return exploreChoiceDist(generator);
   }
   std::size_t getAction() {
-    return (exploreExploitDist(generator) < 1 - epsilon) ? exploit()
-                                                         : explore();
+    return (exploreExploitDist(generator) < 1.0L - epsilon) ? exploit()
+                                                            : explore();
   }
   void update(TYPE_T banditValue, std::size_t action) {
     // update the action value estimates
@@ -137,11 +140,12 @@ public:
     //           = n * sum_(n) [v(a, i) / n] / (n+1) + v(a, n+1) / (n+1)
     //           = n * Q(a, n) / (n + 1) + v(a, n+1) / (n+1)
     //           = [n * Q(a, n) + v(a, n+1)] / (n+1)
-    estActionValue[action] =
-        (actionCnts[action] * estActionValue[action] + banditValue) /
-        (actionCnts[action] + 1);
-    ++actionCnts[action];
-    ++time_step;
+    this->estActionValue[action] =
+        (this->actionCnts[action] * this->estActionValue[action] +
+         banditValue) /
+        (this->actionCnts[action] + 1);
+    ++this->actionCnts[action];
+    ++this->time_step;
   };
 };
 
