@@ -48,6 +48,7 @@ int main(int argc, char *argv[]) {
         std::cout << std::setw(9) << name << "_action, ";
         std::cout << std::setw(9) << name << "_actionVal, ";
         std::cout << std::setw(9) << name << "_actionEst, ";
+        std::cout << std::setw(9) << name << "_gredyEst, ";
       }
       std::cout << "\n";
 
@@ -64,8 +65,10 @@ int main(int argc, char *argv[]) {
       double actionValue = result[action];
       strategy.update(actionValue, action);
       double newActionValueEst = strategy.estimatedActionValue(action);
+      double bestActionEst = strategy.estimatedActionValue(strategy.exploit());
       std::cout << std::setw(3) << action << ", " << std::setw(9) << actionValue
-                << ", " << std::setw(9) << newActionValueEst << ", ";
+                << ", " << std::setw(9) << newActionValueEst << ", "
+                << std::setw(9) << bestActionEst << ", ";
     }
   }
   std::cout << "\n\nFinal Action Value Estimates";
