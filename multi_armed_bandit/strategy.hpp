@@ -55,7 +55,7 @@ enum class Strategies : int {
 template <typename TYPE_T> class ActionValueStrategy {
 protected:
   NormalPriorNormalMultiArmedBandit<TYPE_T> &bandits;
-  std::size_t time_step = 1;
+  std::size_t time_step = 0;
   std::vector<TYPE_T> estActionValue;
   std::vector<std::size_t> actionCnts;
 
@@ -64,6 +64,7 @@ public:
                       std::vector<TYPE_T> &estActionValue)
       : bandits(bandits), estActionValue(estActionValue) {
     this->actionCnts.resize(bandits.getNBandits());
+    std::fill(actionCnts.begin(), actionCnts.end(), 1);
   };
   virtual std::size_t actionChosenCount(std::size_t action) = 0;
   // vector of all actionChosen
