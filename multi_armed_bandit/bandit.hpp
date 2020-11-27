@@ -58,6 +58,7 @@ public:
        << ")";
     return os;
   }
+  TYPE_T getValue() { return qA; };
 
 private:
   std::normal_distribution<double> distribution;
@@ -106,6 +107,13 @@ public:
   };
 
   std::size_t getNBandits() { return n_bandits; };
+  std::vector<TYPE_T> getBanditValues() {
+    std::vector<TYPE_T> result;
+    for (auto &b : bandits) {
+      result.emplace_back(b.getValue());
+    }
+    return result;
+  }
 
 private:
   std::vector<NormalBandit<TYPE_T>> bandits;
