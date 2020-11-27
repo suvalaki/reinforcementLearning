@@ -5,15 +5,24 @@
 
 int main(int argc, char *argv[]) {
   char *tmp;
+  // Number of bandits
   std::size_t n_bandits = static_cast<std::size_t>(strtol(argv[1], &tmp, 10));
+  // Number of samples to take
   std::size_t n_samples = static_cast<std::size_t>(strtol(argv[2], &tmp, 10));
+
+  // Starting estimate for each banits value
+  double baseValue = 0;
+  if (argc >= 4) {
+    baseValue = atof(argv[3]);
+  }
 
   // setup bandits
   std::minstd_rand generator = {};
   NormalPriorNormalMultiArmedBandit<double> bandits(n_bandits, generator);
   std::vector<double> initialValueEstimates;
   initialValueEstimates.resize(n_bandits);
-  std::fill(initialValueEstimates.begin(), initialValueEstimates.end(), 10);
+  std::fill(initialValueEstimates.begin(), initialValueEstimates.end(),
+            baseValue);
   double eps = 0.1;
   strategies::GreedyStrategy<double> greedyStrategy(bandits,
                                                     initialValueEstimates);
