@@ -36,11 +36,21 @@ int main(int argc, char *argv[]) {
   strategyVec.emplace_back(std::string("epsilon-greedy"),
                            epsilonGreedyStrategy);
 
+  std::cout << "Generatimng Ranom Numbers"
+            << " with " << n_bandits << " bandits and " << n_samples
+            << " samples\n";
   for (size_t i = 0; i < n_samples; i++) {
     if (i == 0) {
-      std::cout << "Generatimng Ranom Numbers"
-                << " with " << n_bandits << " bandits and " << n_samples
-                << " samples\n";
+      for (size_t j = 0; j < n_bandits; j++) {
+        std::cout << std::setw(9) << "b" << j << ", ";
+      }
+      for (auto &[name, strategy] : strategyVec) {
+        std::cout << std::setw(9) << name << "_action, ";
+        std::cout << std::setw(9) << name << "_actionVal, ";
+        std::cout << std::setw(9) << name << "_actionEst, ";
+      }
+      std::cout << "\n";
+
     } else {
       std::cout << "\n";
     }
@@ -54,9 +64,8 @@ int main(int argc, char *argv[]) {
       double actionValue = result[action];
       strategy.update(actionValue, action);
       double newActionValueEst = strategy.estimatedActionValue(action);
-      std::cout << std::setw(9) << name << ": (" << std::setw(3) << action
-                << ", " << std::setw(9) << actionValue << ", " << std::setw(9)
-                << newActionValueEst << "), ";
+      std::cout << std::setw(3) << action << ", " << std::setw(9) << actionValue
+                << ", " << std::setw(9) << newActionValueEst << ", ";
     }
   }
   std::cout << "\n\nFinal Action Value Estimates";
