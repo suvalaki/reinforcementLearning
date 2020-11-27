@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
     }
     std::vector<double> result = bandits.sample(generator);
     for (auto const &v : result) {
-      std::cout << std::setw(9) << v << " ";
+      std::cout << std::setw(9) << v << ", ";
     }
 
     for (auto &[name, strategy] : strategyVec) {
@@ -45,8 +45,9 @@ int main(int argc, char *argv[]) {
       double actionValue = result[action];
       strategy.update(actionValue, action);
       double newActionValueEst = strategy.estimatedActionValue(action);
-      std::cout << name << ": (" << action << ", " << actionValue << ", "
-                << newActionValueEst << ") ";
+      std::cout << std::setw(9) << name << ": (" << std::setw(3) << action
+                << ", " << std::setw(9) << actionValue << ", " << std::setw(9)
+                << newActionValueEst << "), ";
     }
   }
   std::cout << "\n\nFinal Action Value Estimates";
