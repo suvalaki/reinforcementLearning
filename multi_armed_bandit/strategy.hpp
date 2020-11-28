@@ -64,7 +64,7 @@ public:
                       std::vector<TYPE_T> &estActionValue)
       : bandits(bandits), estActionValue(estActionValue) {
     this->actionCnts.resize(bandits.getNBandits());
-    std::fill(actionCnts.begin(), actionCnts.end(), 1);
+    std::fill(actionCnts.begin(), actionCnts.end(), 0);
   };
   virtual std::size_t actionChosenCount(std::size_t action) = 0;
   // vector of all actionChosen
@@ -77,17 +77,17 @@ public:
   virtual std::size_t getAction() = 0;
   void update(TYPE_T banditValue, std::size_t action) {
     // update the action value estimates
-    // Q(a, n+1) = sum_(n+1) [v(a, i) / (n+1)]
-    //           = sum_(n) [v(a, i) / (n+1)] + v(a, n+1) / (n+1)
-    //           = n * sum_(n) [v(a, i) / n] / (n+1) + v(a, n+1) / (n+1)
-    //           = n * Q(a, n) / (n + 1) + v(a, n+1) / (n+1)
-    //           = [n * Q(a, n) + v(a, n+1)] / (n+1)
-    this->estActionValue[action] =
-        ((this->actionCnts[action] * this->estActionValue[action] +
-          banditValue) /
-         (this->actionCnts[action] + 1));
+    // Q(a, n+1) = \frac{1}{n} sum_{i=1}^{n} R_i
+    //           = \frac{1}{n} \left\( R_n + sum_{i=1}^{n-1} R_i \right)
+    //           = \frac{1}{n} \left\( R_n + (n-1)\frac{1}{n-1} sum_{i=1}^{n-1}
+    //           R_i \right)
+    //           = \frac{1}{n} \left\( R_n + (n-1) Q(a, n) \right)
+    //           = Q(a,n) + \frac{1}{n} \left\(  R_n - Q(a,n)  \right\)
     ++this->actionCnts[action];
     ++this->time_step;
+    this->estActionValue[action] =
+        this->estActionValue[action] +
+        (banditValue - this->estActionValue[action]) / this->actionCnts[action];
   };
 };
 
