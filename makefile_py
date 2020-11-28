@@ -1,0 +1,24 @@
+# Python Interface
+PY_TARGET := bandit_python_object
+PYTHON_FLAGS ?= python3-config --includes --ldflags
+PYTHON_VERSION := 3.8
+PYTHON_PATH := /home/david/.cache/pypoetry/virtualenvs/reinfocementlearning-dMkvu5-V-py3.8/bin/python
+#PYTHON_INC := /home/david/miniconda3/include/python$(PYTHON_VERSION)
+PYTHON_INC := /usr/include/python$(PYTHON_VERSION)
+BOOST_INC := /usr/include/
+BOOST_LIB := /usr/lib
+BOOST_PYTHON_V :=38
+
+
+$(PY_TARGET).so: $(PY_TARGET).o
+	g++ -shared -Wl,--export-dynamic $(PY_TARGET).o \
+	-L$(BOOST_LIB) \
+	-L/usr/lib/python$(PYTHON_VERSION)/config \
+	-lpython$(PYTHON_VERSION) \
+	-lboost_python$(BOOST_PYTHON_V) \
+	-o $(PY_TARGET).so $(CCFLAGS)
+
+$(PY_TARGET).o: $(PY_ TARGET).cpp
+	g++ -I$(PYTHON_INC) -I$(BOOST_INC) -fPIC -c $(PY_TARGET).cpp $(CCFLAGS)
+
+all: $(TARGET).so

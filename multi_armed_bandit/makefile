@@ -1,35 +1,42 @@
-TARGET_EXEC ?= a.out
+TARGET_EXEC ?= bandit_run.out
 
-PYTHON_FLAGS ?= python3-config --includes --ldflags
+BUILD_DIR ?= ./build
+SRC_DIRS ?= ./src
 
-main:./bandit.hpp ./bandit_run.cpp
-	g++ ./bandit_run.cpp -o ./bandit_run.out
+SRCS := $(shell find $(SRC_DIRS) -name *.cpp -or -name *.c -or -name *.s)
+OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
+DEPS := $(OBJS:.o=.d)
 
-rmain: ./bandit_run.out 
-	./bandit_run.out 10 5
+INC_DIRS := $(shell find $(SRC_DIRS) -type d)
+INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
-PYTHON_VERSION := 3.8
-PYTHON_PATH := /home/david/.cache/pypoetry/virtualenvs/reinfocementlearning-dMkvu5-V-py3.8/bin/python
-#PYTHON_INC := /home/david/miniconda3/include/python$(PYTHON_VERSION)
-PYTHON_INC := /usr/include/python$(PYTHON_VERSION)
-BOOST_INC := /usr/include/
-BOOST_LIB := /usr/lib
-BOOST_PYTHON_V :=38
+CPPFLAGS ?= $(INC_FLAGS) -MMD -MP
+
+$(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
+	$(CC) $(OBJS) -o $@ $(LDFLAGS) -include $(DEPS)
+
+# assembly
+$(BUILD_DIR)/%.s.o: %.s
+	$(MKDIR_P) $(dir $@)
+	$(AS) $(ASFLAGS) -c $< -o $@
+
+# c source
+$(BUILD_DIR)/%.c.o: %.c
+	$(MKDIR_P) $(dir $@)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+# c++ source
+$(BUILD_DIR)/%.cpp.o: %.cpp
+	$(MKDIR_P) $(dir $@)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 
-CFLAGS = --std=c++11
+.PHONY: clean
 
-TARGET := bandit_python_object
+clean:
+	$(RM) -r $(BUILD_DIR)
 
-$(TARGET).so: $(TARGET).o
-	g++ -shared -Wl,--export-dynamic $(TARGET).o \
-	-L$(BOOST_LIB) \
-	-L/usr/lib/python$(PYTHON_VERSION)/config \
-	-lpython$(PYTHON_VERSION) \
-	-lboost_python$(BOOST_PYTHON_V) \
-	-o $(TARGET).so $(CFLAGS)
 
-$(TARGET).o: $(TARGET).cpp
-	g++ -I$(PYTHON_INC) -I$(BOOST_INC) -fPIC -c $(TARGET).cpp $(CFLAGS)
 
-all: $(TARGET).so
+MKDIR_P ?= mkdir -p
+
