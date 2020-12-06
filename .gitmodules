@@ -1,0 +1,3 @@
+[submodule "multi_armed_bandit/lib/Catch2"]
+	path = multi_armed_bandit/lib/Catch2
+	url = https://github.com/catchorg/Catch2.git
