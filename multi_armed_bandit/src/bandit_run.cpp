@@ -1,7 +1,8 @@
 #include "bandit.hpp"
-#include "strategy.hpp"
+#include "explore.hpp"
 #include <iomanip>
 #include <iostream>
+#include <utility>
 
 int main(int argc, char *argv[]) {
   char *tmp;
@@ -24,17 +25,16 @@ int main(int argc, char *argv[]) {
   std::fill(initialValueEstimates.begin(), initialValueEstimates.end(),
             baseValue);
   double eps = 0.1;
-  strategies::GreedyStrategy<double> greedyStrategy(bandits,
-                                                    initialValueEstimates);
-  strategies::EpsilonGreedyStrategy<double> epsilonGreedyStrategy(
-      bandits, generator, initialValueEstimates, eps);
+  strategy::GreedyStrategy<double> greedyStrategy(initialValueEstimates);
+  // strategy::EpsilonGreedyStrategy<double> epsilonGreedyStrategy(
+  //    generator, initialValueEstimates, eps);
 
-  std::vector<std::pair<std::string, strategies::ActionValueStrategy<double> &>>
+  std::vector<std::pair<std::string, strategy::StrategyBase<double> &>>
       strategyVec;
 
   strategyVec.emplace_back(std::string("greedy"), greedyStrategy);
-  strategyVec.emplace_back(std::string("epsilon-greedy"),
-                           epsilonGreedyStrategy);
+  // strategyVec.emplace_back(std::string("epsilon-greedy"),
+  //                         epsilonGreedyStrategy);
 
   std::cout << "Generatimng Ranom Numbers"
             << " with " << n_bandits << " bandits and " << n_samples
@@ -61,11 +61,13 @@ int main(int argc, char *argv[]) {
     }
 
     for (auto &[name, strategy] : strategyVec) {
-      std::size_t action = strategy.getAction();
+      // std::size_t action = strategy.step();
+      std::size_t action = strategy.exploit();
       double actionValue = result[action];
-      strategy.update(actionValue, action);
-      double newActionValueEst = strategy.estimatedActionValue(action);
-      double bestActionEst = strategy.estimatedActionValue(strategy.exploit());
+      strategy.update(action, actionValue);
+      double newActionValueEst = strategy.getActionValueEstimate(action);
+      double bestActionEst =
+          strategy.getActionValueEstimate(strategy.exploit());
       std::cout << std::setw(3) << action << ", " << std::setw(9) << actionValue
                 << ", " << std::setw(9) << newActionValueEst << ", "
                 << std::setw(9) << bestActionEst << ", ";
@@ -82,7 +84,7 @@ int main(int argc, char *argv[]) {
   std::cout << "\n";
 
   for (auto &[name, strategy] : strategyVec) {
-    auto actionValues = strategy.estimatedActionValue();
+    auto actionValues = strategy.getActionValueEstimate();
     std::cout << std::setw(10) << name << "\t";
     for (auto const &v : actionValues) {
       std::cout << std::setw(10) << v << "\t";

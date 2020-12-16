@@ -1,162 +1,469 @@
 #pragma once
-#include "bandit.hpp"
 #include <algorithm>
-#include <limits>
+#include <cmath>
+#include <iterator>
+#include <memory>
 #include <numeric>
+#include <random>
+#include <type_traits>
+#include <vector>
 
-template <typename TYPE_T>
-std::size_t argmax(std::vector<TYPE_T> &sampleArray) {
-  return std::distance(
-      sampleArray.begin(),
-      std::max_element(sampleArray.begin(), sampleArray.end()));
-}
+namespace strategy {
 
-namespace value_estimate {
-
-template <typename TYPE_T>
-TYPE_T sampleAverage(std::vector<TYPE_T> actionValues,
-                     std::size_t actionCount) {
-
-  return actionCount > 0
-             ? std::accumulate(actionValues.begin(), actionValues.end(), 0) /
-                   actionCount
-             : std::numeric_limits<TYPE_T>::min();
-}
-
-template <typename TYPE_T>
-TYPE_T sampleAverage(TYPE_T actionValueSum, std::size_t actionCount) {
-  return actionCount > 0 ? actionValueSum / actionCount
-                         : std::numeric_limits<TYPE_T>::min();
-}
-
-} // namespace value_estimate
-
-namespace strategies {
-
-enum class Strategies : int {
-  GREEDY,
-  EPSILON_GREEDY,
-  EPSILON_GREEDY_NON_STATIONAIRY,
-  UPPER_CONFIDENCE_BOUNDS
+template <typename TYPE_T,
+          typename = typename std::enable_if<
+              std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
+class Base {
+protected:
+  std::vector<TYPE_T> actionValueEstimate;
+  std::vector<std::size_t> actionSelectionCount;
 };
 
-/** Baseclass for action value strategies over the multi-armed-bandit.
- *  Action value strategies:
+} // namespace strategy
+
+/** @brief Methodology for choosing actions which aren't the immediate best */
+namespace strategy::explore {
+
+/** @brief Base functor for exploration methods */
+template <typename TYPE_T,
+          typename = typename std::enable_if<
+              std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
+class ExploreFunctor {
+protected:
+  std::vector<TYPE_T> &actionValueEstimate;
+  std::vector<std::size_t> &actionSelectionCount;
+  std::size_t nActions;
+
+public:
+  ExploreFunctor(std::vector<TYPE_T> &actionValueEstimate,
+                 std::vector<std::size_t> &actionSelectionCount)
+      : actionValueEstimate(actionValueEstimate),
+        actionSelectionCount(actionSelectionCount),
+        nActions(actionSelectionCount.size()){};
+  virtual std::size_t operator()(){};
+};
+
+/** @brief Select from nActions at random with equal probability. */
+template <typename TYPE_T,
+          typename = typename std::enable_if<
+              std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
+class RandomActionSelectionFunctor : public ExploreFunctor<TYPE_T> {
+private:
+  std::size_t nActions;
+  std::uniform_int_distribution<std::size_t> distribution;
+  std::minstd_rand &generator;
+
+public:
+  /** @brief Select from nActions at random with equal
+   * probability.
+   * @param nActions number of actions which can be chosen
+   * from
+   * @param generator random engine/generator
+   */
+  RandomActionSelectionFunctor(std::vector<TYPE_T> &actionValueEstimate,
+                               std::vector<std::size_t> &actionSelectionCount,
+                               std::minstd_rand &generator)
+      : ExploreFunctor<TYPE_T>(actionValueEstimate, actionSelectionCount),
+        distribution(
+            std::uniform_int_distribution<std::size_t>(0, this->nActions)),
+        generator(generator){};
+  /** @retval Random choice of action (index) */
+  std::size_t operator()() { return distribution(generator); }
+};
+
+} // namespace strategy::explore
+
+namespace strategy::action_choice {
+
+enum class ActionTypes : int { EXPLORE, EXPLOIT };
+
+template <typename TYPE_T,
+          typename = typename std::enable_if<
+              std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
+class ActionChoiceFunctor {
+protected:
+  std::vector<TYPE_T> &actionValueEstimate;
+  std::vector<std::size_t> &actionSelectionCount;
+
+public:
+  ActionChoiceFunctor(std::vector<TYPE_T> &actionValueEstimate,
+                      std::vector<std::size_t> &actionSelectionCount)
+      : actionValueEstimate(actionValueEstimate),
+        actionSelectionCount(actionSelectionCount){};
+  virtual ActionTypes operator()(){};
+};
+
+template <typename TYPE_T,
+          typename = typename std::enable_if<
+              std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
+class ConstantSelectionFunctor : public ActionChoiceFunctor<TYPE_T> {
+private:
+  ActionTypes action;
+
+public:
+  ConstantSelectionFunctor(){};
+  ConstantSelectionFunctor(std::vector<TYPE_T> &actionValueEstimate,
+                           std::vector<std::size_t> &actionSelectionCount,
+                           const ActionTypes &action)
+      : ActionChoiceFunctor<TYPE_T>(actionValueEstimate, actionSelectionCount),
+        action(action){};
+  ActionTypes operator()() { return action; }
+};
+
+template <typename TYPE_T,
+          typename = typename std::enable_if<
+              std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
+class BinarySelectionFunctor : public ActionChoiceFunctor<TYPE_T> {
+private:
+  double prob;
+  std::minstd_rand &generator;
+  std::uniform_real_distribution<TYPE_T> distribution{0.0, 1.0};
+
+public:
+  BinarySelectionFunctor(std::vector<TYPE_T> &actionValueEstimate,
+                         std::vector<std::size_t> &actionSelectionCount,
+                         const double &prob, std::minstd_rand &generator)
+      : ActionChoiceFunctor<TYPE_T>(actionValueEstimate, actionSelectionCount),
+        prob(prob), generator(generator){};
+  ActionTypes operator()() {
+    return distribution(generator) > 1 - prob ? ActionTypes::EXPLORE
+                                              : ActionTypes::EXPLOIT;
+  }
+};
+
+} // namespace strategy::action_choice
+
+namespace strategy::step_size {
+
+template <typename TYPE_T,
+          typename = typename std::enable_if<
+              std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
+class StepSizeFunctor {
+protected:
+  std::vector<std::size_t> &actionSelectionCount;
+
+public:
+  StepSizeFunctor(std::vector<std::size_t> &actionSelectionCount)
+      : actionSelectionCount(actionSelectionCount){};
+  // override for action
+  virtual TYPE_T operator()(std::size_t action){};
+};
+
+template <typename TYPE_T,
+          typename = typename std::enable_if<
+              std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
+class ConstantStepSizeFunctor : public StepSizeFunctor<TYPE_T> {
+private:
+  TYPE_T stepSize = 0;
+
+public:
+  ConstantStepSizeFunctor();
+  ConstantStepSizeFunctor(TYPE_T stepSize) : stepSize(stepSize){};
+  TYPE_T operator()(std::size_t action) { return stepSize; }
+};
+
+template <typename TYPE_T,
+          typename = typename std::enable_if<
+              std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
+class SampleAverageStepSizeFunctor : public StepSizeFunctor<TYPE_T> {
+public:
+  SampleAverageStepSizeFunctor(std::vector<std::size_t> &actionSelectionCount)
+      : StepSizeFunctor<TYPE_T>(actionSelectionCount){};
+  TYPE_T operator()(std::size_t action) {
+    return static_cast<TYPE_T>(1) /
+           StepSizeFunctor<TYPE_T>::actionSelectionCount[action];
+  }
+};
+
+} // namespace strategy::step_size
+
+/** \defgroup actionSelectionFunctions
  *
- *   - let r_t(a) be the reward for taking action a at time t (stationairy or
- *     not)
- *   - let q(a) be the true value for taking action a. The true value is the
- *     expected reward
- *   - let Q_t(a) be the estimate for q(a) at time step t
- *   - let N_t(a) be the number of time periods that the actionValueMethodf has
- *     chosen action a after t time periods.
+ * @param actionValueEstimate Vector of action value estimates such that the
+ * index corresponds to the action taken and the value is the estimate.
+ * @retval action to take
+ */
+/** @{ */
+
+/** @ingroup actionSelectionFunctions
+ * @brief Methodology for exploiting curret knwoledge of actuion values.
+ */
+namespace strategy::exploit {
+
+/** @ingroup actionSelectionFunctions
+ * @brief Given a vector of real valued estimates for sample values return the
+ * index corresponding to greatest estimate.
+ * @details The greatest estimate is the so called greedy estimate. It is
+ * considered the estimate which maximises utility given current knowledge of
+ * the state of the value estimates. As such the selection is:
+ *
+ *  $$A_t = \text{argmax}_{a} ( Q_t(a) )$$
  *
  */
-template <typename TYPE_T> class ActionValueStrategy {
+template <typename TYPE_T,
+          typename = typename std::enable_if<
+              std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
+std::size_t argmax(const std::vector<TYPE_T> &actionValueEstimate) {
+  return std::distance(
+      actionValueEstimate.begin(),
+      std::max_element(actionValueEstimate.begin(), actionValueEstimate.end()));
+}
+
+/** @ingroup actionSelectionFunctions
+ * @brief Given a vector of real values estimatess for a sample return
+ * the index corresponding to the value with the greatest C confidence
+ * interval
+ * @details for the estimate given at each time step we only saw the
+ * result of one action at a time. The selection is given by:
+ *
+ *  $$A_t = \text{argmax}_{a} \left\( Q_t(a) + c * \sqrt{ln(t) / N_t(a)}
+ * \right)$$
+ *
+ * Where
+ *  \f$t\f$ is the time step
+ *  \f$A_t\f$ is the action selection at the current time step \f$t\f$
+ *  \f$Q_t(a)\f$ is the value estimate for action a at time step \f$t\f$
+ *  \f$c\f$ confidence interval quantile inverse (eg 1.96 for upper 95%)
+ *  \f$N_t(a)\f$ is the number of times action a has been selected in \f$t\f$
+ * time steps
+ *
+ * As \f$N_t(a)\f$ increases the variance of the estimate \f$Q_t(a)\f$
+ * decreases. As \f$t\f$ increases (which includes the time steps for all the
+ * times we didnt select a) the variance for the estamate \f$Q_t(a)\f$
+ * increases. Hence we trade off reducing the estimate of a current action
+ * against increasing the variance of all other estimates.
+ *
+ * @param confidenceQuantileInverse \f$c\f$: The value corresponding to a
+ * specific quantile from a normal distribution for the confidence level we are
+ * seeking. (eg 1.96 corresponds to 95% confidence)
+ * @param actionValueEstimate \f$Q_t(a)\f$: Vector of action value estimates
+ * such that the index corresponds to the action taken and the value is the
+ * estimate.
+ * @param actionSelectionCount \f$N_t(a)\f$: Vector of counts for how many times
+ * value estimates have been updated using results for a specific action where
+ * the index corresponds with action values.
+ */
+template <typename TYPE_T,
+          typename = typename std::enable_if<
+              std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
+std::size_t upperConfidenceBoundActionSelection(
+    const TYPE_T &confidenceQuantileInverse,
+    const std::vector<TYPE_T> &actionValueEstimate,
+    const std::vector<std::size_t> &actionSelectionCount) {
+  std::vector<TYPE_T> confidenceBound;
+  confidenceBound.reserve(actionValueEstimate.size());
+  const auto t = std::accumulate(actionSelectionCount.begin(),
+                                 actionSelectionCount.end(), 0);
+  for (int i = 0; i < actionValueEstimate.size(); i++) {
+    confidenceBound.emplace_back(
+        actionValueEstimate[i] +
+        confidenceQuantileInverse *
+            std::sqrt(std::log(t) / actionSelectionCount[i]));
+  }
+  return std::distance(
+      confidenceBound.begin(),
+      std::max_element(confidenceBound.begin(), confidenceBound.end()));
+}
+
+/** @} */
+
+/** @brief Base Functor for action selection methods
+ */
+template <typename TYPE_T,
+          typename = typename std::enable_if<
+              std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
+class ExploitFunctor {
 protected:
-  NormalPriorNormalMultiArmedBandit<TYPE_T> &bandits;
-  std::size_t time_step = 0;
-  std::vector<TYPE_T> estActionValue;
-  std::vector<std::size_t> actionCnts;
+  std::vector<TYPE_T> &actionValueEstimate;
+  std::vector<std::size_t> &actionSelectionCount;
 
 public:
-  ActionValueStrategy(NormalPriorNormalMultiArmedBandit<TYPE_T> &bandits,
-                      std::vector<TYPE_T> &estActionValue)
-      : bandits(bandits), estActionValue(estActionValue) {
-    this->actionCnts.resize(bandits.getNBandits());
-    std::fill(actionCnts.begin(), actionCnts.end(), 0);
-  };
-  virtual std::size_t actionChosenCount(std::size_t action) = 0;
-  // vector of all actionChosen
-  virtual std::vector<std::size_t> actionChosenCount() = 0;
-  virtual TYPE_T estimatedActionValue(std::size_t action) = 0;
-  // vector of all estimatedActionValues
-  virtual std::vector<TYPE_T> estimatedActionValue() = 0;
-  virtual std::size_t explore() = 0;
-  virtual std::size_t exploit() = 0;
-  virtual std::size_t getAction() = 0;
-  void update(TYPE_T banditValue, std::size_t action) {
-    // update the action value estimates
-    // Q(a, n+1) = \frac{1}{n} sum_{i=1}^{n} R_i
-    //           = \frac{1}{n} \left\( R_n + sum_{i=1}^{n-1} R_i \right)
-    //           = \frac{1}{n} \left\( R_n + (n-1)\frac{1}{n-1} sum_{i=1}^{n-1}
-    //           R_i \right)
-    //           = \frac{1}{n} \left\( R_n + (n-1) Q(a, n) \right)
-    //           = Q(a,n) + \frac{1}{n} \left\(  R_n - Q(a,n)  \right\)
-    ++this->actionCnts[action];
-    ++this->time_step;
-    this->estActionValue[action] =
-        this->estActionValue[action] +
-        (banditValue - this->estActionValue[action]) / this->actionCnts[action];
-  };
+  ExploitFunctor(std::vector<TYPE_T> &actionValueEstimate,
+                 std::vector<std::size_t> &actionSelectionCount)
+      : actionValueEstimate(actionValueEstimate),
+        actionSelectionCount(actionSelectionCount){};
+  // Replace with exploit logic
+  virtual std::size_t operator()(){};
 };
 
-template <typename TYPE_T>
-class GreedyStrategy : public ActionValueStrategy<TYPE_T> {
-
-  /** Each action has a reward value which we can estimate and define.
-   *  The greedy method will end up picking that with the highest
-   *   estimated action value.
-   *
-   *      Q_t ()
-   */
-
+template <typename TYPE_T,
+          typename = typename std::enable_if<
+              std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
+class ArgmaxFunctor : public ExploitFunctor<TYPE_T> {
 public:
-  GreedyStrategy(NormalPriorNormalMultiArmedBandit<TYPE_T> &bandits,
-                 std::vector<TYPE_T> &estActionValue)
-      : ActionValueStrategy<TYPE_T>(bandits, estActionValue){};
-  std::size_t actionChosenCount(std::size_t action) override {
-    return this->actionCnts[action];
-  };
-  std::vector<std::size_t> actionChosenCount() override {
-    return this->actionCnts;
-  };
-  TYPE_T estimatedActionValue(std::size_t action) override {
-    return this->estActionValue[action];
-  };
-  std::vector<TYPE_T> estimatedActionValue() override {
-    return this->estActionValue;
-  };
-  std::size_t explore() override {
-    return argmax<TYPE_T>(this->estActionValue);
-  };
-  std::size_t exploit() override {
-    return argmax<TYPE_T>(this->estActionValue);
-  };
-  std::size_t getAction() override { return exploit(); };
-  void update(TYPE_T banditValue, std::size_t action) {
-    ActionValueStrategy<TYPE_T>::update(banditValue, action);
+  ArgmaxFunctor(std::vector<TYPE_T> &actionValueEstimate,
+                std::vector<std::size_t> &actionSelectionCount)
+      : ExploitFunctor<TYPE_T>(actionValueEstimate, actionSelectionCount){};
+  std::size_t operator()() override {
+    return strategy::exploit::argmax(this->actionValueEstimate);
   }
 };
 
-template <typename TYPE_T>
-class EpsilonGreedyStrategy : public strategies::GreedyStrategy<TYPE_T> {
-
+template <typename TYPE_T,
+          typename = typename std::enable_if<
+              std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
+class UpperConfidenceBoundFunctor : public ExploitFunctor<TYPE_T> {
 private:
-  std::minstd_rand &generator;
-  double epsilon;
-  std::uniform_real_distribution<double> exploreExploitDist{0.0, 1.0};
-  std::uniform_int_distribution<std::size_t> exploreChoiceDist;
+  TYPE_T confidenceQuantileInverse;
 
 public:
-  EpsilonGreedyStrategy(NormalPriorNormalMultiArmedBandit<TYPE_T> &bandits,
-                        std::minstd_rand &generator,
-                        std::vector<TYPE_T> initialActionValueEstimate,
-                        double epsilon)
-      : strategies::GreedyStrategy<TYPE_T>(bandits, initialActionValueEstimate),
-        generator(generator),
-        exploreChoiceDist(std::uniform_int_distribution<std::size_t>(
-            0, bandits.getNBandits())),
-        epsilon(epsilon){};
-  std::size_t exploit() { return argmax(this->estActionValue); }
-  std::size_t explore() {
-    // pick an index at random
-    return exploreChoiceDist(generator);
-  }
-  std::size_t getAction() {
-    return (exploreExploitDist(generator) < 1.0L - epsilon) ? exploit()
-                                                            : explore();
+  UpperConfidenceBoundFunctor(std::vector<TYPE_T> &actionValueEstimate,
+                              std::vector<std::size_t> &actionSelectionCount,
+                              const TYPE_T &confidenceQuantileInverse)
+      : ExploitFunctor<TYPE_T>(actionValueEstimate, actionSelectionCount),
+        confidenceQuantileInverse(confidenceQuantileInverse){};
+  std::size_t operator()() {
+    return strategy::exploit::upperConfidenceBoundActionSelection(
+        confidenceQuantileInverse, this->actionValueEstimate,
+        this->actionSelectionCount);
   }
 };
 
-} // namespace strategies
+}; // namespace strategy::exploit
+
+namespace strategy {
+
+template <typename TYPE_T,
+          typename = typename std::enable_if<
+              std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
+class StrategyBase {
+
+public:
+  StrategyBase(){};
+  virtual std::size_t explore(){};
+  virtual std::size_t exploit() { return 2; };
+  /** @brief Explore or explot according to ther strategy.
+   *  @retval The action index chosen either through exploration of exploitation
+   */
+  virtual std::size_t step() {}
+  /** @brief Given a chosen action and returned Action value from the bandits
+   * update the internal estimates for action values
+   */
+  virtual void update(std::size_t action, TYPE_T actionValue){};
+  virtual std::vector<TYPE_T> getActionValueEstimate() {}
+  virtual TYPE_T getActionValueEstimate(std::size_t action) {}
+  virtual std::vector<std::size_t> getActionSelectionCount() {}
+  virtual std::size_t getActionSelectionCount(std::size_t action) {}
+};
+
+template <typename TYPE_T,
+          class CHOICE = strategy::action_choice::ActionChoiceFunctor<TYPE_T>,
+          class EXPLORE = strategy::explore::ExploreFunctor<TYPE_T>,
+          class EXPLOIT = strategy::exploit::ExploitFunctor<TYPE_T>,
+          class STEP = strategy::step_size::StepSizeFunctor<TYPE_T>,
+          typename = typename std::enable_if<
+              std::is_floating_point<TYPE_T>::value and
+                  std::is_base_of<strategy::exploit::ExploitFunctor<TYPE_T>,
+                                  EXPLOIT>::value,
+              TYPE_T>::type>
+class Strategy : public StrategyBase<TYPE_T> {
+
+protected:
+  std::vector<TYPE_T> actionValueEstimate;
+  std::vector<std::size_t> actionSelectionCount;
+  CHOICE choiceFunctor;
+  EXPLORE exploreFunctor;
+  EXPLOIT exploitFunctor;
+  STEP stepSizeFunctor;
+
+public:
+  /** @brief Creating a strategy when the functors have been initialised
+   * beforehand */
+  Strategy(std::vector<TYPE_T> actionValueEstimate,
+           std::vector<std::size_t> actionSelectionCount, CHOICE choiceFunctor,
+           EXPLORE exploreFunctor, EXPLOIT exploitFunctor, STEP stepSizeFunctor)
+      : actionValueEstimate(actionValueEstimate),
+        actionSelectionCount(actionSelectionCount),
+        choiceFunctor(choiceFunctor), exploreFunctor(exploreFunctor),
+        exploitFunctor(exploitFunctor), stepSizeFunctor(stepSizeFunctor){};
+
+  std::size_t explore() override { return this->exploreFunctor(); };
+  std::size_t exploit() override { return this->exploitFunctor(); };
+  /** @brief Explore or explot according to ther strategy.
+   *  @retval The action index chosen either through exploration of exploitation
+   */
+  std::size_t step() override {
+    return choiceFunctor() == strategy::action_choice::ActionTypes::EXPLORE
+               ? exploreFunctor()
+               : exploitFunctor();
+  }
+  /** @brief Given a chosen action and returned Action value from the bandits
+   * update the internal estimates for action values
+   */
+  void update(std::size_t action, TYPE_T actionValue) override {
+    actionValueEstimate[action] =
+        (actionValueEstimate[action] +
+         stepSizeFunctor(action) * (actionValue - actionValueEstimate[action]));
+    ++actionSelectionCount[action];
+  };
+  std::vector<TYPE_T> getActionValueEstimate() override {
+    return actionValueEstimate;
+  }
+  TYPE_T getActionValueEstimate(std::size_t action) override {
+    return actionValueEstimate[action];
+  }
+  std::vector<std::size_t> getActionSelectionCount() override {
+    return actionSelectionCount;
+  }
+  std::size_t getActionSelectionCount(std::size_t action) override {
+    return actionSelectionCount[action];
+  }
+};
+
+template <typename TYPE_T,
+          typename = typename std::enable_if<
+              std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
+class GreedyStrategy
+    : public Strategy<
+          TYPE_T, strategy::action_choice::ConstantSelectionFunctor<TYPE_T>,
+          strategy::explore::ExploreFunctor<TYPE_T>,
+          strategy::exploit::ArgmaxFunctor<TYPE_T>,
+          strategy::step_size::SampleAverageStepSizeFunctor<TYPE_T>> {
+public:
+  GreedyStrategy(std::vector<TYPE_T> initialActionValueEstimate)
+      : Strategy<TYPE_T,
+                 strategy::action_choice::ConstantSelectionFunctor<TYPE_T>,
+                 strategy::explore::ExploreFunctor<TYPE_T>,
+                 strategy::exploit::ArgmaxFunctor<TYPE_T>,
+                 strategy::step_size::SampleAverageStepSizeFunctor<TYPE_T>>(
+            initialActionValueEstimate,
+            std::vector<std::size_t>(initialActionValueEstimate.size(), 1),
+            strategy::action_choice::ConstantSelectionFunctor<TYPE_T>(
+                this->actionValueEstimate, this->actionSelectionCount,
+                strategy::action_choice::ActionTypes::EXPLOIT),
+            strategy::explore::ExploreFunctor<TYPE_T>(
+                this->actionValueEstimate,
+                this->actionSelectionCount), // NULL FUNCTOR
+            strategy::exploit::ArgmaxFunctor<TYPE_T>(
+                this->actionValueEstimate, this->actionSelectionCount),
+            strategy::step_size::SampleAverageStepSizeFunctor<TYPE_T>(
+                this->actionSelectionCount)){};
+};
+
+/**
+template <typename TYPE_T,
+          typename = typename std::enable_if<
+              std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
+class EpsilonGreedyStrategy : public Strategy<TYPE_T> {
+
+public:
+  EpsilonGreedyStrategy(std::minstd_rand &generator,
+                        std::vector<TYPE_T> initialActionValueEstimate,
+                        TYPE_T epsilon)
+      : Strategy<TYPE_T>(
+            initialActionValueEstimate,
+            std::vector<std::size_t>(initialActionValueEstimate.size()),
+            strategy::action_choice::BinarySelectionFunctor<TYPE_T>(
+                this->actionValueEstimate, this->actionSelectionCount, epsilon,
+                generator),
+            strategy::explore::RandomActionSelectionFunctor<TYPE_T>(
+                this->actionValueEstimate, this->actionSelectionCount,
+                generator),
+            strategy::exploit::ArgmaxFunctor<TYPE_T>(
+                this->actionValueEstimate, this->actionSelectionCount),
+            strategy::step_size::SampleAverageStepSizeFunctor<TYPE_T>(
+                this->actionSelectionCount)){};
+};
+*/
+
+} // namespace strategy
