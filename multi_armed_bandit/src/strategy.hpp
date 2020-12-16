@@ -21,57 +21,6 @@ protected:
 
 } // namespace strategy
 
-/** @brief Methodology for choosing actions which aren't the immediate best */
-namespace strategy::explore {
-
-/** @brief Base functor for exploration methods */
-template <typename TYPE_T,
-          typename = typename std::enable_if<
-              std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
-class ExploreFunctor {
-protected:
-  std::vector<TYPE_T> &actionValueEstimate;
-  std::vector<std::size_t> &actionSelectionCount;
-  std::size_t nActions;
-
-public:
-  ExploreFunctor(std::vector<TYPE_T> &actionValueEstimate,
-                 std::vector<std::size_t> &actionSelectionCount)
-      : actionValueEstimate(actionValueEstimate),
-        actionSelectionCount(actionSelectionCount),
-        nActions(actionSelectionCount.size()){};
-  virtual std::size_t operator()() { return 0; };
-};
-
-/** @brief Select from nActions at random with equal probability. */
-template <typename TYPE_T,
-          typename = typename std::enable_if<
-              std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
-class RandomActionSelectionFunctor : public ExploreFunctor<TYPE_T> {
-private:
-  std::uniform_int_distribution<std::size_t> distribution;
-  std::minstd_rand &generator;
-
-public:
-  /** @brief Select from nActions at random with equal
-   * probability.
-   * @param nActions number of actions which can be chosen
-   * from
-   * @param generator random engine/generator
-   */
-  RandomActionSelectionFunctor(std::vector<TYPE_T> &actionValueEstimate,
-                               std::vector<std::size_t> &actionSelectionCount,
-                               std::minstd_rand &generator)
-      : ExploreFunctor<TYPE_T>(actionValueEstimate, actionSelectionCount),
-        distribution(std::uniform_int_distribution<std::size_t>(
-            0, actionValueEstimate.size())),
-        generator(generator){};
-  /** @retval Random choice of action (index) */
-  std::size_t operator()() { return distribution(generator); }
-};
-
-} // namespace strategy::explore
-
 namespace strategy::action_choice {
 
 enum class ActionTypes : int { EXPLORE, EXPLOIT };
@@ -131,6 +80,57 @@ public:
 };
 
 } // namespace strategy::action_choice
+
+/** @brief Methodology for choosing actions which aren't the immediate best */
+namespace strategy::explore {
+
+/** @brief Base functor for exploration methods */
+template <typename TYPE_T,
+          typename = typename std::enable_if<
+              std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
+class ExploreFunctor {
+protected:
+  std::vector<TYPE_T> &actionValueEstimate;
+  std::vector<std::size_t> &actionSelectionCount;
+  std::size_t nActions;
+
+public:
+  ExploreFunctor(std::vector<TYPE_T> &actionValueEstimate,
+                 std::vector<std::size_t> &actionSelectionCount)
+      : actionValueEstimate(actionValueEstimate),
+        actionSelectionCount(actionSelectionCount),
+        nActions(actionSelectionCount.size()){};
+  virtual std::size_t operator()() { return 0; };
+};
+
+/** @brief Select from nActions at random with equal probability. */
+template <typename TYPE_T,
+          typename = typename std::enable_if<
+              std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
+class RandomActionSelectionFunctor : public ExploreFunctor<TYPE_T> {
+private:
+  std::uniform_int_distribution<std::size_t> distribution;
+  std::minstd_rand &generator;
+
+public:
+  /** @brief Select from nActions at random with equal
+   * probability.
+   * @param nActions number of actions which can be chosen
+   * from
+   * @param generator random engine/generator
+   */
+  RandomActionSelectionFunctor(std::vector<TYPE_T> &actionValueEstimate,
+                               std::vector<std::size_t> &actionSelectionCount,
+                               std::minstd_rand &generator)
+      : ExploreFunctor<TYPE_T>(actionValueEstimate, actionSelectionCount),
+        distribution(std::uniform_int_distribution<std::size_t>(
+            0, actionValueEstimate.size())),
+        generator(generator){};
+  /** @retval Random choice of action (index) */
+  std::size_t operator()() { return distribution(generator); }
+};
+
+} // namespace strategy::explore
 
 namespace strategy::step_size {
 
