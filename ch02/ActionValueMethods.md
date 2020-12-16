@@ -23,6 +23,40 @@ An agent can either exploit its current knowledge of the problem space or explor
 - Let $Q_t(a)=\widehat{q}(a)$  be the estimate of the true value of action $a$ after $t$ time periods
 - Let $N_t(a)$ be the number of time periods action $a$ has been taken after $t$ time periods
 
+## Aggregate updates
+At any time preiod we need to update our estimate $Q_t(a)$. Instead of holding vectors of all values $r_t(a)$ we can perform itterative updates. 
+
+### Stationary action values 
+When $q(a)$ is invariant with time:
+$$
+\begin{aligned}
+Q_{t+1}(a) &= \frac{1}{N_t(a)}\sum_{t\in N_t(a)} r_t(a) \\
+&= \frac{1}{N_t(a)} \left( r_t(a) + \sum_{t\in N_{t-1}(a)} r_t(a) \right) \\
+&= \frac{1}{N_t(a)} \left( r_t(a) + N_{t-1}(a)\left(\frac{1}{N_{t-1}(a)}\sum_{t\in N_{t-1}(a)} r_t(a) \right)\right) \\
+&= \frac{1}{N_t(a)} \left( r_t(a) + N_{t-1}(a) * Q_{t-1}(a) \right) \\
+&= \frac{1}{t} \left( r_t(a) + (t-1) * Q_{t-1}(a) \right) \\
+&= Q_{t-1}(a) + \frac{1}{t} \left(  r_t(a) - Q_{t-1}(a) \right)\\ 
+&= Q_{t-1}(a) +  \alpha_t * \left(  r_t(a) - Q_{t-1}(a) \right)
+\end{aligned}
+$$
+
+As such the the update is a "sample weighted average". 
+
+### Non-Stationairy action values
+Often it is possible for action values to change with time. To account for this we need to weight more recent outcomes more than prior ones. 
+
+We call $\alpha \in [0,1]$ the step size parameter. When $\alpha = 1/t$ we call this the simple moving average.  
+his converges with probability 1 when :
+
+$$
+\sum_{t=1}^{\infty} \alpha_t(a) = \infty 
+\hspace{5mm}
+\text{and}
+\hspace{5mm}
+\sum_{t=1}^{\infty}\alpha_{t}^2(a) < \infty
+$$
+Non-covergence (which is the case for constant $\alpha_t$) is actually useful for non-stationairy problems because results <b>continue to vary in response to most recent rewards</b> (an never truly converge). If distribution is changing we want to be sensetive to these changes.
+
 ## Multi Armed Bandits
 
 The multi armed bandit problem is an example of a learning problem in a non-associative setting. 
@@ -34,9 +68,35 @@ The multi armed bandit problem is an example of a learning problem in a non-asso
 
 At each time period we pick an index. We are seeking to consistently pick $X_{i,t}$ with the maximal value, so that at the end of the period $T$ we have accumulated the greatest possible reward. 
 
-The multi-armed bandit problem illustrates the tension between 
+The multi-armed bandit problem illustrates the tension between exploration and exploitation.
 
-- 
+### Greedy Method
+The greedy method is a purely expoloitative method; it does not explore in order to search for a better solution. The strategy is instantiated with an initial set of belief values for expected value of each choice. At every time step it selects the bandit it thinks will have the largest payoff, and then performs an update to its view of the the expected values.
+
+The greedy action can only change when the estimated value for the greedy action dips bellow another non-greedy estimate. Hence low initial vonealues for value estimates will likely result in local non-optimal results. 
+
+```
+def exploit(banditValues):
+    return argmax(banditValues)
+
+def explore():
+    pass 
+
+def update(idx, value):
+    # update the value of the bandit
+
+def greedyMethod(bandits, iterations):
+    for i in range(iterations):
+        bandits.sample()
+        idx = exploit(bandits.valueEstinmates)
+        value = bandits.value(idx)
+        update(idx, value)
+    return bandits.valueEstimates
+
+```
+### Epsilon Greedy Method
+Epslion greedy introduces a probabilistic search exploration step to the greedy method: at each time step with probability epsilon the strategy explores one of the non-greedy actions, otherwise the greedy action is selected. 
+
 
 ## Gradient Bandits
 
