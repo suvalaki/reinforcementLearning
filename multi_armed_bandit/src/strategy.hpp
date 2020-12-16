@@ -13,7 +13,7 @@ namespace strategy {
 template <typename TYPE_T,
           typename = typename std::enable_if<
               std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
-class Base {
+class PtrBase {
 protected:
   std::vector<TYPE_T> actionValueEstimate;
   std::vector<std::size_t> actionSelectionCount;
@@ -40,7 +40,7 @@ public:
       : actionValueEstimate(actionValueEstimate),
         actionSelectionCount(actionSelectionCount),
         nActions(actionSelectionCount.size()){};
-  virtual std::size_t operator()(){};
+  virtual std::size_t operator()() { return 0; };
 };
 
 /** @brief Select from nActions at random with equal probability. */
@@ -89,7 +89,7 @@ public:
                       std::vector<std::size_t> &actionSelectionCount)
       : actionValueEstimate(actionValueEstimate),
         actionSelectionCount(actionSelectionCount){};
-  virtual ActionTypes operator()(){};
+  virtual ActionTypes operator()() { return ActionTypes::EXPLOIT; };
 };
 
 template <typename TYPE_T,
@@ -145,7 +145,7 @@ public:
   StepSizeFunctor(std::vector<std::size_t> &actionSelectionCount)
       : actionSelectionCount(actionSelectionCount){};
   // override for action
-  virtual TYPE_T operator()(std::size_t action){};
+  virtual TYPE_T operator()(std::size_t action) { return 0; };
 };
 
 template <typename TYPE_T,
@@ -282,7 +282,7 @@ public:
       : actionValueEstimate(actionValueEstimate),
         actionSelectionCount(actionSelectionCount){};
   // Replace with exploit logic
-  virtual std::size_t operator()(){};
+  virtual std::size_t operator()() { return 0; };
 };
 
 template <typename TYPE_T,
@@ -329,20 +329,20 @@ class StrategyBase {
 
 public:
   StrategyBase(){};
-  virtual std::size_t explore(){};
-  virtual std::size_t exploit() { return 2; };
+  virtual std::size_t explore() = 0;
+  virtual std::size_t exploit() = 0;
   /** @brief Explore or explot according to ther strategy.
    *  @retval The action index chosen either through exploration of exploitation
    */
-  virtual std::size_t step() {}
+  virtual std::size_t step() = 0;
   /** @brief Given a chosen action and returned Action value from the bandits
    * update the internal estimates for action values
    */
   virtual void update(std::size_t action, TYPE_T actionValue){};
-  virtual std::vector<TYPE_T> getActionValueEstimate() {}
-  virtual TYPE_T getActionValueEstimate(std::size_t action) {}
-  virtual std::vector<std::size_t> getActionSelectionCount() {}
-  virtual std::size_t getActionSelectionCount(std::size_t action) {}
+  virtual std::vector<TYPE_T> getActionValueEstimate() = 0;
+  virtual TYPE_T getActionValueEstimate(std::size_t action) = 0;
+  virtual std::vector<std::size_t> getActionSelectionCount() = 0;
+  virtual std::size_t getActionSelectionCount(std::size_t action) = 0;
 };
 
 template <typename TYPE_T,

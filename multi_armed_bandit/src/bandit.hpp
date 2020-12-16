@@ -6,6 +6,9 @@
 #include <random>
 #include <vector>
 
+/** @brief Base class for a single random bandit
+ * 
+ */
 template <class TYPE_T> class Bandit {
 public:
   virtual TYPE_T sample(std::minstd_rand &engine) {
