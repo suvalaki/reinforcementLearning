@@ -1,5 +1,5 @@
 #include "bandit.hpp"
-#include "explore.hpp"
+#include "strategy.hpp"
 #include <iomanip>
 #include <iostream>
 #include <utility>
@@ -24,17 +24,17 @@ int main(int argc, char *argv[]) {
   initialValueEstimates.resize(n_bandits);
   std::fill(initialValueEstimates.begin(), initialValueEstimates.end(),
             baseValue);
-  double eps = 0.1;
+  double eps = 0.5;
   strategy::GreedyStrategy<double> greedyStrategy(initialValueEstimates);
-  // strategy::EpsilonGreedyStrategy<double> epsilonGreedyStrategy(
-  //    generator, initialValueEstimates, eps);
+  strategy::EpsilonGreedyStrategy<double> epsilonGreedyStrategy(
+      generator, initialValueEstimates, eps);
 
   std::vector<std::pair<std::string, strategy::StrategyBase<double> &>>
       strategyVec;
 
   strategyVec.emplace_back(std::string("greedy"), greedyStrategy);
-  // strategyVec.emplace_back(std::string("epsilon-greedy"),
-  //                         epsilonGreedyStrategy);
+  strategyVec.emplace_back(std::string("epsilon-greedy"),
+                           epsilonGreedyStrategy);
 
   std::cout << "Generatimng Ranom Numbers"
             << " with " << n_bandits << " bandits and " << n_samples
@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
 
     for (auto &[name, strategy] : strategyVec) {
       // std::size_t action = strategy.step();
-      std::size_t action = strategy.exploit();
+      std::size_t action = strategy.step();
       double actionValue = result[action];
       strategy.update(action, actionValue);
       double newActionValueEst = strategy.getActionValueEstimate(action);

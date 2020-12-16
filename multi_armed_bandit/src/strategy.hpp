@@ -49,7 +49,6 @@ template <typename TYPE_T,
               std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
 class RandomActionSelectionFunctor : public ExploreFunctor<TYPE_T> {
 private:
-  std::size_t nActions;
   std::uniform_int_distribution<std::size_t> distribution;
   std::minstd_rand &generator;
 
@@ -64,8 +63,8 @@ public:
                                std::vector<std::size_t> &actionSelectionCount,
                                std::minstd_rand &generator)
       : ExploreFunctor<TYPE_T>(actionValueEstimate, actionSelectionCount),
-        distribution(
-            std::uniform_int_distribution<std::size_t>(0, this->nActions)),
+        distribution(std::uniform_int_distribution<std::size_t>(
+            0, actionValueEstimate.size())),
         generator(generator){};
   /** @retval Random choice of action (index) */
   std::size_t operator()() { return distribution(generator); }
@@ -440,19 +439,27 @@ public:
                 this->actionSelectionCount)){};
 };
 
-/**
 template <typename TYPE_T,
           typename = typename std::enable_if<
               std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
-class EpsilonGreedyStrategy : public Strategy<TYPE_T> {
+class EpsilonGreedyStrategy
+    : public Strategy<
+          TYPE_T, strategy::action_choice::BinarySelectionFunctor<TYPE_T>,
+          strategy::explore::RandomActionSelectionFunctor<TYPE_T>,
+          strategy::exploit::ArgmaxFunctor<TYPE_T>,
+          strategy::step_size::SampleAverageStepSizeFunctor<TYPE_T>> {
 
 public:
   EpsilonGreedyStrategy(std::minstd_rand &generator,
                         std::vector<TYPE_T> initialActionValueEstimate,
                         TYPE_T epsilon)
-      : Strategy<TYPE_T>(
+      : Strategy<TYPE_T,
+                 strategy::action_choice::BinarySelectionFunctor<TYPE_T>,
+                 strategy::explore::RandomActionSelectionFunctor<TYPE_T>,
+                 strategy::exploit::ArgmaxFunctor<TYPE_T>,
+                 strategy::step_size::SampleAverageStepSizeFunctor<TYPE_T>>(
             initialActionValueEstimate,
-            std::vector<std::size_t>(initialActionValueEstimate.size()),
+            std::vector<std::size_t>(initialActionValueEstimate.size(), 1),
             strategy::action_choice::BinarySelectionFunctor<TYPE_T>(
                 this->actionValueEstimate, this->actionSelectionCount, epsilon,
                 generator),
@@ -464,6 +471,5 @@ public:
             strategy::step_size::SampleAverageStepSizeFunctor<TYPE_T>(
                 this->actionSelectionCount)){};
 };
-*/
 
 } // namespace strategy
