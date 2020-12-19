@@ -12,7 +12,7 @@ set_target_properties(MultiArmedBandit PROPERTIES
             CXX_STANDARD 17
             CXX_EXTENSIONS OFF
             )
-include_directories(src)
+target_include_directories(MultiArmedBandit PUBLIC src)
 
 
 # Add testcase executable
@@ -26,8 +26,7 @@ set_target_properties(tests PROPERTIES
             CXX_EXTENSIONS OFF
             )
 
-#include_directories(src)
-#include_directories(test)
+target_include_directories(tests PUBLIC src test)
 
 include(CTest)
 include(lib/Catch2/extras/Catch.cmake)
@@ -38,6 +37,7 @@ ParseAndAddCatchTests(tests)
 # add_test(allTests tests)
 
 # Run tests after each build 
-add_custom_command(TARGET tests 
-                   POST_BUILD
-                   COMMAND ctest -C $<CONFIGURATION> --output-on-failure)
+# add_custom_command(TARGET tests 
+#                   POST_BUILD
+#                   COMMAND ctest -C $<CONFIGURATION> --output-on-failure)
+# Instead just run ctest explicitly

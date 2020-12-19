@@ -1,5 +1,6 @@
-#include "strategy.hpp"
 #include "catch.hpp"
+
+#include "strategy.hpp"
 
 #include <random>
 #include <vector>
@@ -38,13 +39,41 @@ TEST_CASE("ConstantStepSizeFunctor") {}
 
 TEST_CASE("SampleAverageStepSizeFunctor") {}
 
-TEST_CASE("argmax") {}
+TEST_CASE("argmax") {
+  {
+    std::vector<float> v = {1, 2, 3, 4, 5};
+    CHECK(strategy::exploit::argmax(v) == 4);
+  }
+  {
+    std::vector<float> v = {0, 0, 0, 0};
+    CHECK(strategy::exploit::argmax(v) == 0);
+  }
+}
 
 TEST_CASE("upperConfidenceBoundActionSelection") {}
 
 TEST_CASE("ExploitFunctor") {}
 
-TEST_CASE("ArgmaxFunctor") {}
+TEST_CASE("ArgmaxFunctor") {
+  {
+    std::vector<float> v = {0, 0, 0, 0};
+    std::vector<std::size_t> s = {0, 0, 0, 0};
+    strategy::exploit::ArgmaxFunctor<float> aF = {v, s};
+    CHECK(aF() == 0);
+  }
+  {
+    std::vector<float> v = {1, 2, 3, 4, 5};
+    std::vector<std::size_t> s = {0, 0, 0, 0, 0};
+    strategy::exploit::ArgmaxFunctor<float> aF = {v, s};
+    CHECK(aF() == 4);
+  }
+  {
+    std::vector<float> v = {1, 2, 10, 4, 5};
+    std::vector<std::size_t> s = {0, 0, 0, 0, 0};
+    strategy::exploit::ArgmaxFunctor<float> aF = {v, s};
+    CHECK(aF() == 2);
+  }
+}
 
 TEST_CASE("UpperConfidenceBoundFunctor") {}
 
@@ -52,6 +81,15 @@ TEST_CASE("StrategyBase") {}
 
 TEST_CASE("Strategy") {}
 
-TEST_CASE("GreedyStrategy") {}
+TEST_CASE("GreedyStrategy") {
+  {
+    std::vector<float> v = {0, 0, 0, 0};
+    strategy::GreedyStrategy<float> strat(v);
+    CHECK(strat.getActionValueEstimate(0) == 0);
+    CHECK(strat.getActionValueEstimate().size() == 4);
+    CHECK(strat.getActionSelectionCount().size() == 4);
+    CHECK(strat.exploit() == 0);
+  }
+}
 
 TEST_CASE("EpsilonGreedyStrategy") {}
