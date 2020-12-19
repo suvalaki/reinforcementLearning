@@ -13,7 +13,7 @@ TEST_CASE("Factorials are computed", "[factorial]") {
   REQUIRE(Factorial(10) == 3628800);
 }
 
-#include "explore.hpp"
+#include "strategy.hpp"
 #include <vector>
 
 TEST_CASE("Argmax") {
