@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
+set(CATCH_INSTALL_EXTRAS ON)
 set(CMAKE_BUILD_TYPE Debug)
 
 # set the project name
@@ -13,15 +14,30 @@ set_target_properties(MultiArmedBandit PROPERTIES
             )
 include_directories(src)
 
+
 # Add testcase executable
-add_executable(tests test/main.cpp)
+enable_testing()
+file(GLOB_RECURSE testfiles CONFIGURE_DEPENDS "test/*.h" "test/*.cpp")
+add_executable(tests ${testfiles})
+add_subdirectory(lib/Catch2)
+target_link_libraries(tests INTERFACE Catch2::Catch2)
 set_target_properties(tests PROPERTIES
             CXX_STANDARD 17
             CXX_EXTENSIONS OFF
             )
 
-include_directories(test)
+#include_directories(src)
+#include_directories(test)
 
-# Include catch2 from subdirectory
-add_subdirectory(lib/Catch2)
-target_link_libraries(tests Catch2::Catch2)
+include(CTest)
+include(lib/Catch2/extras/Catch.cmake)
+include(lib/Catch2/extras/ParseAndAddCatchTests.cmake)
+ParseAndAddCatchTests(tests)
+
+# Add the tests to be run 
+# add_test(allTests tests)
+
+# Run tests after each build 
+add_custom_command(TARGET tests 
+                   POST_BUILD
+                   COMMAND ctest -C $<CONFIGURATION> --output-on-failure)
