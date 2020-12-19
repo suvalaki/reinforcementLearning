@@ -7,18 +7,36 @@
 
 TEST_CASE("ActionChoiceFunctor") {}
 
-TEST_CASE("ConstantSelectorFunction") {}
+TEST_CASE("strategy::action_choice::ConstantSelectorFunction") {
+
+  // The constant choice functor always returns the action type supplied to it
+  // during construction
+  auto v = std::vector<float>(10, 0.1);
+  auto s = std::vector<std::size_t>(10, 1);
+  {
+    // When supplying exploit as the constant action type
+    auto c = strategy::action_choice::ConstantSelectionFunctor<float>(
+        v, s, strategy::action_choice::ActionTypes::EXPLOIT);
+    CHECK(c() == strategy::action_choice::ActionTypes::EXPLOIT);
+  }
+  {
+    // When supplying explore as the constant action type
+    auto c = strategy::action_choice::ConstantSelectionFunctor<float>(
+        v, s, strategy::action_choice::ActionTypes::EXPLORE);
+    CHECK(c() == strategy::action_choice::ActionTypes::EXPLORE);
+  }
+}
 
 TEST_CASE("strategy::action_choice::BinarySelectionFunctor") {
 
   // The epsilon valuie of the Binary selection functor denotes the probablity
   // of exploration
+  auto v = std::vector<float>(10, 0.1);
+  auto s = std::vector<std::size_t>(10, 1);
+  std::minstd_rand generator = {};
   {
     // Check that when the probability of exploration is set to zero that the
     // function exploits
-    auto v = std::vector<float>(10, 0.1);
-    auto s = std::vector<std::size_t>(10, 1);
-    std::minstd_rand generator = {};
     auto b = strategy::action_choice::BinarySelectionFunctor<float>(v, s, 0.0,
                                                                     generator);
     CHECK(b() == strategy::action_choice::ActionTypes::EXPLOIT);
@@ -26,9 +44,6 @@ TEST_CASE("strategy::action_choice::BinarySelectionFunctor") {
   {
     // Check that when the probability of exploration is set to one that the
     // function explores
-    auto v = std::vector<float>(10, 0.1);
-    auto s = std::vector<std::size_t>(10, 1);
-    std::minstd_rand generator = {};
     auto b = strategy::action_choice::BinarySelectionFunctor<float>(v, s, 1.0,
                                                                     generator);
     CHECK(b() == strategy::action_choice::ActionTypes::EXPLORE);
@@ -40,9 +55,6 @@ TEST_CASE("strategy::action_choice::BinarySelectionFunctor") {
   {
     // Check that when the probability of exploration is set to less than zero
     // that the function only exploits
-    auto v = std::vector<float>(10, 0.1);
-    auto s = std::vector<std::size_t>(10, 1);
-    std::minstd_rand generator = {};
     auto b = strategy::action_choice::BinarySelectionFunctor<float>(v, s, -1.0,
                                                                     generator);
     CHECK(b() == strategy::action_choice::ActionTypes::EXPLOIT);
@@ -50,9 +62,6 @@ TEST_CASE("strategy::action_choice::BinarySelectionFunctor") {
   {
     // Check that when the probability of exploration is set to grerater than
     // one that the function only explores
-    auto v = std::vector<float>(10, 0.1);
-    auto s = std::vector<std::size_t>(10, 1);
-    std::minstd_rand generator = {};
     auto b = strategy::action_choice::BinarySelectionFunctor<float>(v, s, 1.0,
                                                                     generator);
     CHECK(b() == strategy::action_choice::ActionTypes::EXPLORE);
