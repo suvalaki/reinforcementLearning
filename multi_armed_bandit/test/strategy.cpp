@@ -5,7 +5,15 @@
 #include <random>
 #include <vector>
 
-TEST_CASE("ActionChoiceFunctor") {}
+TEST_CASE("strategy::action_choice::ActionChoiceFunctor") {
+  // Default virtual functor is implemented to always return the EXPLOIT choice
+  auto v = std::vector<float>(10, 0.1);
+  auto s = std::vector<std::size_t>(10, 1);
+  {
+    auto c = strategy::action_choice::ActionChoiceFunctor<float>(v, s);
+    CHECK(c() == strategy::action_choice::ActionTypes::EXPLOIT);
+  }
+}
 
 TEST_CASE("strategy::action_choice::ConstantSelectorFunction") {
 
