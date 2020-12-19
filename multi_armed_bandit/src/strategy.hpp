@@ -21,6 +21,9 @@ protected:
 
 } // namespace strategy
 
+/** @brief Action Choices are how the strategic agent decides
+ * whhether to explore of exploit.
+ */
 namespace strategy::action_choice {
 
 enum class ActionTypes : int { EXPLORE, EXPLOIT };
@@ -73,7 +76,7 @@ public:
                          const double &prob, std::minstd_rand &generator)
       : ActionChoiceFunctor<TYPE_T>(actionValueEstimate, actionSelectionCount),
         prob(prob), generator(generator){};
-  ActionTypes operator()() {
+  ActionTypes operator()() override {
     return distribution(generator) > 1 - prob ? ActionTypes::EXPLORE
                                               : ActionTypes::EXPLOIT;
   }
@@ -338,7 +341,7 @@ public:
   /** @brief Given a chosen action and returned Action value from the bandits
    * update the internal estimates for action values
    */
-  virtual void update(std::size_t action, TYPE_T actionValue){};
+  virtual void update(std::size_t action, TYPE_T actionValue) = 0;
   virtual std::vector<TYPE_T> getActionValueEstimate() = 0;
   virtual TYPE_T getActionValueEstimate(std::size_t action) = 0;
   virtual std::vector<std::size_t> getActionSelectionCount() = 0;
