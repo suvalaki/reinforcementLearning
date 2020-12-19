@@ -76,9 +76,55 @@ TEST_CASE("strategy::action_choice::BinarySelectionFunctor") {
   }
 }
 
-TEST_CASE("ExploreFunctor") {}
+TEST_CASE("strategy::explore::ExploreFunctor") {
+  // Explore functor default virtual operator method always returns 0
+  auto v = std::vector<float>(10, 0.1);
+  auto s = std::vector<std::size_t>(10, 1);
+  auto functor = strategy::explore::ExploreFunctor(v, s);
+  CHECK(functor() == 0);
+}
 
-TEST_CASE("RandomActionSelectionFunctor") {}
+TEST_CASE("strategy::explore::RandomActionSelectionFunctor") {
+  // Random Selection functor selects a random number within the size of the
+  // index for the valueEstimateVector.
+  // We safely assume that the fector has at least size 1
+  { // When the size of the valueEstimate vector is at a minimum
+    auto v = std::vector<float>(1, 0.1);
+    auto s = std::vector<std::size_t>(1, 1);
+    std::minstd_rand generator = {};
+    auto functor =
+        strategy::explore::RandomActionSelectionFunctor(v, s, generator);
+    std::minstd_rand generator_copy = generator; // copy construction
+    std::uniform_int_distribution<std::size_t> distribution_benchmark(0, 1);
+
+    // Check that the distribution and the select functor yield the same as one
+    // another. We assume that <random> is well tested and is yielding correct
+    // random integers.
+    for (std::size_t i = 0; i < 100; i++) {
+      auto functorChoice = functor();
+      auto benchmakChoice = distribution_benchmark(generator_copy);
+      CHECK(functorChoice == benchmakChoice);
+    }
+  }
+  { // When the size of the valueEstimate vector is some random int
+    auto v = std::vector<float>(10, 0.1);
+    auto s = std::vector<std::size_t>(10, 1);
+    std::minstd_rand generator = {};
+    auto functor =
+        strategy::explore::RandomActionSelectionFunctor<float>(v, s, generator);
+    std::minstd_rand generator_copy = generator; // copy construction
+    std::uniform_int_distribution<std::size_t> distribution_benchmark(0, 10);
+
+    // Check that the distribution and the select functor yield the same as one
+    // another. We assume that <random> is well tested and is yielding correct
+    // random integers.
+    for (std::size_t i = 0; i < 100; i++) {
+      auto functorChoice = functor();
+      auto benchmakChoice = distribution_benchmark(generator_copy);
+      CHECK(functorChoice == benchmakChoice);
+    }
+  }
+}
 
 TEST_CASE("StepSizeFunctor") {}
 
