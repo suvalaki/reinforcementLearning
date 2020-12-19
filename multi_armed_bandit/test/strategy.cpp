@@ -9,9 +9,13 @@ TEST_CASE("ActionChoiceFunctor") {}
 
 TEST_CASE("ConstantSelectorFunction") {}
 
-TEST_CASE("BinarySelectionFunctor") {
+TEST_CASE("strategy::action_choice::BinarySelectionFunctor") {
 
+  // The epsilon valuie of the Binary selection functor denotes the probablity
+  // of exploration
   {
+    // Check that when the probability of exploration is set to zero that the
+    // function exploits
     auto v = std::vector<float>(10, 0.1);
     auto s = std::vector<std::size_t>(10, 1);
     std::minstd_rand generator = {};
@@ -20,6 +24,32 @@ TEST_CASE("BinarySelectionFunctor") {
     CHECK(b() == strategy::action_choice::ActionTypes::EXPLOIT);
   }
   {
+    // Check that when the probability of exploration is set to one that the
+    // function explores
+    auto v = std::vector<float>(10, 0.1);
+    auto s = std::vector<std::size_t>(10, 1);
+    std::minstd_rand generator = {};
+    auto b = strategy::action_choice::BinarySelectionFunctor<float>(v, s, 1.0,
+                                                                    generator);
+    CHECK(b() == strategy::action_choice::ActionTypes::EXPLORE);
+  }
+  // The functor accounts for epsilon values out of the bounds of admissible
+  // probabilities by setting them to the nearest bound. When probability is set
+  // to less than zero we bound it at zero and when it is greeater than one we
+  // bound it by one.
+  {
+    // Check that when the probability of exploration is set to less than zero
+    // that the function only exploits
+    auto v = std::vector<float>(10, 0.1);
+    auto s = std::vector<std::size_t>(10, 1);
+    std::minstd_rand generator = {};
+    auto b = strategy::action_choice::BinarySelectionFunctor<float>(v, s, -1.0,
+                                                                    generator);
+    CHECK(b() == strategy::action_choice::ActionTypes::EXPLOIT);
+  }
+  {
+    // Check that when the probability of exploration is set to grerater than
+    // one that the function only explores
     auto v = std::vector<float>(10, 0.1);
     auto s = std::vector<std::size_t>(10, 1);
     std::minstd_rand generator = {};
