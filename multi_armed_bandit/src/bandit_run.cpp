@@ -17,6 +17,18 @@ int main(int argc, char *argv[]) {
     baseValue = atof(argv[3]);
   }
 
+  // Epsilon for epsilon-greedy method
+  double epsilon = 0;
+  if (argc >= 5) {
+    epsilon = atof(argv[4]);
+    if (epsilon < 0) {
+      epsilon = 0;
+    }
+    if (epsilon > 1) {
+      epsilon = 1;
+    }
+  }
+
   // setup bandits
   std::minstd_rand generator = {};
   NormalPriorNormalMultiArmedBandit<double> bandits(n_bandits, generator);
@@ -24,10 +36,9 @@ int main(int argc, char *argv[]) {
   initialValueEstimates.resize(n_bandits);
   std::fill(initialValueEstimates.begin(), initialValueEstimates.end(),
             baseValue);
-  double eps = 0.5;
   strategy::GreedyStrategy<double> greedyStrategy(initialValueEstimates);
   strategy::EpsilonGreedyStrategy<double> epsilonGreedyStrategy(
-      generator, initialValueEstimates, eps);
+      generator, initialValueEstimates, epsilon);
 
   std::vector<std::pair<std::string, strategy::StrategyBase<double> &>>
       strategyVec;
