@@ -6,14 +6,14 @@ set(CMAKE_BUILD_TYPE Debug)
 # set the project name
 project(MultiArmedBandit)
 
+
 # add the executable
 add_executable(MultiArmedBandit src/bandit_run.cpp)
 set_target_properties(MultiArmedBandit PROPERTIES
             CXX_STANDARD 17
             CXX_EXTENSIONS OFF
             )
-target_include_directories(MultiArmedBandit PUBLIC src)
-
+target_include_directories(MultiArmedBandit PUBLIC src )
 
 # Add testcase executable
 enable_testing()

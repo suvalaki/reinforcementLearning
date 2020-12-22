@@ -1,10 +1,12 @@
 #pragma once
+#include "exceptions.hpp"
 #include <algorithm>
 #include <cmath>
 #include <iterator>
 #include <memory>
 #include <numeric>
 #include <random>
+#include <stdexcept>
 #include <type_traits>
 #include <vector>
 
@@ -13,10 +15,40 @@ namespace strategy {
 template <typename TYPE_T,
           typename = typename std::enable_if<
               std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
-class PtrBase {
+class ActionValueBase {
 protected:
   std::vector<TYPE_T> actionValueEstimate;
   std::vector<std::size_t> actionSelectionCount;
+
+public:
+  ActionValueBase(std::vector<TYPE_T> actionValueEstimate,
+                  std::vector<std::size_t> actionSelectionCount)
+      : actionValueEstimate(actionValueEstimate),
+        actionSelectionCount(actionSelectionCount){};
+};
+
+template <typename TYPE_T,
+          typename = typename std::enable_if<
+              std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
+class PtrActionValueBase {
+protected:
+  std::vector<TYPE_T> *actionValueEstimate = nullptr;
+  std::vector<std::size_t> *actionSelectionCount = nullptr;
+
+public:
+  PtrActionValueBase(){}; // Useful for methods that arent stateful
+  PtrActionValueBase(std::vector<TYPE_T> *addrActionValueEstimate,
+                     std::vector<std::size_t> *addrActionSelectionCount)
+      : actionValueEstimate(actionValueEstimate),
+        actionSelectionCount(actionSelectionCount) {
+    checkEqualVectorDims(actionValueEstimate, actionSelectionCount);
+  };
+  PtrActionValueBase(std::vector<TYPE_T> &actionValueEstimate,
+                     std::vector<std::size_t> &actionSelectionCount)
+      : actionValueEstimate(&actionValueEstimate),
+        actionSelectionCount(&actionSelectionCount) {
+    checkEqualVectorDims(this->actionValueEstimate, this->actionSelectionCount);
+  };
 };
 
 } // namespace strategy
@@ -31,19 +63,23 @@ enum class ActionTypes : int { EXPLORE, EXPLOIT };
 template <typename TYPE_T,
           typename = typename std::enable_if<
               std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
-class ActionChoiceFunctor {
-protected:
-  std::vector<TYPE_T> &actionValueEstimate;
-  std::vector<std::size_t> &actionSelectionCount;
+class ActionChoiceFunctor : PtrActionValueBase<TYPE_T> {
 
 public:
+  ActionChoiceFunctor() : PtrActionValueBase<TYPE_T>(){};
   ActionChoiceFunctor(std::vector<TYPE_T> &actionValueEstimate,
                       std::vector<std::size_t> &actionSelectionCount)
-      : actionValueEstimate(actionValueEstimate),
-        actionSelectionCount(actionSelectionCount){};
+      : PtrActionValueBase<TYPE_T>(actionValueEstimate, actionSelectionCount){};
   virtual ActionTypes operator()() { return ActionTypes::EXPLOIT; };
 };
 
+/** @brief Action Choice Functor which selects a constant choice whenever
+ * queried from operator().
+ *
+ * @details Some methodologies might only explore or exploit. In those cases we
+ * can sepecify which methodology is being employed with this functor. For
+ * example the "greedy" action value strategy always exploits.
+ */
 template <typename TYPE_T,
           typename = typename std::enable_if<
               std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
@@ -52,15 +88,16 @@ private:
   ActionTypes action;
 
 public:
-  ConstantSelectionFunctor(){};
-  ConstantSelectionFunctor(std::vector<TYPE_T> &actionValueEstimate,
-                           std::vector<std::size_t> &actionSelectionCount,
-                           const ActionTypes &action)
-      : ActionChoiceFunctor<TYPE_T>(actionValueEstimate, actionSelectionCount),
-        action(action){};
+  /**@param action Which action to select everytime the functor is queried */
+  ConstantSelectionFunctor(const ActionTypes &action)
+      : ActionChoiceFunctor<TYPE_T>(), action(action){};
   ActionTypes operator()() { return action; }
 };
 
+/** @brief Action choice Functor which selects whether to explore or exploit
+ * according to a bernouli distributrion.
+ *
+ */
 template <typename TYPE_T,
           typename = typename std::enable_if<
               std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
@@ -71,11 +108,10 @@ private:
   std::uniform_real_distribution<TYPE_T> distribution{0.0, 1.0};
 
 public:
-  BinarySelectionFunctor(std::vector<TYPE_T> &actionValueEstimate,
-                         std::vector<std::size_t> &actionSelectionCount,
-                         const double &prob, std::minstd_rand &generator)
-      : ActionChoiceFunctor<TYPE_T>(actionValueEstimate, actionSelectionCount),
-        prob(prob), generator(generator){};
+  BinarySelectionFunctor(const double &prob, std::minstd_rand &generator)
+      : ActionChoiceFunctor<TYPE_T>(), prob(prob), generator(generator) {
+    checkValidProbability(prob); // probabilities are between 0 and 1
+  };
   ActionTypes operator()() override {
     return distribution(generator) > 1 - prob ? ActionTypes::EXPLORE
                                               : ActionTypes::EXPLOIT;
@@ -159,8 +195,10 @@ private:
   TYPE_T stepSize = 0;
 
 public:
-  ConstantStepSizeFunctor();
-  ConstantStepSizeFunctor(TYPE_T stepSize) : stepSize(stepSize){};
+  ConstantStepSizeFunctor(std::vector<std::size_t> &actionSelectionCount,
+                          TYPE_T stepSize)
+      : strategy::step_size::StepSizeFunctor<TYPE_T>(actionSelectionCount),
+        stepSize(stepSize){};
   TYPE_T operator()(std::size_t action) { return stepSize; }
 };
 
@@ -431,7 +469,6 @@ public:
             initialActionValueEstimate,
             std::vector<std::size_t>(initialActionValueEstimate.size(), 1),
             strategy::action_choice::ConstantSelectionFunctor<TYPE_T>(
-                this->actionValueEstimate, this->actionSelectionCount,
                 strategy::action_choice::ActionTypes::EXPLOIT),
             strategy::explore::ExploreFunctor<TYPE_T>(
                 this->actionValueEstimate,
@@ -463,9 +500,8 @@ public:
                  strategy::step_size::SampleAverageStepSizeFunctor<TYPE_T>>(
             initialActionValueEstimate,
             std::vector<std::size_t>(initialActionValueEstimate.size(), 1),
-            strategy::action_choice::BinarySelectionFunctor<TYPE_T>(
-                this->actionValueEstimate, this->actionSelectionCount, epsilon,
-                generator),
+            strategy::action_choice::BinarySelectionFunctor<TYPE_T>(epsilon,
+                                                                    generator),
             strategy::explore::RandomActionSelectionFunctor<TYPE_T>(
                 this->actionValueEstimate, this->actionSelectionCount,
                 generator),

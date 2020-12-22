@@ -1,15 +1,21 @@
 #include "catch.hpp"
 
+#include "exceptions.hpp"
 #include "strategy.hpp"
 
 #include <random>
+#include <type_traits>
 #include <vector>
 
 TEST_CASE("strategy::action_choice::ActionChoiceFunctor") {
   // Default virtual functor is implemented to always return the EXPLOIT choice
-  auto v = std::vector<float>(10, 0.1);
-  auto s = std::vector<std::size_t>(10, 1);
-  {
+  { // Default Constructor doesnt need pointers/refs to data
+    auto c = strategy::action_choice::ActionChoiceFunctor<float>();
+    CHECK(c() == strategy::action_choice::ActionTypes::EXPLOIT);
+  }
+  { // Secondary constructor enables to use of data
+    auto v = std::vector<float>(10, 0.1);
+    auto s = std::vector<std::size_t>(10, 1);
     auto c = strategy::action_choice::ActionChoiceFunctor<float>(v, s);
     CHECK(c() == strategy::action_choice::ActionTypes::EXPLOIT);
   }
@@ -19,19 +25,23 @@ TEST_CASE("strategy::action_choice::ConstantSelectorFunction") {
 
   // The constant choice functor always returns the action type supplied to it
   // during construction
-  auto v = std::vector<float>(10, 0.1);
-  auto s = std::vector<std::size_t>(10, 1);
   {
     // When supplying exploit as the constant action type
     auto c = strategy::action_choice::ConstantSelectionFunctor<float>(
-        v, s, strategy::action_choice::ActionTypes::EXPLOIT);
+        strategy::action_choice::ActionTypes::EXPLOIT);
     CHECK(c() == strategy::action_choice::ActionTypes::EXPLOIT);
+    // double check public polymorphism
+    CHECK(dynamic_cast<strategy::action_choice::ActionChoiceFunctor<float> *>(
+        &c));
   }
   {
     // When supplying explore as the constant action type
     auto c = strategy::action_choice::ConstantSelectionFunctor<float>(
-        v, s, strategy::action_choice::ActionTypes::EXPLORE);
+        strategy::action_choice::ActionTypes::EXPLORE);
     CHECK(c() == strategy::action_choice::ActionTypes::EXPLORE);
+    // double check public polymorphism
+    CHECK(dynamic_cast<strategy::action_choice::ActionChoiceFunctor<float> *>(
+        &c));
   }
 }
 
@@ -39,40 +49,42 @@ TEST_CASE("strategy::action_choice::BinarySelectionFunctor") {
 
   // The epsilon valuie of the Binary selection functor denotes the probablity
   // of exploration
-  auto v = std::vector<float>(10, 0.1);
-  auto s = std::vector<std::size_t>(10, 1);
   std::minstd_rand generator = {};
   {
     // Check that when the probability of exploration is set to zero that the
     // function exploits
-    auto b = strategy::action_choice::BinarySelectionFunctor<float>(v, s, 0.0,
-                                                                    generator);
+    auto b =
+        strategy::action_choice::BinarySelectionFunctor<float>(0.0, generator);
     CHECK(b() == strategy::action_choice::ActionTypes::EXPLOIT);
+    // double check public polymorphism
+    CHECK(dynamic_cast<strategy::action_choice::ActionChoiceFunctor<float> *>(
+        &b));
   }
   {
     // Check that when the probability of exploration is set to one that the
     // function explores
-    auto b = strategy::action_choice::BinarySelectionFunctor<float>(v, s, 1.0,
-                                                                    generator);
+    auto b =
+        strategy::action_choice::BinarySelectionFunctor<float>(1.0, generator);
     CHECK(b() == strategy::action_choice::ActionTypes::EXPLORE);
+    // double check public polymorphism
+    CHECK(dynamic_cast<strategy::action_choice::ActionChoiceFunctor<float> *>(
+        &b));
   }
   // The functor accounts for epsilon values out of the bounds of admissible
   // probabilities by setting them to the nearest bound. When probability is set
   // to less than zero we bound it at zero and when it is greeater than one we
   // bound it by one.
   {
-    // Check that when the probability of exploration is set to less than zero
-    // that the function only exploits
-    auto b = strategy::action_choice::BinarySelectionFunctor<float>(v, s, -1.0,
-                                                                    generator);
-    CHECK(b() == strategy::action_choice::ActionTypes::EXPLOIT);
+    // Check that when the probability of exploration is set to less than
+    // one that the constructor throws
+    CHECK_THROWS(strategy::action_choice::BinarySelectionFunctor<float>(
+        -0.1F, generator));
   }
   {
     // Check that when the probability of exploration is set to grerater than
-    // one that the function only explores
-    auto b = strategy::action_choice::BinarySelectionFunctor<float>(v, s, 1.0,
-                                                                    generator);
-    CHECK(b() == strategy::action_choice::ActionTypes::EXPLORE);
+    // one that the constructor throws
+    CHECK_THROWS(strategy::action_choice::BinarySelectionFunctor<float>(
+        1.1F, generator));
   }
 }
 
@@ -105,6 +117,8 @@ TEST_CASE("strategy::explore::RandomActionSelectionFunctor") {
       auto benchmakChoice = distribution_benchmark(generator_copy);
       CHECK(functorChoice == benchmakChoice);
     }
+    // double check public polymorphism
+    CHECK(dynamic_cast<strategy::explore::ExploreFunctor<float> *>(&functor));
   }
   { // When the size of the valueEstimate vector is some random int
     auto v = std::vector<float>(10, 0.1);
@@ -123,14 +137,66 @@ TEST_CASE("strategy::explore::RandomActionSelectionFunctor") {
       auto benchmakChoice = distribution_benchmark(generator_copy);
       CHECK(functorChoice == benchmakChoice);
     }
+    // double check public polymorphism
+    CHECK(dynamic_cast<strategy::explore::ExploreFunctor<float> *>(&functor));
   }
 }
 
-TEST_CASE("StepSizeFunctor") {}
+TEST_CASE("strategy::step_size::StepSizeFunctor") {
+  auto s = std::vector<std::size_t>(10, 1);
+  auto functor = strategy::step_size::StepSizeFunctor<float>(s);
+  for (std::size_t action = 0; action < 10; action++) {
+    // Check that for each action we get the same
+    CHECK(functor(action) == 0);
+  }
+  // It must be noted that the StepSize functor doesnt have any guards
+  // preventing negative step sizes. In practicce it doesnt make sense to have
+  // negative steps (they will never converge)
+}
 
-TEST_CASE("ConstantStepSizeFunctor") {}
+TEST_CASE("strategy::step_size::ConstantStepSizeFunctor") {
 
-TEST_CASE("SampleAverageStepSizeFunctor") {}
+  int maxVal = 10;
+  auto s = std::vector<std::size_t>(10, 1);
+  {
+    // Check over a range of float values that the constant step size is adhered
+    // to
+    for (int stepSize = 0; stepSize < maxVal; stepSize++) {
+      auto functor = strategy::step_size::ConstantStepSizeFunctor<float>(
+          s, static_cast<float>(stepSize));
+      for (std::size_t action = 0; action < 10; action++) {
+        // Check that for each action we get the same
+        CHECK(functor(action) == static_cast<float>(stepSize));
+      }
+      // double check public polymorphism to StepSizeFunctor
+      CHECK(dynamic_cast<strategy::step_size::StepSizeFunctor<float> *>(
+          &functor));
+    }
+  }
+}
+
+TEST_CASE("strategy::step_size::SampleAverageStepSizeFunctor") {
+
+  {
+    std::size_t nElements = 10;
+    std::size_t maxCount = 50;
+    auto s = std::vector<std::size_t>(nElements, 1);
+    // Check over increasing counts (until maxCount is reached ) for each
+    // element within s (the sample size counts)
+    for (int elementCount = 0; elementCount < maxCount; elementCount++) {
+      auto functor =
+          strategy::step_size::SampleAverageStepSizeFunctor<float>(s);
+      for (std::size_t action = 0; action < nElements; action++) {
+        s[action] = elementCount;
+        // Check that for each action we get the same
+        CHECK(functor(action) == 1.0F / static_cast<float>(elementCount));
+      }
+      // double check public polymorphism to StepSizeFunctor
+      CHECK(dynamic_cast<strategy::step_size::StepSizeFunctor<float> *>(
+          &functor));
+    }
+  }
+}
 
 TEST_CASE("argmax") {
   {
