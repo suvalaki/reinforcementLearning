@@ -49,6 +49,18 @@ public:
         actionSelectionCount(&actionSelectionCount) {
     checkEqualVectorDims(this->actionValueEstimate, this->actionSelectionCount);
   };
+  /** @brief Only maintain pointer to the action value estimate */
+  PtrActionValueBase(std::vector<TYPE_T> *addrActionValueEstimate)
+      : actionValueEstimate(actionValueEstimate){};
+  /** @brief Only maintain pointer to the action value estimate */
+  PtrActionValueBase(std::vector<TYPE_T> &addrActionValueEstimate)
+      : actionValueEstimate(&actionValueEstimate){};
+  /** @brief Only maintain pointer to the value counts */
+  PtrActionValueBase(std::vector<std::size_t> *addrActionSelectionCount)
+      : actionSelectionCount(actionSelectionCount){};
+  /** @brief Only maintain pointer to the value counts */
+  PtrActionValueBase(std::vector<std::size_t> &addrActionSelectionCount)
+      : actionSelectionCount(&actionSelectionCount){};
 };
 
 } // namespace strategy
@@ -312,16 +324,15 @@ std::size_t upperConfidenceBoundActionSelection(
 template <typename TYPE_T,
           typename = typename std::enable_if<
               std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
-class ExploitFunctor {
-protected:
-  std::vector<TYPE_T> &actionValueEstimate;
-  std::vector<std::size_t> &actionSelectionCount;
+class ExploitFunctor : public PtrActionValueBase<TYPE_T> {
 
 public:
+  ExploitFunctor() : PtrActionValueBase<TYPE_T>(){};
+  ExploitFunctor(std::vector<TYPE_T> &actionValueEstimate)
+      : PtrActionValueBase<TYPE_T>(actionValueEstimate){};
   ExploitFunctor(std::vector<TYPE_T> &actionValueEstimate,
                  std::vector<std::size_t> &actionSelectionCount)
-      : actionValueEstimate(actionValueEstimate),
-        actionSelectionCount(actionSelectionCount){};
+      : PtrActionValueBase<TYPE_T>(actionValueEstimate, actionSelectionCount){};
   // Replace with exploit logic
   virtual std::size_t operator()() { return 0; };
 };
@@ -331,11 +342,10 @@ template <typename TYPE_T,
               std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
 class ArgmaxFunctor : public ExploitFunctor<TYPE_T> {
 public:
-  ArgmaxFunctor(std::vector<TYPE_T> &actionValueEstimate,
-                std::vector<std::size_t> &actionSelectionCount)
-      : ExploitFunctor<TYPE_T>(actionValueEstimate, actionSelectionCount){};
+  ArgmaxFunctor(std::vector<TYPE_T> &actionValueEstimate)
+      : ExploitFunctor<TYPE_T>(actionValueEstimate){};
   std::size_t operator()() override {
-    return strategy::exploit::argmax(this->actionValueEstimate);
+    return strategy::exploit::argmax(*(this->actionValueEstimate));
   }
 };
 
@@ -354,8 +364,8 @@ public:
         confidenceQuantileInverse(confidenceQuantileInverse){};
   std::size_t operator()() {
     return strategy::exploit::upperConfidenceBoundActionSelection(
-        confidenceQuantileInverse, this->actionValueEstimate,
-        this->actionSelectionCount);
+        confidenceQuantileInverse, *(this->actionValueEstimate),
+        *(this->actionSelectionCount));
   }
 };
 
@@ -473,8 +483,7 @@ public:
             strategy::explore::ExploreFunctor<TYPE_T>(
                 this->actionValueEstimate,
                 this->actionSelectionCount), // NULL FUNCTOR
-            strategy::exploit::ArgmaxFunctor<TYPE_T>(
-                this->actionValueEstimate, this->actionSelectionCount),
+            strategy::exploit::ArgmaxFunctor<TYPE_T>(this->actionValueEstimate),
             strategy::step_size::SampleAverageStepSizeFunctor<TYPE_T>(
                 this->actionSelectionCount)){};
 };
@@ -505,8 +514,7 @@ public:
             strategy::explore::RandomActionSelectionFunctor<TYPE_T>(
                 this->actionValueEstimate, this->actionSelectionCount,
                 generator),
-            strategy::exploit::ArgmaxFunctor<TYPE_T>(
-                this->actionValueEstimate, this->actionSelectionCount),
+            strategy::exploit::ArgmaxFunctor<TYPE_T>(this->actionValueEstimate),
             strategy::step_size::SampleAverageStepSizeFunctor<TYPE_T>(
                 this->actionSelectionCount)){};
 };

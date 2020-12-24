@@ -217,19 +217,19 @@ TEST_CASE("ArgmaxFunctor") {
   {
     std::vector<float> v = {0, 0, 0, 0};
     std::vector<std::size_t> s = {0, 0, 0, 0};
-    strategy::exploit::ArgmaxFunctor<float> aF = {v, s};
+    strategy::exploit::ArgmaxFunctor<float> aF(v);
     CHECK(aF() == 0);
   }
   {
     std::vector<float> v = {1, 2, 3, 4, 5};
     std::vector<std::size_t> s = {0, 0, 0, 0, 0};
-    strategy::exploit::ArgmaxFunctor<float> aF = {v, s};
+    strategy::exploit::ArgmaxFunctor<float> aF = {v};
     CHECK(aF() == 4);
   }
   {
     std::vector<float> v = {1, 2, 10, 4, 5};
     std::vector<std::size_t> s = {0, 0, 0, 0, 0};
-    strategy::exploit::ArgmaxFunctor<float> aF = {v, s};
+    strategy::exploit::ArgmaxFunctor<float> aF = {v};
     CHECK(aF() == 2);
   }
 }
