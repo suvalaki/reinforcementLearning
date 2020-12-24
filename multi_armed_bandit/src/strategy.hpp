@@ -53,13 +53,13 @@ public:
   PtrActionValueBase(std::vector<TYPE_T> *addrActionValueEstimate)
       : actionValueEstimate(actionValueEstimate){};
   /** @brief Only maintain pointer to the action value estimate */
-  PtrActionValueBase(std::vector<TYPE_T> &addrActionValueEstimate)
+  PtrActionValueBase(std::vector<TYPE_T> &actionValueEstimate)
       : actionValueEstimate(&actionValueEstimate){};
   /** @brief Only maintain pointer to the value counts */
   PtrActionValueBase(std::vector<std::size_t> *addrActionSelectionCount)
       : actionSelectionCount(actionSelectionCount){};
   /** @brief Only maintain pointer to the value counts */
-  PtrActionValueBase(std::vector<std::size_t> &addrActionSelectionCount)
+  PtrActionValueBase(std::vector<std::size_t> &actionSelectionCount)
       : actionSelectionCount(&actionSelectionCount){};
 };
 
@@ -323,6 +323,7 @@ std::size_t upperConfidenceBoundActionSelection(
  */
 template <typename TYPE_T,
           typename = typename std::enable_if<
+
               std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
 class ExploitFunctor : public PtrActionValueBase<TYPE_T> {
 
