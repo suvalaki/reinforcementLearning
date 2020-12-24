@@ -12,10 +12,14 @@
 
 namespace strategy {
 
+/** @brief Base class for action-value methods
+ *
+ */
 template <typename TYPE_T,
           typename = typename std::enable_if<
               std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
 class ActionValueBase {
+
 protected:
   std::vector<TYPE_T> actionValueEstimate;
   std::vector<std::size_t> actionSelectionCount;
@@ -25,8 +29,13 @@ public:
                   std::vector<std::size_t> actionSelectionCount)
       : actionValueEstimate(actionValueEstimate),
         actionSelectionCount(actionSelectionCount){};
+  template <typename> friend class PtrActionValueBase;
 };
 
+/** @brief Base class used to point to action value data. Derrived class
+ * @details All aciton value functors inherit from this base class. Nullpointers
+ * are used when the datum is not needed.
+ */
 template <typename TYPE_T,
           typename = typename std::enable_if<
               std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
@@ -61,6 +70,9 @@ public:
   /** @brief Only maintain pointer to the value counts */
   PtrActionValueBase(std::vector<std::size_t> &actionSelectionCount)
       : actionSelectionCount(&actionSelectionCount){};
+  PtrActionValueBase(ActionValueBase<TYPE_T> &actionValueBase)
+      : actionValueEstimate(&(actionValueBase.actionValueEstimate)),
+        actionSelectionCount(&(actionValueBase.actionSelectionCount)){};
 };
 
 } // namespace strategy
