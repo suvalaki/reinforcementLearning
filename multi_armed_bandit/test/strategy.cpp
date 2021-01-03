@@ -224,7 +224,26 @@ TEST_CASE("strategy::exploit::upperConfidenceBoundActionSelection") {
   }
 }
 
-TEST_CASE("strategy::exploit::ExploitFunctor") {}
+TEST_CASE("strategy::exploit::ExploitFunctor") {
+  {
+    // Default Constructor
+    auto functor = strategy::exploit::ExploitFunctor<float>();
+    CHECK(functor() == 0);
+  }
+  {
+    // Value Estimate Only Constructor
+    std::vector<float> v = {1, 2, 3, 4, 5};
+    auto functor = strategy::exploit::ExploitFunctor<float>(v);
+    CHECK(functor() == 0);
+  }
+  {
+    // Complete Constructor
+    std::vector<float> v = {1, 2, 3, 4, 5};
+    std::vector<std::size_t> s = {1, 2, 3, 4, 5};
+    auto functor = strategy::exploit::ExploitFunctor<float>(v, s);
+    CHECK(functor() == 0);
+  }
+}
 
 TEST_CASE("strategy::exploit::ArgmaxFunctor") {
   {
