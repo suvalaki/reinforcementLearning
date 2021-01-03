@@ -210,6 +210,12 @@ TEST_CASE("strategy::exploit::argmax") {
 }
 
 TEST_CASE("strategy::exploit::upperConfidenceBoundActionSelection") {
+  { //  Test zero case
+    std::vector<float> v = {1, 2, 3, 4, 5};
+    std::vector<std::size_t> s = {0, 0, 0, 0, 0};
+    CHECK(strategy::exploit::upperConfidenceBoundActionSelection(1.96F, v, s) ==
+          4);
+  }
   {
     std::vector<float> v = {1, 2, 3, 4, 5};
     std::vector<std::size_t> s = {1, 2, 3, 4, 5};
@@ -266,7 +272,23 @@ TEST_CASE("strategy::exploit::ArgmaxFunctor") {
   }
 }
 
-TEST_CASE("strategy::exploit::UpperConfidenceBoundFunctor") {}
+TEST_CASE("strategy::exploit::UpperConfidenceBoundFunctor") {
+  // Check decomposition to argmax
+  {
+    std::vector<float> v = {1, 2, 3, 4, 5};
+    std::vector<std::size_t> s = {0, 0, 0, 0, 0};
+    strategy::exploit::UpperConfidenceBoundFunctor<float> functor = {v, s,
+                                                                     1.0F};
+    CHECK(functor() == 4);
+  }
+  {
+    std::vector<float> v = {1, 2, 10, 4, 5};
+    std::vector<std::size_t> s = {5, 4, 3, 2, 1};
+    strategy::exploit::UpperConfidenceBoundFunctor<float> functor = {v, s,
+                                                                     1.0F};
+    CHECK(functor() == 2);
+  }
+}
 
 TEST_CASE("strategy::StrategyBase") {}
 

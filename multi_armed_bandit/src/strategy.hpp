@@ -334,9 +334,12 @@ std::size_t upperConfidenceBoundActionSelection(
                                  actionSelectionCount.end(), 0);
   for (int i = 0; i < actionValueEstimate.size(); i++) {
     confidenceBound.emplace_back(
-        actionValueEstimate[i] +
-        confidenceQuantileInverse *
-            std::sqrt(std::log(t) / actionSelectionCount[i]));
+        actionSelectionCount[i] > 0
+            ? actionValueEstimate[i] +
+                  confidenceQuantileInverse *
+                      std::sqrt(std::log(t) / actionSelectionCount[i])
+            // When no samples taken just use mean estimate
+            : actionValueEstimate[i]);
   }
   return strategy::exploit::argmax(confidenceBound);
 }
