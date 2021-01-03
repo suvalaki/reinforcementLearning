@@ -12,6 +12,18 @@
 
 namespace strategy {
 
+/** \defgroup Strategy Bases
+ * @brief Strategy Bases are utilised in the creation of Strategy functors. They
+ * contain the interface and data needed to keep track of the multi-armed-bandit
+ * game.
+ * @param actionValueEstimate Vector of action value estimates such that the
+ * index corresponds to the action taken and the value is the estimate.
+ * @param actionSelectionCount Vector of counts that each corresponding index
+ * has had its' estimate updated.
+ * @retval action to take
+ */
+/** @{ *you/
+
 /** @brief Base class for action-value methods
  *
  */
@@ -74,6 +86,8 @@ public:
       : actionValueEstimate(&(actionValueBase.actionValueEstimate)),
         actionSelectionCount(&(actionValueBase.actionSelectionCount)){};
 };
+
+/** @} */
 
 } // namespace strategy
 
@@ -324,9 +338,7 @@ std::size_t upperConfidenceBoundActionSelection(
         confidenceQuantileInverse *
             std::sqrt(std::log(t) / actionSelectionCount[i]));
   }
-  return std::distance(
-      confidenceBound.begin(),
-      std::max_element(confidenceBound.begin(), confidenceBound.end()));
+  return strategy::exploit::argmax(confidenceBound);
 }
 
 /** @} */
@@ -386,6 +398,10 @@ public:
 
 namespace strategy {
 
+/** @ingroup actionSelectionFunctions
+ * @brief Base interfaace with data attributes for a Strategy.
+ * @details Contains definitions for the virtual interfaces for a strategy.
+ */
 template <typename TYPE_T,
           typename = typename std::enable_if<
               std::is_floating_point<TYPE_T>::value, TYPE_T>::type>

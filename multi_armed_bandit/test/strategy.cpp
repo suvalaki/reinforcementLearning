@@ -198,7 +198,7 @@ TEST_CASE("strategy::step_size::SampleAverageStepSizeFunctor") {
   }
 }
 
-TEST_CASE("argmax") {
+TEST_CASE("strategy::exploit::argmax") {
   {
     std::vector<float> v = {1, 2, 3, 4, 5};
     CHECK(strategy::exploit::argmax(v) == 4);
@@ -209,11 +209,24 @@ TEST_CASE("argmax") {
   }
 }
 
-TEST_CASE("upperConfidenceBoundActionSelection") {}
+TEST_CASE("strategy::exploit::upperConfidenceBoundActionSelection") {
+  {
+    std::vector<float> v = {1, 2, 3, 4, 5};
+    std::vector<std::size_t> s = {1, 2, 3, 4, 5};
+    // index 0: 1 + 1.96 * sqrt( ln(15) / 1 ) ~= 4.225
+    // index 1: 2 + 1.96 * sqrt( ln(15) / 2 ) ~= 4.28
+    // index 2: 3 + 1.96 * sqrt( ln(15) / 3 ) ~= 4.865
+    // index 3: 4 + 1.96 * sqrt( ln(15) / 4 ) ~= 5.61
+    // index 4: 5 + 1.96 * sqrt( ln(15) / 5 ) ~= 7.31
+    // index 4 is the maximum
+    CHECK(strategy::exploit::upperConfidenceBoundActionSelection(1.96F, v, s) ==
+          4);
+  }
+}
 
-TEST_CASE("ExploitFunctor") {}
+TEST_CASE("strategy::exploit::ExploitFunctor") {}
 
-TEST_CASE("ArgmaxFunctor") {
+TEST_CASE("strategy::exploit::ArgmaxFunctor") {
   {
     std::vector<float> v = {0, 0, 0, 0};
     std::vector<std::size_t> s = {0, 0, 0, 0};
@@ -234,13 +247,13 @@ TEST_CASE("ArgmaxFunctor") {
   }
 }
 
-TEST_CASE("UpperConfidenceBoundFunctor") {}
+TEST_CASE("strategy::exploit::UpperConfidenceBoundFunctor") {}
 
-TEST_CASE("StrategyBase") {}
+TEST_CASE("strategy::StrategyBase") {}
 
-TEST_CASE("Strategy") {}
+TEST_CASE("strategy::Strategy") {}
 
-TEST_CASE("GreedyStrategy") {
+TEST_CASE("strategy::GreedyStrategy") {
   {
     std::vector<float> v = {0, 0, 0, 0};
     strategy::GreedyStrategy<float> strat(v);
@@ -251,4 +264,4 @@ TEST_CASE("GreedyStrategy") {
   }
 }
 
-TEST_CASE("EpsilonGreedyStrategy") {}
+TEST_CASE("strategy::EpsilonGreedyStrategy") {}
