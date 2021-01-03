@@ -274,7 +274,7 @@ TEST_CASE("strategy::exploit::ArgmaxFunctor") {
 
 TEST_CASE("strategy::exploit::UpperConfidenceBoundFunctor") {
   // Check decomposition to argmax
-  {
+  { // validate zero case reduces to mean
     std::vector<float> v = {1, 2, 3, 4, 5};
     std::vector<std::size_t> s = {0, 0, 0, 0, 0};
     strategy::exploit::UpperConfidenceBoundFunctor<float> functor = {v, s,
@@ -290,12 +290,22 @@ TEST_CASE("strategy::exploit::UpperConfidenceBoundFunctor") {
   }
 }
 
-TEST_CASE("strategy::StrategyBase") {}
+TEST_CASE("strategy::StrategyBase") {
+  // Baseclass for virtual method inheritance. Tests not needed
+}
 
-TEST_CASE("strategy::Strategy") {}
+TEST_CASE("strategy::Strategy") {
+  // Used to create strategies
+  // Unsure what tests would be valid here
+
+  // Just need to test step() and update()
+}
 
 TEST_CASE("strategy::GreedyStrategy") {
+  // Being a mixture of already tested classes and interactions tests is not
+  // needed
   {
+    // Test constructor
     std::vector<float> v = {0, 0, 0, 0};
     strategy::GreedyStrategy<float> strat(v);
     CHECK(strat.getActionValueEstimate(0) == 0);
@@ -303,6 +313,28 @@ TEST_CASE("strategy::GreedyStrategy") {
     CHECK(strat.getActionSelectionCount().size() == 4);
     CHECK(strat.exploit() == 0);
   }
+  {
+    // Test constructor
+    std::vector<float> v = {0, 0, 10, 0};
+    strategy::GreedyStrategy<float> strat(v);
+    CHECK(strat.getActionValueEstimate(0) == 0);
+    CHECK(strat.getActionValueEstimate().size() == 4);
+    CHECK(strat.getActionSelectionCount().size() == 4);
+    CHECK(strat.exploit() == 2);
+  }
 }
 
-TEST_CASE("strategy::EpsilonGreedyStrategy") {}
+TEST_CASE("strategy::EpsilonGreedyStrategy") {
+  // Being a mixture of already tested classes and interactions tests is not
+  // needed
+  {
+    // Test constructor
+    std::minstd_rand generator = {};
+    std::vector<float> v = {0, 0, 0, 0};
+    strategy::EpsilonGreedyStrategy<float> strat(generator, v, 0);
+    CHECK(strat.getActionValueEstimate(0) == 0);
+    CHECK(strat.getActionValueEstimate().size() == 4);
+    CHECK(strat.getActionSelectionCount().size() == 4);
+    CHECK(strat.exploit() == 0);
+  }
+}
