@@ -186,6 +186,7 @@ template <typename TYPE_T,
               std::is_floating_point<TYPE_T>::value, TYPE_T>::type>
 class RandomActionSelectionFunctor : public ExploreFunctor<TYPE_T> {
 private:
+  const std::size_t nBandits;
   std::uniform_int_distribution<std::size_t> distribution;
   std::minstd_rand &generator;
 
@@ -196,12 +197,13 @@ public:
    * from
    * @param generator random engine/generator
    */
-  RandomActionSelectionFunctor(std::vector<TYPE_T> &actionValueEstimate,
+  RandomActionSelectionFunctor(const std::size_t nBandits,
+                               std::vector<TYPE_T> &actionValueEstimate,
                                std::vector<std::size_t> &actionSelectionCount,
                                std::minstd_rand &generator)
       : ExploreFunctor<TYPE_T>(actionValueEstimate, actionSelectionCount),
-        distribution(std::uniform_int_distribution<std::size_t>(
-            0, actionValueEstimate.size())),
+        nBandits(nBandits),
+        distribution(std::uniform_int_distribution<std::size_t>(0, nBandits)),
         generator(generator){};
   /** @retval Random choice of action (index) */
   std::size_t operator()() { return distribution(generator); }
@@ -544,8 +546,8 @@ public:
             strategy::action_choice::BinarySelectionFunctor<TYPE_T>(epsilon,
                                                                     generator),
             strategy::explore::RandomActionSelectionFunctor<TYPE_T>(
-                this->actionValueEstimate, this->actionSelectionCount,
-                generator),
+                initialActionValueEstimate.size(), this->actionValueEstimate,
+                this->actionSelectionCount, generator),
             strategy::exploit::ArgmaxFunctor<TYPE_T>(this->actionValueEstimate),
             strategy::step_size::SampleAverageStepSizeFunctor<TYPE_T>(
                 this->actionSelectionCount)){};

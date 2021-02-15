@@ -104,8 +104,8 @@ TEST_CASE("strategy::explore::RandomActionSelectionFunctor") {
     auto v = std::vector<float>(1, 0.1);
     auto s = std::vector<std::size_t>(1, 1);
     std::minstd_rand generator = {};
-    auto functor =
-        strategy::explore::RandomActionSelectionFunctor(v, s, generator);
+    auto functor = strategy::explore::RandomActionSelectionFunctor(
+        v.size(), v, s, generator);
     std::minstd_rand generator_copy = generator; // copy construction
     std::uniform_int_distribution<std::size_t> distribution_benchmark(0, 1);
 
@@ -124,8 +124,8 @@ TEST_CASE("strategy::explore::RandomActionSelectionFunctor") {
     auto v = std::vector<float>(10, 0.1);
     auto s = std::vector<std::size_t>(10, 1);
     std::minstd_rand generator = {};
-    auto functor =
-        strategy::explore::RandomActionSelectionFunctor<float>(v, s, generator);
+    auto functor = strategy::explore::RandomActionSelectionFunctor<float>(
+        v.size(), v, s, generator);
     std::minstd_rand generator_copy = generator; // copy construction
     std::uniform_int_distribution<std::size_t> distribution_benchmark(0, 10);
 

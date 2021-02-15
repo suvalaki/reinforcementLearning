@@ -29,6 +29,12 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  std::cout << "Begin Multi-Armed Bandit Simulation \n\n"
+            << "N-Bandits: " << n_bandits << " "
+            << "N-Samples: " << n_samples << " "
+            << "StartingValue: " << baseValue << " "
+            << "Epsilon: " << epsilon << "\n\n";
+
   // setup bandits
   std::minstd_rand generator = {};
   NormalPriorNormalMultiArmedBandit<double> bandits(n_bandits, generator);
@@ -47,7 +53,7 @@ int main(int argc, char *argv[]) {
   strategyVec.emplace_back(std::string("epsilon-greedy"),
                            epsilonGreedyStrategy);
 
-  std::cout << "Generatimng Ranom Numbers"
+  std::cout << "Generating Ranom Numbers"
             << " with " << n_bandits << " bandits and " << n_samples
             << " samples\n";
   for (size_t i = 0; i < n_samples; i++) {
