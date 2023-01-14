@@ -76,6 +76,13 @@ struct RandomPolicy : Policy<ENVIRON_T> {
   virtual void update(const TransitionType &s){};
 };
 
+struct pair_hash {
+  template <class T1, class T2>
+  std::size_t operator()(const std::pair<T1, T2> &pair) const {
+    return pair.first.hash() ^ pair.second.hash();
+  }
+};
+
 template <environment::EnvironmentType ENVIRON_T>
 struct GreedyPolicy : Policy<ENVIRON_T> {
   using baseType = Policy<ENVIRON_T>;
@@ -83,17 +90,29 @@ struct GreedyPolicy : Policy<ENVIRON_T> {
   using StateType = typename baseType::StateType;
   using ActionSpace = typename baseType::ActionSpace;
   using TransitionType = typename baseType::TransitionType;
+  using RewardType = typename EnvironmentType::RewardType;
 
-  // std::unordered_map<std::pair(StateType, ActionSpace), typename
-  // EnvironmentType::RewardType::PrecisionType> q_table
+  std::unordered_map<std::pair<StateType, ActionSpace>,
+                     typename EnvironmentType::RewardType::PrecisionType,
+                     pair_hash>
+      q_table;
 
-  // Search over a space of actions and return the one with the highest reward
+  // Search over a space of actions and return the one with the highest
+  // reward
   ActionSpace operator()(const StateType &s) override {
     return ActionSpace{random_spec_gen<typename ActionSpace::SpecType>()};
   }
 
   // Update the Q-table with the new transition
-  virtual void update(const TransitionType &s){};
+  virtual void update(const TransitionType &s) {
+
+    // Reward for this transition
+    auto reward = RewardType::reward(s);
+
+    // For now update the Q-table with the reward straight from the reward
+    // function
+    q_table.emplace(std::make_pair(s.state, s.action), reward);
+  };
 };
 
 } // namespace policy

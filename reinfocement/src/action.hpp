@@ -28,9 +28,9 @@ struct Action : T::DataType {
   // When an action modifies the state space impliment anew
   virtual StateType step(const StateType &state) const { return state; }
 
-  bool operator==(const Action &other) const {
-    return xt::all(static_cast<const typename T::DataType &>(*this) ==
-                   static_cast<const typename T::DataType &>(other));
+  friend bool operator==(const Action &lhs, const Action &rhs) {
+    return static_cast<const typename T::DataType &>(lhs) ==
+           static_cast<const typename T::DataType &>(rhs);
   }
 
   // create a single long number which is the same as the string concat of all

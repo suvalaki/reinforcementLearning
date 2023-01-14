@@ -32,6 +32,10 @@ struct State {
   HiddenDataType hidden;
 
   std::size_t hash() const { return hidden.hash(); }
+
+  friend bool operator==(const State &lhs, const State &rhs) {
+    return lhs.observable == rhs.observable;
+  }
 };
 
 template <typename STATE_T>

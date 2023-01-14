@@ -19,6 +19,7 @@ struct BoundedAarraySpec {
   constexpr static T min = MIN;
   constexpr static T max = MAX;
   constexpr static std::array<std::size_t, sizeof...(DIMS)> dims = {DIMS...};
+  constexpr static std::size_t nDim = sizeof...(DIMS);
 };
 
 template <typename T>
@@ -29,6 +30,7 @@ concept BoundedArraySpecType = requires {
   T::min;
   T::max;
   T::dims;
+  T::nDim;
 }
 &&(std::is_integral_v<typename T::ValueType> ||
    std::is_floating_point_v<typename T::ValueType>);
@@ -58,6 +60,7 @@ struct CategoricalArraySpec {
   constexpr static std::size_t min = 0;
   constexpr static std::size_t max = NCHOICE;
   constexpr static std::array<std::size_t, sizeof...(DIMS)> dims = {DIMS...};
+  constexpr static std::size_t nDim = sizeof...(DIMS);
 };
 
 template <typename T>
@@ -66,6 +69,7 @@ concept CategoricalArraySpecType = requires {
   typename T::Shape;
   typename T::DataType;
   T::dims;
+  T::nDim;
 }
 &&EnumType<typename T::ChoicesType>;
 
@@ -106,6 +110,20 @@ struct CompositeArray : std::tuple<typename T::DataType...> {
     std::hash<std::string> hasher;
     std::size_t h = hasher(ss.str());
     return h;
+  }
+
+  friend bool operator==(const CompositeArray &lhs, const CompositeArray &rhs) {
+
+    if constexpr (sizeof...(T) == 0) {
+      return true;
+    }
+
+    return [&]<std::size_t... N>(std::index_sequence<N...>) {
+      // xtensor == comparison returns a bool for the entire thing
+      // https://xtensor.readthedocs.io/en/latest/quickref/operator.html
+      return ((std::get<N>(lhs) == std::get<N>(rhs)) && ...);
+    }
+    (std::make_index_sequence<sizeof...(T)>());
   }
 };
 

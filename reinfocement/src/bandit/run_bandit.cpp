@@ -20,7 +20,7 @@ struct ExampleState : State<float> {
   PrecisionType val;
 };
 
-using ExampleSpec0 = spec::BoundedAarraySpec<float, -1.0F, 1.0F, 1>;
+using ExampleSpec0 = spec::BoundedAarraySpec<float, -1.0F, 1.0F, 10, 20>;
 using EnumSpec0 =
     spec::CategoricalArraySpec<bandit::BanditActionChoices, 4, 10>;
 
@@ -35,6 +35,7 @@ auto z3 = policy::random_spec_gen<EnumSpec0>();
 static_assert(spec::isBoundedArraySpec<ExampleSpec0>);
 
 using ExampleCombinedSpec = spec::CompositeArraySpec<EnumSpec0>;
+using ExampleCombinedSpec1 = spec::CompositeArraySpec<ExampleSpec0>;
 
 // using banditAction = bandit::BanditActionSpec<10>;
 
@@ -57,6 +58,7 @@ using NBanditEnvironment = bandit::BanditEnvironment<
     environment::Return<bandit::rewards::ConstantReward<10>>>;
 
 using NBanditPolicy = RandomPolicy<NBanditEnvironment>;
+using BanditGreedy = policy::GreedyPolicy<NBanditEnvironment>;
 
 int main() {
 
@@ -85,7 +87,6 @@ int main() {
   auto trans = banditEnv.step(banditAction);
   auto reward2 = bandit::rewards::ConstantReward<10>::reward(trans);
   //
-  // greedyBanditPolicy.printActionValueEstimate();
   // randomPolicy.printActionValueEstimate();
   //
   std::cout << z << "\n";
@@ -99,6 +100,16 @@ int main() {
 
   std::cout << action.hash() << "\n";
   std::cout << state.hash() << "\n";
+
+  auto temp = state == state;
+  auto temp1 = action == action;
+
+  // auto banditGreedy = BanditGreedy();
+  // banditGreedy.update(trans);
+
+  auto tmpAction = policy::random_spec_gen<ExampleCombinedSpec1>();
+
+  auto val = tmpAction == tmpAction;
 
   return 0;
 }
