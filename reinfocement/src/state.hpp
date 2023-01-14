@@ -31,7 +31,7 @@ struct State {
   ObservableDataType observable;
   HiddenDataType hidden;
 
-  std::size_t hash() const { return hidden.hash(); }
+  virtual std::size_t hash() const { return observable.hash(); }
 
   friend bool operator==(const State &lhs, const State &rhs) {
     return lhs.observable == rhs.observable;

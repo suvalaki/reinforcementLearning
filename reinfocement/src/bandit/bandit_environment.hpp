@@ -24,11 +24,19 @@ struct BanditState : environment::State<float> {
   std::array<float, N_BANDITS> hiddenBanditStd;
   std::array<float, N_BANDITS> observableBanditSample;
 
-  BanditState static nullFactory(std::minstd_rand &engine) {
-    return BanditState{.hiddenRandomEngine = engine,
-                       .hiddenBanditMeans = {0},
-                       .hiddenBanditStd = {0},
-                       .observableBanditSample = {0}};
+  BanditState(std::minstd_rand &engine,
+              const std::array<float, N_BANDITS> &hiddenBanditMeans,
+              const std::array<float, N_BANDITS> &hiddenBanditStd,
+              const std::array<float, N_BANDITS> &observableBanditSample)
+      : BaseType(), hiddenRandomEngine(engine),
+        hiddenBanditMeans(hiddenBanditMeans), hiddenBanditStd(hiddenBanditStd), observableBanditSample(observableBanditSample) {
+  }
+
+  BanditState static nullFactory(
+      std::minstd_rand &engine,
+      const std::array<float, N_BANDITS> &hiddenBanditMeans,
+      const std::array<float, N_BANDITS> &hiddenBanditStd) {
+    return BanditState{engine, hiddenBanditMeans, hiddenBanditStd, {0}};
   }
 
   BanditState operator=(const BanditState &other) {
@@ -43,8 +51,22 @@ struct BanditState : environment::State<float> {
 
   friend std::ostream &operator<<(std::ostream &os, const BanditState &b) {
 
+    os << "hiddenBanditMeans: ";
+    for (const auto &r : b.hiddenBanditMeans)
+      os << std::setw(10) << r << " ";
+
+    os << "hiddenBanditStd: ";
+    for (const auto &r : b.hiddenBanditStd)
+      os << std::setw(10) << r << " ";
+
+    os << "observableBanditSample: ";
+    for (const auto &r : b.observableBanditSample)
+      os << std::setw(10) << r << " ";
+
     return os;
   }
+
+  std::size_t hash() const override { return 1; }
 };
 
 enum class BanditActionChoices { NO = 0, YES = 1 };
@@ -69,23 +91,22 @@ struct BanditAction
          const std::array<float, N_BANDITS> &hiddenBanditStd) const {
     std::array<float, N_BANDITS> samples;
     for (std::size_t i = 0; i < N_BANDITS; i++) {
-      if (banditChoice[i]) {
-        samples[i] = std::normal_distribution<float>(
-            hiddenBanditMeans[i], hiddenBanditStd[i])(engine);
-      } else {
-        samples[i] = 0; // Only the sampled bandit is seen
-      }
+      // if (banditChoice[i]) {
+      samples[i] = std::normal_distribution<float>(hiddenBanditMeans[i],
+                                                   hiddenBanditStd[i])(engine);
+      //} else {
+      //  samples[i] = 0; // Only the sampled bandit is seen
+      //}
     }
     return samples;
   }
 
   StateType step(const StateType &state) const override {
-    return StateType{.hiddenRandomEngine = state.hiddenRandomEngine,
-                     .hiddenBanditMeans = state.hiddenBanditMeans,
-                     .hiddenBanditStd = state.hiddenBanditStd,
-                     .observableBanditSample = this->sample(
-                         state.hiddenRandomEngine, state.hiddenBanditMeans,
-                         state.hiddenBanditStd)};
+    return StateType{state.hiddenRandomEngine, state.hiddenBanditMeans,
+                     state.hiddenBanditStd,
+                     this->sample(state.hiddenRandomEngine,
+                                  state.hiddenBanditMeans,
+                                  state.hiddenBanditStd)};
   }
 
   friend std::ostream &operator<<(std::ostream &os, const BanditAction &b) {
@@ -128,7 +149,9 @@ struct BanditEnvironment
                     PrecisionType prior_var_stddev = 1)
       : engine(engine), prior_mu(prior_mu_ave, prior_mu_stddev),
         prior_var(prior_var_ave, prior_var_stddev),
-        BaseType(StateType::nullFactory(engine)) {}
+        BaseType(StateType::nullFactory(engine, means, stddevs)) {
+    reset();
+  }
 
   void resetDistributions() {
 
@@ -148,7 +171,7 @@ struct BanditEnvironment
     resetDistributions();
 
     // Setup the initial State
-    this->state = StateType::nullFactory(engine);
+    this->state = StateType::nullFactory(engine, means, stddevs);
   }
 };
 
@@ -172,10 +195,8 @@ struct ConstantReward : environment::Reward<BanditAction<N_BANDITS>> {
 
     const auto actions = std::get<0>(transition.action);
     for (const auto &val : actions) {
-      reward += (transition.state
-                         .observableBanditSample[static_cast<std::size_t>(val)]
-                     ? SUCCESS_V
-                     : FAIL_V);
+      reward +=
+          transition.nextState.observableBanditSample[static_cast<std::size_t>(val)];
     }
 
     return reward;

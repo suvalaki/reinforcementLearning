@@ -45,17 +45,17 @@ struct ExampleAction : Action<ExampleState, ExampleCombinedSpec> {
 
 using ExampleStep = Step<ExampleAction>;
 using ExampleTransition = Transition<ExampleAction>;
-using ExampleSequence = TransitionSequence<10, ExampleAction>;
+using ExampleSequence = TransitionSequence<2, ExampleAction>;
 struct ExampleReward : Reward<ExampleAction> {
   static PrecisionType reward(const TransitionType &t) { return 10.0F; }
 };
 using ExampleReturn = Return<ExampleReward>;
 
-using constatntR = bandit::rewards::ConstantReward<10>;
-using constatntRet = environment::Return<bandit::rewards::ConstantReward<10>>;
+using constatntR = bandit::rewards::ConstantReward<2>;
+using constatntRet = environment::Return<bandit::rewards::ConstantReward<2>>;
 using NBanditEnvironment = bandit::BanditEnvironment<
-    10, bandit::rewards::ConstantReward<10>,
-    environment::Return<bandit::rewards::ConstantReward<10>>>;
+    3, bandit::rewards::ConstantReward<3>,
+    environment::Return<bandit::rewards::ConstantReward<3>>>;
 
 using NBanditPolicy = RandomPolicy<NBanditEnvironment>;
 using BanditGreedy = policy::GreedyPolicy<NBanditEnvironment>;
@@ -85,7 +85,7 @@ int main() {
   //     bandit::policy::GreedyPolicy<NBanditEnvironment, 0.1F>{};
   //
   auto trans = banditEnv.step(banditAction);
-  auto reward2 = bandit::rewards::ConstantReward<10>::reward(trans);
+  auto reward2 = bandit::rewards::ConstantReward<3>::reward(trans);
   //
   // randomPolicy.printActionValueEstimate();
   //
@@ -104,12 +104,51 @@ int main() {
   auto temp = state == state;
   auto temp1 = action == action;
 
-  // auto banditGreedy = BanditGreedy();
-  // banditGreedy.update(trans);
-
   auto tmpAction = policy::random_spec_gen<ExampleCombinedSpec1>();
 
   auto val = tmpAction == tmpAction;
+
+  auto banditGreedy = BanditGreedy();
+  auto banditRandom = RandomPolicy<NBanditEnvironment>();
+
+  // Prepoluate the action value estimates with some random actions
+  banditEnv.reset();
+  std::cout << banditEnv.state << "\n";
+
+    auto recommendedAction = banditRandom(banditEnv.state);
+    auto newState = recommendedAction.step(banditEnv.state);
+
+    std::cout << newState << "\n";
+
+
+  std::cout << "RANDOM ACTIONS\n";
+  for (int i = 0; i < 100; i++) {
+    auto recommendedAction = banditRandom(banditEnv.state);
+    auto transition = banditEnv.step(recommendedAction);
+    banditGreedy.update(transition); // seed the greedy action
+                                     //
+    std::cout << banditEnv.state << " " << transition.action << " " << transition.nextState << "\n";
+
+    // std::cout << transition.state << transition.action << " "
+    //           << recommendedAction << " " << banditGreedy.greedyValue() << "\n";
+
+    banditEnv.update(transition);
+  }
+
+  banditGreedy.printQTable();
+
+  // Start the greedy loop
+  std::cout << "GREEDY ACTIONS\n";
+  for (int i = 0; i < 1000; i++) {
+    auto recommendedAction = banditGreedy(banditEnv.state);
+    auto transition = banditEnv.step(recommendedAction);
+    banditGreedy.update(transition);
+    banditEnv.update(transition);
+    std::cout << transition.state << transition.action << " "
+              << recommendedAction << " " << banditGreedy.greedyValue() << "\n";
+  }
+
+  banditGreedy.printQTable();
 
   return 0;
 }

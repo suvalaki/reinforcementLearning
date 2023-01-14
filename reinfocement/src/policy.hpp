@@ -91,16 +91,32 @@ struct GreedyPolicy : Policy<ENVIRON_T> {
   using ActionSpace = typename baseType::ActionSpace;
   using TransitionType = typename baseType::TransitionType;
   using RewardType = typename EnvironmentType::RewardType;
+  using PrecisionType = typename RewardType::PrecisionType;
 
-  std::unordered_map<std::pair<StateType, ActionSpace>,
-                     typename EnvironmentType::RewardType::PrecisionType,
+  using QTableValueType =
+      std::tuple<StateType, ActionSpace,
+                 typename EnvironmentType::RewardType::PrecisionType, int>;
+  std::unordered_map<std::pair<StateType, ActionSpace>, QTableValueType,
                      pair_hash>
       q_table;
 
   // Search over a space of actions and return the one with the highest
   // reward
   ActionSpace operator()(const StateType &s) override {
-    return ActionSpace{random_spec_gen<typename ActionSpace::SpecType>()};
+    PrecisionType maxVal = 0;
+    auto action = random_spec_gen<
+        typename ActionSpace::SpecType>(); // start with a random action so we
+                                           // at least have one that is
+                                           // permissible
+
+    for (auto &[k, v] : q_table) {
+      if (maxVal < std::get<2>(v)) {
+        maxVal = std::get<2>(v);
+        action = std::get<1>(v);
+      }
+    }
+
+    return action;
   }
 
   // Update the Q-table with the new transition
@@ -109,10 +125,40 @@ struct GreedyPolicy : Policy<ENVIRON_T> {
     // Reward for this transition
     auto reward = RewardType::reward(s);
 
-    // For now update the Q-table with the reward straight from the reward
-    // function
-    q_table.emplace(std::make_pair(s.state, s.action), reward);
+    auto key = std::make_pair(s.state, s.action);
+    if (q_table.find(key) != q_table.end()) {
+      // Update the Q-table with the reward from the transition
+      auto &v = q_table.at(key);
+      // Replace with the updated monte carlo avergae
+      std::get<2>(v) = (std::get<2>(v) * std::get<3>(v) +  reward) / (std::get<3>(v) + 1) ;
+      std::get<3>(v)++;
+    } else {
+      q_table.emplace(key, QTableValueType{s.state, s.action, reward, 1});
+    }
   };
+
+  virtual PrecisionType greedyValue() {
+    PrecisionType maxVal = 0;
+    for (auto &[k, v] : q_table) {
+      if (maxVal < std::get<2>(v)) {
+        maxVal = std::get<2>(v);
+      }
+    }
+    return maxVal;
+  }
+
+  void printQTable() const {
+
+    std::cout << "QTable\n=====\n";
+    for (const auto& [k,v] : q_table){
+
+      std::cout << std::get<0>(v) << "\t" << std::get<1>(v) << "\t" << 
+      std::get<2>(v) << "\t" << std::get<3>(v) << "\n" ;
+
+    }
+
+  }
+
 };
 
 } // namespace policy
