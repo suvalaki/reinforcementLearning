@@ -97,5 +97,7 @@ int main() {
 
   std::cout << reward2 << "\n";
 
+  std::cout << action.hash() << "\n";
+
   return 0;
 }

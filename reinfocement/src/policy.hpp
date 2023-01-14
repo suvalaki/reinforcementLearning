@@ -53,7 +53,7 @@ typename T::DataType >
 
   // Tuple of the random types
   return [&engine]<std::size_t... N>(std::index_sequence<N...>) {
-    return std::make_tuple(
+    return typename T::DataType(
         random_spec_gen<std::tuple_element_t<N, typename T::tupleType>>(
             engine)...);
   }
@@ -73,6 +73,26 @@ struct RandomPolicy : Policy<ENVIRON_T> {
     return ActionSpace{random_spec_gen<typename ActionSpace::SpecType>()};
   }
 
+  virtual void update(const TransitionType &s){};
+};
+
+template <environment::EnvironmentType ENVIRON_T>
+struct GreedyPolicy : Policy<ENVIRON_T> {
+  using baseType = Policy<ENVIRON_T>;
+  using EnvironmentType = typename baseType::EnvironmentType;
+  using StateType = typename baseType::StateType;
+  using ActionSpace = typename baseType::ActionSpace;
+  using TransitionType = typename baseType::TransitionType;
+
+  // std::unordered_map<std::pair(StateType, ActionSpace), typename
+  // EnvironmentType::RewardType::PrecisionType> q_table
+
+  // Search over a space of actions and return the one with the highest reward
+  ActionSpace operator()(const StateType &s) override {
+    return ActionSpace{random_spec_gen<typename ActionSpace::SpecType>()};
+  }
+
+  // Update the Q-table with the new transition
   virtual void update(const TransitionType &s){};
 };
 

@@ -1,6 +1,12 @@
 #pragma once
 
+#include <boost/functional/hash.hpp>
+#include <string>
 #include <type_traits>
+#include <unordered_map>
+
+#include <xtensor/xarray.hpp>
+#include <xtensor/xstrided_view.hpp>
 
 #include "spec.hpp"
 #include "state.hpp"
@@ -21,6 +27,22 @@ struct Action : T::DataType {
 
   // When an action modifies the state space impliment anew
   virtual StateType step(const StateType &state) const { return state; }
+
+  bool operator==(const Action &other) const {
+    return xt::all(static_cast<const typename T::DataType &>(*this) ==
+                   static_cast<const typename T::DataType &>(other));
+  }
+
+  // create a single long number which is the same as the string concat of all
+  // the elements in the data array
+  long long int hash() const {
+    // auto fl = xt::flatten(static_cast<const typename T::DataType &>(*this));
+    auto ss = std::stringstream();
+    ss << static_cast<const typename T::DataType &>(*this);
+    std::hash<std::string> hasher;
+    std::size_t h = hasher(ss.str());
+    return h;
+  }
 };
 
 template <typename ACTION_T>

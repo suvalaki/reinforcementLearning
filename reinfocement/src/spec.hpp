@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include <iostream>
 #include <type_traits>
 #include <xtensor/xfixed.hpp>
 
@@ -84,9 +85,25 @@ template <typename... T>
 concept AllElementsAnyArraySpecType = (AnyArraySpecType<T> && ...);
 
 template <AllElementsAnyArraySpecType... T>
+struct CompositeArray : std::tuple<typename T::DataType...> {
+  using tupleType = std::tuple<T...>;
+  using tupleDataType = std::tuple<typename T::DataType...>;
+
+  using tupleDataType::tupleDataType;
+
+  friend std::ostream &operator<<(std::ostream &os, const CompositeArray &rhs) {
+    os << "CompositeArray(";
+    std::apply([&os](auto &&...args) { ((os << args << ", "), ...); },
+               static_cast<const tupleDataType &>(rhs));
+    os << ")";
+    return os;
+  }
+};
+
+template <AllElementsAnyArraySpecType... T>
 struct CompositeArraySpec : std::tuple<T...> {
   using tupleType = std::tuple<T...>;
-  using DataType = std::tuple<typename T::DataType...>;
+  using DataType = CompositeArray<T...>;
 };
 
 template <typename T>
@@ -115,3 +132,13 @@ template <isBoundedArraySpec T> struct BoundedArray {
 };
 
 } // namespace spec
+
+// extend std::get
+namespace std {
+template <std::size_t I, spec::AllElementsAnyArraySpecType... T>
+decltype(auto) get(spec::CompositeArray<typename T::DataType...> &v) {
+  return std::get<I>(
+      static_cast<
+          spec::CompositeArray<typename T::DataType...>::tupleDataType &>(v));
+}
+} // namespace std
