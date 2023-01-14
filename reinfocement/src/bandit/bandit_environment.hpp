@@ -7,8 +7,9 @@
 
 #include "action.hpp"
 #include "environment.hpp"
-#include "policy.hpp"
 #include "iostream"
+#include "policy.hpp"
+#include "spec.hpp"
 
 namespace bandit {
 
@@ -40,28 +41,25 @@ struct BanditState : environment::State<float> {
     return *this;
   }
 
-
-  friend std::ostream& operator<<(std::ostream& os, const BanditState& b){
+  friend std::ostream &operator<<(std::ostream &os, const BanditState &b) {
 
     return os;
-
   }
-
 };
 
 enum class BanditActionChoices { NO = 0, YES = 1 };
 
 template <std::size_t N_BANDITS>
-using BanditActionSpec = action::CompositeArraySpec<
-    typename action::CategoricalArraySpec<bandit::BanditActionChoices, N_BANDITS>>;
+using BanditActionSpec = spec::CompositeArraySpec<
+    spec::CategoricalArraySpec<bandit::BanditActionChoices, N_BANDITS>>;
 
 template <std::size_t N_BANDITS>
 struct BanditAction
-    : environment::Action<BanditState<N_BANDITS>, BanditActionSpec<N_BANDITS>> {
+    : action::Action<BanditState<N_BANDITS>, BanditActionSpec<N_BANDITS>> {
   using BaseType =
-      environment::Action<BanditState<N_BANDITS>, BanditActionSpec<N_BANDITS>>;
-  using typename BaseType::StateType;
+      action::Action<BanditState<N_BANDITS>, BanditActionSpec<N_BANDITS>>;
   using typename BaseType::BaseType;
+  using typename BaseType::StateType;
 
   std::array<bool, N_BANDITS> banditChoice;
 
@@ -90,14 +88,11 @@ struct BanditAction
                          state.hiddenBanditStd)};
   }
 
-  friend std::ostream& operator<<(std::ostream& os, const BanditAction& b){
-    os << "BanditAction(" << std::get<0>(b) << ")"; 
+  friend std::ostream &operator<<(std::ostream &os, const BanditAction &b) {
+    os << "BanditAction(" << std::get<0>(b) << ")";
     return os;
   }
-  
 };
-
-
 
 template <std::size_t N_BANDITS>
 struct BanditStep : environment::Step<BanditAction<N_BANDITS>> {
@@ -176,8 +171,11 @@ struct ConstantReward : environment::Reward<BanditAction<N_BANDITS>> {
     PrecisionType reward = 0.0F;
 
     const auto actions = std::get<0>(transition.action);
-    for (const auto& val : actions) {
-        reward += (transition.state.observableBanditSample[static_cast<std::size_t>(val)] ? SUCCESS_V : FAIL_V);
+    for (const auto &val : actions) {
+      reward += (transition.state
+                         .observableBanditSample[static_cast<std::size_t>(val)]
+                     ? SUCCESS_V
+                     : FAIL_V);
     }
 
     return reward;

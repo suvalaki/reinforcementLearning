@@ -1,16 +1,17 @@
-#include "bandit.hpp"
 #include "action.hpp"
-#include "policy.hpp"
+#include "bandit.hpp"
 #include "bandit_environment.hpp"
 #include "bandit_policy.hpp"
-#include <random>
+#include "policy.hpp"
 #include <ctime>
+#include <random>
 
-
-#include <xtensor/xrandom.hpp>
 #include "xtensor/xio.hpp"
+#include <xtensor/xrandom.hpp>
 // XTensor View:
 #include "xtensor/xview.hpp"
+
+#include "spec.hpp"
 
 using namespace environment;
 
@@ -19,8 +20,9 @@ struct ExampleState : State<float> {
   PrecisionType val;
 };
 
-using ExampleSpec0 = action::BoundedAarraySpec<float, -1.0F, 1.0F, 1>;
-using EnumSpec0 = action::CategoricalArraySpec<bandit::BanditActionChoices, 4, 10>;
+using ExampleSpec0 = spec::BoundedAarraySpec<float, -1.0F, 1.0F, 1>;
+using EnumSpec0 =
+    spec::CategoricalArraySpec<bandit::BanditActionChoices, 4, 10>;
 
 auto &engine = xt::random::get_default_random_engine();
 
@@ -30,16 +32,15 @@ auto z1 = policy::random_spec_gen<EnumSpec0>();
 auto z2 = policy::random_spec_gen<EnumSpec0>();
 auto z3 = policy::random_spec_gen<EnumSpec0>();
 
-static_assert(action::isBoundedArraySpec<ExampleSpec0>);
+static_assert(spec::isBoundedArraySpec<ExampleSpec0>);
 
-using ExampleCombinedSpec = action::CompositeArraySpec<EnumSpec0>;
+using ExampleCombinedSpec = spec::CompositeArraySpec<EnumSpec0>;
 
 // using banditAction = bandit::BanditActionSpec<10>;
 
 struct ExampleAction : Action<ExampleState, ExampleCombinedSpec> {
   using Action<ExampleState, ExampleCombinedSpec>::Action;
 };
-
 
 using ExampleStep = Step<ExampleAction>;
 using ExampleTransition = Transition<ExampleAction>;
@@ -55,17 +56,18 @@ using NBanditEnvironment = bandit::BanditEnvironment<
     10, bandit::rewards::ConstantReward<10>,
     environment::Return<bandit::rewards::ConstantReward<10>>>;
 
- using NBanditPolicy = RandomPolicy<NBanditEnvironment>;
+using NBanditPolicy = RandomPolicy<NBanditEnvironment>;
 
 int main() {
 
   auto state = ExampleState{};
-  auto action = ExampleAction{policy::random_spec_gen<typename ExampleAction::SpecType>()};
+  auto action = ExampleAction{
+      policy::random_spec_gen<typename ExampleAction::SpecType>()};
   auto nextState = ExampleStep::step(state, action);
   auto transition = ExampleTransition{
       .state = state, .action = action, .nextState = nextState};
   auto reward = ExampleReward::reward(transition);
-  auto discountReward = DiscountReturn<ExampleReward, 0.5F>::value(
+  auto discountReward = returns::DiscountReturn<ExampleReward, 0.5F>::value(
       TransitionSequence<2, ExampleAction>{transition, transition});
 
   std::cout << "Hello, world! " << nextState.val << " " << reward
@@ -86,10 +88,10 @@ int main() {
   // greedyBanditPolicy.printActionValueEstimate();
   // randomPolicy.printActionValueEstimate();
   //
-  std::cout <<z << "\n";
-  std::cout << z1 <<"\n";
-  std::cout << z2 <<"\n";
-  std::cout << z3 <<"\n";
+  std::cout << z << "\n";
+  std::cout << z1 << "\n";
+  std::cout << z2 << "\n";
+  std::cout << z3 << "\n";
 
   std::cout << banditAction << "\n";
 
