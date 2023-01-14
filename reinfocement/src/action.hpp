@@ -35,13 +35,8 @@ struct Action : T::DataType {
 
   // create a single long number which is the same as the string concat of all
   // the elements in the data array
-  long long int hash() const {
-    // auto fl = xt::flatten(static_cast<const typename T::DataType &>(*this));
-    auto ss = std::stringstream();
-    ss << static_cast<const typename T::DataType &>(*this);
-    std::hash<std::string> hasher;
-    std::size_t h = hasher(ss.str());
-    return h;
+  virtual std::size_t hash() const {
+    return static_cast<const typename T::DataType &>(*this).hash();
   }
 };
 

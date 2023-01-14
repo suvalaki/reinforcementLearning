@@ -98,6 +98,7 @@ int main() {
   std::cout << reward2 << "\n";
 
   std::cout << action.hash() << "\n";
+  std::cout << state.hash() << "\n";
 
   return 0;
 }

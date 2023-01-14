@@ -1,6 +1,7 @@
 #pragma once
 #include <array>
 #include <iostream>
+#include <string>
 #include <type_traits>
 #include <xtensor/xfixed.hpp>
 
@@ -97,6 +98,14 @@ struct CompositeArray : std::tuple<typename T::DataType...> {
                static_cast<const tupleDataType &>(rhs));
     os << ")";
     return os;
+  }
+
+  std::size_t hash() const {
+    auto ss = std::stringstream();
+    ss << *this;
+    std::hash<std::string> hasher;
+    std::size_t h = hasher(ss.str());
+    return h;
   }
 };
 
