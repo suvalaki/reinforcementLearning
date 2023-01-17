@@ -26,6 +26,9 @@ template <environment::EnvironmentType ENVIRON_T> struct Policy {
   virtual void update(const TransitionType &s) = 0;
 };
 
+template <typename T>
+concept PolicyType = std::is_base_of_v<Policy<typename T::EnvironmentType>, T>;
+
 template <isBoundedArraySpec T, class E = xt::random::default_engine_type>
 std::enable_if_t<isBoundedArraySpec<T>, typename T::DataType>
 random_spec_gen(E &engine = xt::random::get_default_random_engine()) {
@@ -130,7 +133,8 @@ struct GreedyPolicy : Policy<ENVIRON_T> {
       // Update the Q-table with the reward from the transition
       auto &v = q_table.at(key);
       // Replace with the updated monte carlo avergae
-      std::get<2>(v) = (std::get<2>(v) * std::get<3>(v) +  reward) / (std::get<3>(v) + 1) ;
+      std::get<2>(v) =
+          (std::get<2>(v) * std::get<3>(v) + reward) / (std::get<3>(v) + 1);
       std::get<3>(v)++;
     } else {
       q_table.emplace(key, QTableValueType{s.state, s.action, reward, 1});
@@ -150,15 +154,48 @@ struct GreedyPolicy : Policy<ENVIRON_T> {
   void printQTable() const {
 
     std::cout << "QTable\n=====\n";
-    for (const auto& [k,v] : q_table){
+    for (const auto &[k, v] : q_table) {
 
-      std::cout << std::get<0>(v) << "\t" << std::get<1>(v) << "\t" << 
-      std::get<2>(v) << "\t" << std::get<3>(v) << "\n" ;
-
+      std::cout << std::get<0>(v) << "\t" << std::get<1>(v) << "\t"
+                << std::get<2>(v) << "\t" << std::get<3>(v) << "\n";
     }
+  }
+};
 
+template <environment::EnvironmentType ENVIRON_T,
+          PolicyType EXPLOIT_POLICY = GreedyPolicy<ENVIRON_T>,
+          class E = xt::random::default_engine_type>
+struct EpsilonGreedyPolicy : EXPLOIT_POLICY {
+  using baseType = EXPLOIT_POLICY;
+  using EnvironmentType = typename baseType::EnvironmentType;
+  using StateType = typename baseType::StateType;
+  using ActionSpace = typename baseType::ActionSpace;
+  using TransitionType = typename baseType::TransitionType;
+  using RewardType = typename EnvironmentType::RewardType;
+  using PrecisionType = typename RewardType::PrecisionType;
+
+  RandomPolicy<ENVIRON_T> randomPolicy;
+
+  PrecisionType epsilon = 0.1;
+  E &engine;
+
+  EpsilonGreedyPolicy(PrecisionType epsilon = 0.1,
+                      E &engine = xt::random::get_default_random_engine())
+      : epsilon(epsilon), engine(engine) {}
+
+  ActionSpace explore(const StateType &s) { return randomPolicy(s); }
+
+  ActionSpace exploit(const StateType &s) {
+    return static_cast<EXPLOIT_POLICY &>(*this)(s);
   }
 
+  ActionSpace operator()(const StateType &s) override {
+    if (xt::random::rand<double>(xt::xshape<1>{}, 0, 1, engine)[0] < epsilon) {
+      return explore(s);
+    } else {
+      return exploit(s);
+    }
+  }
 };
 
 } // namespace policy

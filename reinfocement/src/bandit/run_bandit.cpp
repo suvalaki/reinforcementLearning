@@ -115,11 +115,10 @@ int main() {
   banditEnv.reset();
   std::cout << banditEnv.state << "\n";
 
-    auto recommendedAction = banditRandom(banditEnv.state);
-    auto newState = recommendedAction.step(banditEnv.state);
+  auto recommendedAction = banditRandom(banditEnv.state);
+  auto newState = recommendedAction.step(banditEnv.state);
 
-    std::cout << newState << "\n";
-
+  std::cout << newState << "\n";
 
   std::cout << "RANDOM ACTIONS\n";
   for (int i = 0; i < 100; i++) {
@@ -127,10 +126,12 @@ int main() {
     auto transition = banditEnv.step(recommendedAction);
     banditGreedy.update(transition); // seed the greedy action
                                      //
-    std::cout << banditEnv.state << " " << transition.action << " " << transition.nextState << "\n";
+    // std::cout << banditEnv.state << " " << transition.action << " "
+    //           << transition.nextState << "\n";
 
     // std::cout << transition.state << transition.action << " "
-    //           << recommendedAction << " " << banditGreedy.greedyValue() << "\n";
+    //           << recommendedAction << " " << banditGreedy.greedyValue() <<
+    //           "\n";
 
     banditEnv.update(transition);
   }
@@ -144,11 +145,27 @@ int main() {
     auto transition = banditEnv.step(recommendedAction);
     banditGreedy.update(transition);
     banditEnv.update(transition);
-    std::cout << transition.state << transition.action << " "
-              << recommendedAction << " " << banditGreedy.greedyValue() << "\n";
+    // std::cout << transition.state << transition.action << " "
+    //           << recommendedAction << " " << banditGreedy.greedyValue() <<
+    //           "\n";
   }
 
   banditGreedy.printQTable();
+
+  // Create an epsilon  greedy policy and run the bandit over them.
+  auto epsilonGreedy = policy::EpsilonGreedyPolicy<NBanditEnvironment>{0.1F};
+  std::cout << "EPSILON GREEDY ACTIONS\n";
+  for (int i = 0; i < 1000; i++) {
+    auto recommendedAction = epsilonGreedy(banditEnv.state);
+    auto transition = banditEnv.step(recommendedAction);
+    epsilonGreedy.update(transition);
+    banditEnv.update(transition);
+    // std::cout << transition.state << transition.action << " "
+    //           << recommendedAction << " " << banditGreedy.greedyValue() <<
+    //           "\n";
+  }
+
+  epsilonGreedy.printQTable();
 
   return 0;
 }
