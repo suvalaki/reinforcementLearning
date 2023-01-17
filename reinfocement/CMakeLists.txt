@@ -36,17 +36,21 @@ target_include_directories(MultiArmedBandit PUBLIC src )
 
 
 # Add testcase executable
-# enable_testing()
-# file(GLOB_RECURSE testfiles CONFIGURE_DEPENDS "test/*.h" "test/*.cpp")
-# add_executable(tests ${testfiles})
+enable_testing()
+find_package(Catch2 3 REQUIRED) 
+
+
+file(GLOB_RECURSE testfiles CONFIGURE_DEPENDS "test/*.h" "test/*.cpp")
+add_executable(tests ${testfiles})
+
 # add_subdirectory(lib/Catch2)
-# target_link_libraries(tests INTERFACE Catch2::Catch2)
+target_link_libraries(tests INTERFACE Catch2::Catch2)
 # set_target_properties(tests PROPERTIES
 #              CXX_STANDARD 17
 #              CXX_EXTENSIONS OFF
 #              )
 
-# target_include_directories(tests PUBLIC src test)
+target_include_directories(tests PUBLIC src test)
 
 # include(CTest)
 # include(lib/Catch2/extras/Catch.cmake)
