@@ -86,7 +86,69 @@ struct pair_hash {
   }
 };
 
+// use crtp
+template <environment::EnvironmentType ENVIRON_T, typename KEY_T>
+struct StateActionKeymaker {
+  using EnvironmentType = typename ENVIRON_T::EnvironmentType;
+  using StateType = typename EnvironmentType::StateType;
+  using ActionSpace = typename EnvironmentType::ActionSpace;
+
+  // The type that will be used for Q value lookup
+  using KeyType = KEY_T;
+
+  static KeyType make(const StateType &s, const ActionSpace &action);
+  static ActionSpace get_action_from_key(const KeyType &key);
+  static std::size_t hash(const KEY_T &key);
+};
+
+template <typename T>
+concept isStateActionKeymaker = requires(T t) {
+  typename T::KeyType;
+  {
+    T::make(std::declval<typename T::StateType>(),
+            std::declval<typename T::ActionSpace>())
+    } -> std::same_as<typename T::KeyType>;
+  {
+    T::get_action_from_key(std::declval<typename T::KeyType>())
+    } -> std::same_as<typename T::ActionSpace>;
+  { T::hash(std::declval<typename T::KeyType>()) } -> std::same_as<std::size_t>;
+};
+
 template <environment::EnvironmentType ENVIRON_T>
+struct DefaultActionKeymaker
+    : StateActionKeymaker<ENVIRON_T,
+                          std::pair<typename ENVIRON_T::StateType,
+                                    typename ENVIRON_T::ActionSpace>> {
+
+  using baseType =
+      StateActionKeymaker<ENVIRON_T,
+                          std::pair<typename ENVIRON_T::StateType,
+                                    typename ENVIRON_T::ActionSpace>>;
+
+  using EnvironmentType = typename baseType::EnvironmentType;
+  using StateType = typename baseType::StateType;
+  using ActionSpace = typename baseType::ActionSpace;
+  using KeyType = typename baseType::KeyType;
+
+  static KeyType make(const StateType &s, const ActionSpace &action) {
+    return std::make_pair(s, action);
+  }
+
+  static typename ENVIRON_T::ActionSpace
+  get_action_from_key(const std::pair<typename ENVIRON_T::StateType,
+                                      typename ENVIRON_T::ActionSpace> &key) {
+    return key.second;
+  }
+
+  static std::size_t
+  hash(const std::pair<typename ENVIRON_T::StateType,
+                       typename ENVIRON_T::ActionSpace> &key) {
+    return key.first.hash() ^ key.second.hash();
+  }
+};
+
+template <environment::EnvironmentType ENVIRON_T,
+          isStateActionKeymaker KEYMAPPER_T = DefaultActionKeymaker<ENVIRON_T>>
 struct GreedyPolicy : Policy<ENVIRON_T> {
   using baseType = Policy<ENVIRON_T>;
   using EnvironmentType = typename baseType::EnvironmentType;
@@ -96,12 +158,12 @@ struct GreedyPolicy : Policy<ENVIRON_T> {
   using RewardType = typename EnvironmentType::RewardType;
   using PrecisionType = typename RewardType::PrecisionType;
 
+  using KeyMaker = KEYMAPPER_T;
+  using KeyType = typename KeyMaker::KeyType;
+
   using QTableValueType =
-      std::tuple<StateType, ActionSpace,
-                 typename EnvironmentType::RewardType::PrecisionType, int>;
-  std::unordered_map<std::pair<StateType, ActionSpace>, QTableValueType,
-                     pair_hash>
-      q_table;
+      std::tuple<typename EnvironmentType::RewardType::PrecisionType, int>;
+  std::unordered_map<KeyType, QTableValueType, pair_hash> q_table;
 
   // Search over a space of actions and return the one with the highest
   // reward
@@ -113,9 +175,9 @@ struct GreedyPolicy : Policy<ENVIRON_T> {
                                            // permissible
 
     for (auto &[k, v] : q_table) {
-      if (maxVal < std::get<2>(v)) {
-        maxVal = std::get<2>(v);
-        action = std::get<1>(v);
+      if (maxVal < std::get<0>(v)) {
+        maxVal = std::get<0>(v);
+        action = KeyMaker::get_action_from_key(k);
       }
     }
 
@@ -128,24 +190,24 @@ struct GreedyPolicy : Policy<ENVIRON_T> {
     // Reward for this transition
     auto reward = RewardType::reward(s);
 
-    auto key = std::make_pair(s.state, s.action);
+    auto key = KeyMaker::make(s.state, s.action);
     if (q_table.find(key) != q_table.end()) {
       // Update the Q-table with the reward from the transition
       auto &v = q_table.at(key);
       // Replace with the updated monte carlo avergae
-      std::get<2>(v) =
-          (std::get<2>(v) * std::get<3>(v) + reward) / (std::get<3>(v) + 1);
-      std::get<3>(v)++;
+      std::get<0>(v) =
+          (std::get<0>(v) * std::get<1>(v) + reward) / (std::get<1>(v) + 1);
+      std::get<1>(v)++;
     } else {
-      q_table.emplace(key, QTableValueType{s.state, s.action, reward, 1});
+      q_table.emplace(key, QTableValueType{reward, 1});
     }
   };
 
   virtual PrecisionType greedyValue() {
     PrecisionType maxVal = 0;
     for (auto &[k, v] : q_table) {
-      if (maxVal < std::get<2>(v)) {
-        maxVal = std::get<2>(v);
+      if (maxVal < std::get<0>(v)) {
+        maxVal = std::get<0>(v);
       }
     }
     return maxVal;
@@ -156,8 +218,8 @@ struct GreedyPolicy : Policy<ENVIRON_T> {
     std::cout << "QTable\n=====\n";
     for (const auto &[k, v] : q_table) {
 
-      std::cout << std::get<0>(v) << "\t" << std::get<1>(v) << "\t"
-                << std::get<2>(v) << "\t" << std::get<3>(v) << "\n";
+      std::cout << std::get<0>(v) << "\t" << std::get<0>(v) << "\t"
+                << std::get<0>(v) << "\t" << std::get<1>(v) << "\n";
     }
   }
 };

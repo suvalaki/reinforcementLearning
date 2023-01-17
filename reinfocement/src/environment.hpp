@@ -36,6 +36,7 @@ using transition::TransitionSequence;
 template <StepType STEP_T, RewardType REWARD_T, ReturnType RETURN_T>
 struct Environment {
 
+  using EnvironmentType = Environment<STEP_T, REWARD_T, RETURN_T>;
   using StateType = typename STEP_T::StateType;
   using ActionSpace = typename STEP_T::ActionSpace;
   using ActionSpecType = typename ActionSpace::SpecType;
