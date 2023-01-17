@@ -86,6 +86,12 @@ struct pair_hash {
   }
 };
 
+template <typename T> struct HashBuilder {
+  std::size_t operator()(const typename T::KeyType &key) const {
+    return T::hash(key);
+  }
+};
+
 // use crtp
 template <environment::EnvironmentType ENVIRON_T, typename KEY_T>
 struct StateActionKeymaker {
@@ -99,6 +105,8 @@ struct StateActionKeymaker {
   static KeyType make(const StateType &s, const ActionSpace &action);
   static ActionSpace get_action_from_key(const KeyType &key);
   static std::size_t hash(const KEY_T &key);
+
+  using Hash = HashBuilder<StateActionKeymaker<ENVIRON_T, KEY_T>>;
 };
 
 template <typename T>
@@ -145,7 +153,16 @@ struct DefaultActionKeymaker
                        typename ENVIRON_T::ActionSpace> &key) {
     return key.first.hash() ^ key.second.hash();
   }
+
+  using Hash = HashBuilder<DefaultActionKeymaker<ENVIRON_T>>;
 };
+
+// Helper to print the default key type
+template <typename T0, typename T1>
+std::ostream &operator<<(std::ostream &os, const std::pair<T0, T1> &p) {
+  os << "(" << p.first << ", " << p.second << ")";
+  return os;
+}
 
 template <environment::EnvironmentType ENVIRON_T,
           isStateActionKeymaker KEYMAPPER_T = DefaultActionKeymaker<ENVIRON_T>>
@@ -163,7 +180,7 @@ struct GreedyPolicy : Policy<ENVIRON_T> {
 
   using QTableValueType =
       std::tuple<typename EnvironmentType::RewardType::PrecisionType, int>;
-  std::unordered_map<KeyType, QTableValueType, pair_hash> q_table;
+  std::unordered_map<KeyType, QTableValueType, typename KeyMaker::Hash> q_table;
 
   // Search over a space of actions and return the one with the highest
   // reward
@@ -218,14 +235,15 @@ struct GreedyPolicy : Policy<ENVIRON_T> {
     std::cout << "QTable\n=====\n";
     for (const auto &[k, v] : q_table) {
 
-      std::cout << std::get<0>(v) << "\t" << std::get<0>(v) << "\t"
-                << std::get<0>(v) << "\t" << std::get<1>(v) << "\n";
+      std::cout << k << "\t" << std::get<0>(v) << "\t" << std::get<1>(v)
+                << "\n";
     }
   }
 };
 
 template <environment::EnvironmentType ENVIRON_T,
-          PolicyType EXPLOIT_POLICY = GreedyPolicy<ENVIRON_T>,
+          PolicyType EXPLOIT_POLICY =
+              GreedyPolicy<ENVIRON_T, DefaultActionKeymaker<ENVIRON_T>>,
           class E = xt::random::default_engine_type>
 struct EpsilonGreedyPolicy : EXPLOIT_POLICY {
   using baseType = EXPLOIT_POLICY;

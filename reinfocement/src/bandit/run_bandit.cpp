@@ -14,6 +14,7 @@
 #include "spec.hpp"
 
 using namespace environment;
+using namespace policy;
 
 // Examples
 struct ExampleState : State<float> {
@@ -27,10 +28,10 @@ using EnumSpec0 =
 auto &engine = xt::random::get_default_random_engine();
 
 auto s = 123;
-auto z = policy::random_spec_gen<ExampleSpec0>();
-auto z1 = policy::random_spec_gen<EnumSpec0>();
-auto z2 = policy::random_spec_gen<EnumSpec0>();
-auto z3 = policy::random_spec_gen<EnumSpec0>();
+auto z = ::policy::random_spec_gen<ExampleSpec0>();
+auto z1 = ::policy::random_spec_gen<EnumSpec0>();
+auto z2 = ::policy::random_spec_gen<EnumSpec0>();
+auto z3 = ::policy::random_spec_gen<EnumSpec0>();
 
 static_assert(spec::isBoundedArraySpec<ExampleSpec0>);
 
@@ -58,7 +59,10 @@ using NBanditEnvironment = bandit::BanditEnvironment<
     environment::Return<bandit::rewards::ConstantReward<3>>>;
 
 using NBanditPolicy = RandomPolicy<NBanditEnvironment>;
-using BanditGreedy = policy::GreedyPolicy<NBanditEnvironment>;
+using KeyHashMappings = bandit::BanditStateActionKeymapper<NBanditEnvironment>;
+// using BanditGreedy = policy::GreedyPolicy<NBanditEnvironment,
+// KeyHashMappings>;
+using BanditGreedy = bandit::GreedyBanditPolicy<NBanditEnvironment>;
 
 int main() {
 
@@ -153,7 +157,8 @@ int main() {
   banditGreedy.printQTable();
 
   // Create an epsilon  greedy policy and run the bandit over them.
-  auto epsilonGreedy = policy::EpsilonGreedyPolicy<NBanditEnvironment>{0.1F};
+  auto epsilonGreedy =
+      policy::EpsilonGreedyPolicy<NBanditEnvironment, BanditGreedy>{0.1F};
   std::cout << "EPSILON GREEDY ACTIONS\n";
   for (int i = 0; i < 1000; i++) {
     auto recommendedAction = epsilonGreedy(banditEnv.state);

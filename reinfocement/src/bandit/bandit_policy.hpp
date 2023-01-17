@@ -6,56 +6,33 @@
 #include "bandit_environment.hpp"
 #include "policy.hpp"
 
-using namespace policy;
+using namespace bandit;
 
-namespace bandit::policy {
+namespace bandit {
 
-template <typename ENVIRON_T, float STARTING_VALUE = 1.0F>
-struct GreedyPolicy : Policy<ENVIRON_T> {
+template <typename ENVIRON_T>
+struct BanditStateActionKeymapper
+    : policy::StateActionKeymaker<ENVIRON_T, typename ENVIRON_T::ActionSpace> {
 
-  using EnvironmentType = ENVIRON_T;
-  using StateType = typename EnvironmentType::StateType;
-  using ActionSpace = typename EnvironmentType::ActionSpace;
-  using TransitionType = typename EnvironmentType::TransitionType;
+  using baseType =
+      policy::StateActionKeymaker<ENVIRON_T, typename ENVIRON_T::ActionSpace>;
+  using KeyType = typename baseType::KeyType;
+  using StateType = typename baseType::StateType;
+  using ActionSpace = typename baseType::ActionSpace;
 
-  std::array<float, EnvironmentType::N> actionValueEstimate;
-  std::array<int, EnvironmentType::N> actionSelectionCount;
-
-  GreedyPolicy() {
-    actionValueEstimate.fill(STARTING_VALUE);
-    actionSelectionCount.fill(0);
+  static KeyType make(const StateType &s, const ActionSpace &action) {
+    return action;
   }
 
-  // Run the policy over the current state of the environment
-  // iterate over s.observableBanditSample and return the
-  // argmax item. If there are multiple argmax items, return a random one. If
-  // there are no argmax items, return a random item.
-  ActionSpace operator()(const StateType &s) override {
-    auto result = ActionSpace{};
-    auto idxArgmax = std::distance(actionValueEstimate.begin(),
-                                   std::max_element(actionValueEstimate.begin(),
-                                                    actionValueEstimate.end()));
-    // std::array<float, EnvironmentType::N> banditChoice = {false};
-    result.banditChoice[idxArgmax] = true;
-    return result;
-  }
+  static ActionSpace get_action_from_key(const KeyType &key) { return key; }
 
-  void update(const TransitionType &s) override{};
+  static std::size_t hash(const KeyType &key) { return key.hash(); }
 
-  // print the current action value estimate as a table where each cell takes
-  // the same space
-  void printActionValueEstimate() {
-    std::cout << "Action Value Estimate" << std::endl;
-    std::cout << "---------------------" << std::endl;
-    for (int i = 0; i < EnvironmentType::N; i++) {
-      std::cout << std::setw(5) << actionValueEstimate[i] << " ";
-    }
-    std::cout << "\n";
-    for (int i = 0; i < EnvironmentType::N; i++) {
-      std::cout << std::setw(5) << actionSelectionCount[i] << " ";
-    }
-    std::cout << std::endl;
-  }
+  using Hash = policy::HashBuilder<BanditStateActionKeymapper<ENVIRON_T>>;
 };
 
-} // namespace bandit::policy
+template <typename ENVIRON_T>
+using GreedyBanditPolicy =
+    policy::GreedyPolicy<ENVIRON_T, BanditStateActionKeymapper<ENVIRON_T>>;
+
+} // namespace bandit
