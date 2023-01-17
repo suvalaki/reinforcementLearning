@@ -171,6 +171,7 @@ int main() {
   }
 
   epsilonGreedy.printQTable();
+  banditEnv.printDistributions();
 
   return 0;
 }

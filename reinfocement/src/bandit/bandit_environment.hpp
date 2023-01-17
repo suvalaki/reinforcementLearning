@@ -29,8 +29,8 @@ struct BanditState : environment::State<float> {
               const std::array<float, N_BANDITS> &hiddenBanditStd,
               const std::array<float, N_BANDITS> &observableBanditSample)
       : BaseType(), hiddenRandomEngine(engine),
-        hiddenBanditMeans(hiddenBanditMeans), hiddenBanditStd(hiddenBanditStd), observableBanditSample(observableBanditSample) {
-  }
+        hiddenBanditMeans(hiddenBanditMeans), hiddenBanditStd(hiddenBanditStd),
+        observableBanditSample(observableBanditSample) {}
 
   BanditState static nullFactory(
       std::minstd_rand &engine,
@@ -173,6 +173,13 @@ struct BanditEnvironment
     // Setup the initial State
     this->state = StateType::nullFactory(engine, means, stddevs);
   }
+
+  void printDistributions() const {
+    for (int i = 0; i < N_BANDITS; i++) {
+      std::cout << "bandit " << i << ": " << means[i] << " (+/- " << stddevs[i]
+                << ")\n";
+    }
+  }
 };
 
 } // namespace bandit
@@ -195,8 +202,8 @@ struct ConstantReward : environment::Reward<BanditAction<N_BANDITS>> {
 
     const auto actions = std::get<0>(transition.action);
     for (const auto &val : actions) {
-      reward +=
-          transition.nextState.observableBanditSample[static_cast<std::size_t>(val)];
+      reward += transition.nextState
+                    .observableBanditSample[static_cast<std::size_t>(val)];
     }
 
     return reward;
