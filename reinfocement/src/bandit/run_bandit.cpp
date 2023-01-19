@@ -160,7 +160,7 @@ int main() {
   auto epsilonGreedy =
       policy::EpsilonGreedyPolicy<NBanditEnvironment, BanditGreedy>{0.1F};
   std::cout << "EPSILON GREEDY ACTIONS\n";
-  for (int i = 0; i < 1000; i++) {
+  for (int i = 0; i < 100000; i++) {
     auto recommendedAction = epsilonGreedy(banditEnv.state);
     auto transition = banditEnv.step(recommendedAction);
     epsilonGreedy.update(transition);

@@ -164,8 +164,42 @@ std::ostream &operator<<(std::ostream &os, const std::pair<T0, T1> &p) {
   return os;
 }
 
+template <environment::EnvironmentType ENVIRON_T> struct StateActionValue {
+  using EnvironmentType = ENVIRON_T;
+  using PrecisionType = typename ENVIRON_T::PrecisionType;
+  // Current state-action-value estimatae
+  PrecisionType value;
+  // number of steps taken for this state-action estimate
+  std::size_t step;
+};
+
+template <typename T>
+concept isStateActionValue =
+    std::is_base_of_v<StateActionValue<typename T::EnvironmentType>, T> ||
+    std::is_same_v<StateActionValue<typename T::EnvironmentType>, T>;
+
+template <typename T>
+concept step_size_taker = requires(T t) {
+  typename T::StateValueType;
+  {
+    T::getStepSize(std::declval<typename T::StateValueType>())
+    } -> std::same_as<typename T::PrecisionType>;
+};
+
+template <isStateActionValue VALUE_T> struct weighted_average_step_size_taker {
+  using StateValueType = VALUE_T;
+  using PrecisionType = typename StateValueType::PrecisionType;
+  static typename StateValueType::PrecisionType
+  getStepSize(const StateValueType &value) {
+    return 1.0 / (value.step + 1);
+  }
+};
+
 template <environment::EnvironmentType ENVIRON_T,
-          isStateActionKeymaker KEYMAPPER_T = DefaultActionKeymaker<ENVIRON_T>>
+          isStateActionKeymaker KEYMAPPER_T = DefaultActionKeymaker<ENVIRON_T>,
+          isStateActionValue VALUE_T = StateActionValue<ENVIRON_T>,
+          step_size_taker STEPSIZE_TAKER_T =
+              weighted_average_step_size_taker<VALUE_T>>
 struct GreedyPolicy : Policy<ENVIRON_T> {
   using baseType = Policy<ENVIRON_T>;
   using EnvironmentType = typename baseType::EnvironmentType;
@@ -177,9 +211,10 @@ struct GreedyPolicy : Policy<ENVIRON_T> {
 
   using KeyMaker = KEYMAPPER_T;
   using KeyType = typename KeyMaker::KeyType;
+  using ValueType = VALUE_T;
+  using StepSizeTaker = STEPSIZE_TAKER_T;
 
-  using QTableValueType =
-      std::tuple<typename EnvironmentType::RewardType::PrecisionType, int>;
+  using QTableValueType = ValueType;
   std::unordered_map<KeyType, QTableValueType, typename KeyMaker::Hash> q_table;
 
   // Search over a space of actions and return the one with the highest
@@ -192,8 +227,8 @@ struct GreedyPolicy : Policy<ENVIRON_T> {
                                            // permissible
 
     for (auto &[k, v] : q_table) {
-      if (maxVal < std::get<0>(v)) {
-        maxVal = std::get<0>(v);
+      if (maxVal < v.value) {
+        maxVal = v.value;
         action = KeyMaker::get_action_from_key(k);
       }
     }
@@ -212,9 +247,8 @@ struct GreedyPolicy : Policy<ENVIRON_T> {
       // Update the Q-table with the reward from the transition
       auto &v = q_table.at(key);
       // Replace with the updated monte carlo avergae
-      std::get<0>(v) =
-          (std::get<0>(v) * std::get<1>(v) + reward) / (std::get<1>(v) + 1);
-      std::get<1>(v)++;
+      v.value = v.value + StepSizeTaker::getStepSize(v) * (reward - v.value);
+      v.step++;
     } else {
       q_table.emplace(key, QTableValueType{reward, 1});
     }
@@ -223,8 +257,8 @@ struct GreedyPolicy : Policy<ENVIRON_T> {
   virtual PrecisionType greedyValue() {
     PrecisionType maxVal = 0;
     for (auto &[k, v] : q_table) {
-      if (maxVal < std::get<0>(v)) {
-        maxVal = std::get<0>(v);
+      if (maxVal < v.value) {
+        maxVal = v.value;
       }
     }
     return maxVal;
@@ -235,15 +269,13 @@ struct GreedyPolicy : Policy<ENVIRON_T> {
     std::cout << "QTable\n=====\n";
     for (const auto &[k, v] : q_table) {
 
-      std::cout << k << "\t" << std::get<0>(v) << "\t" << std::get<1>(v)
-                << "\n";
+      std::cout << k << "\t" << v.value << "\t" << v.step << "\n";
     }
   }
 };
 
 template <environment::EnvironmentType ENVIRON_T,
-          PolicyType EXPLOIT_POLICY =
-              GreedyPolicy<ENVIRON_T, DefaultActionKeymaker<ENVIRON_T>>,
+          PolicyType EXPLOIT_POLICY = GreedyPolicy<ENVIRON_T>,
           class E = xt::random::default_engine_type>
 struct EpsilonGreedyPolicy : EXPLOIT_POLICY {
   using baseType = EXPLOIT_POLICY;

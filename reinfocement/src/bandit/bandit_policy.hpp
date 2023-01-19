@@ -32,7 +32,19 @@ struct BanditStateActionKeymapper
 };
 
 template <typename ENVIRON_T>
-using GreedyBanditPolicy =
-    policy::GreedyPolicy<ENVIRON_T, BanditStateActionKeymapper<ENVIRON_T>>;
+using BanditStateActionValue = ::policy::StateActionValue<ENVIRON_T>;
+
+template <typename ENVIRON_T>
+using BanditWeightedAverageStepSizeTaker =
+    ::policy::weighted_average_step_size_taker<
+        BanditStateActionValue<ENVIRON_T>>;
+
+template <typename ENVIRON_T>
+using GreedyBanditPolicy = ::policy::GreedyPolicy< //
+    ENVIRON_T,                                     //
+    BanditStateActionKeymapper<ENVIRON_T>,         //
+    BanditStateActionValue<ENVIRON_T>,             //
+    BanditWeightedAverageStepSizeTaker<ENVIRON_T>  //
+    >;
 
 } // namespace bandit
