@@ -8,7 +8,7 @@
 #include "action.hpp"
 #include "environment.hpp"
 #include "iostream"
-#include "policy.hpp"
+#include "policy/policy.hpp"
 #include "spec.hpp"
 
 namespace bandit {

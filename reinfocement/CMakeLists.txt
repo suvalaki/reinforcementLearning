@@ -18,7 +18,7 @@ add_library(${PROJECT_NAME} SHARED
 
 
 # Configure the directories to search for header files.
-target_include_directories(${PROJECT_NAME} PUBLIC src src/bandit)
+target_include_directories(${PROJECT_NAME} PUBLIC src src/bandit src/policy)
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 # Set the version property.
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
@@ -29,9 +29,10 @@ set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER
     src/environment.hpp
 )
 
-file(GLOB_RECURSE bandits CONFIGURE_DEPENDS   "src/*.hpp" "src/*.cpp" "src/bandit/*.hpp")
+file(GLOB_RECURSE bandits CONFIGURE_DEPENDS   "src/*.hpp" "src/*.cpp" "src/bandit/*.hpp" "src/policy/*.hpp")
 add_executable(MultiArmedBandit "src/bandit/run_bandit.cpp")
 target_include_directories(MultiArmedBandit PUBLIC src )
+set(GCC_COVERAGE_COMPILE_FLAGS "-fconcepts-diagnostics-depth=2")
 
 
 

@@ -1,8 +1,3 @@
-#include "action.hpp"
-#include "bandit.hpp"
-#include "bandit_environment.hpp"
-#include "bandit_policy.hpp"
-#include "policy.hpp"
 #include <ctime>
 #include <random>
 
@@ -11,7 +6,16 @@
 // XTensor View:
 #include "xtensor/xview.hpp"
 
+#include "action.hpp"
+#include "bandit.hpp"
+#include "bandit_environment.hpp"
+#include "bandit_policy.hpp"
 #include "spec.hpp"
+
+#include "policy/epsilon_greedy_policy.hpp"
+#include "policy/greedy_policy.hpp"
+#include "policy/policy.hpp"
+#include "policy/random_policy.hpp"
 
 using namespace environment;
 using namespace policy;

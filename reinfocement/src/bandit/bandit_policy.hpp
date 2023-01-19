@@ -4,7 +4,10 @@
 
 #include "bandit.hpp"
 #include "bandit_environment.hpp"
-#include "policy.hpp"
+#include "policy/epsilon_greedy_policy.hpp"
+#include "policy/greedy_policy.hpp"
+#include "policy/policy.hpp"
+#include "policy/random_policy.hpp"
 
 using namespace bandit;
 
