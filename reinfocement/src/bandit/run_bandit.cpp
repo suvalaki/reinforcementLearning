@@ -67,6 +67,8 @@ using KeyHashMappings = bandit::BanditStateActionKeymapper<NBanditEnvironment>;
 // using BanditGreedy = policy::GreedyPolicy<NBanditEnvironment,
 // KeyHashMappings>;
 using BanditGreedy = bandit::GreedyBanditPolicy<NBanditEnvironment>;
+using CIBanditGreedy =
+    bandit::UpperConfidenceBoundGreedyBanditPolicy<NBanditEnvironment, 0.5F>;
 
 int main() {
 
@@ -175,6 +177,39 @@ int main() {
   }
 
   epsilonGreedy.printQTable();
+  banditEnv.printDistributions();
+
+  // Create a UCB policy and run the bandit over them.
+  auto ucbGreedy = CIBanditGreedy{};
+  std::cout << "UCB GREEDY ACTIONS\n";
+  for (int i = 0; i < 100000; i++) {
+    auto recommendedAction = ucbGreedy(banditEnv.state);
+    auto transition = banditEnv.step(recommendedAction);
+    ucbGreedy.update(transition);
+    banditEnv.update(transition);
+    // std::cout << transition.state << transition.action << " "
+    //           << recommendedAction << " " << banditGreedy.greedyValue() <<
+    //           "\n";
+  }
+
+  ucbGreedy.printQTable();
+  banditEnv.printDistributions();
+
+  // Create a UBC epsilon greedy policy and run the bandit over them.
+  auto ucbEpsilonGreedy =
+      policy::EpsilonGreedyPolicy<NBanditEnvironment, CIBanditGreedy>{0.1F};
+  std::cout << "UCB EPSILON GREEDY ACTIONS\n";
+  for (int i = 0; i < 100000; i++) {
+    auto recommendedAction = ucbEpsilonGreedy(banditEnv.state);
+    auto transition = banditEnv.step(recommendedAction);
+    ucbEpsilonGreedy.update(transition);
+    banditEnv.update(transition);
+    // std::cout << transition.state << transition.action << " "
+    //           << recommendedAction << " " << banditGreedy.greedyValue() <<
+    //           "\n";
+  }
+
+  ucbEpsilonGreedy.printQTable();
   banditEnv.printDistributions();
 
   return 0;

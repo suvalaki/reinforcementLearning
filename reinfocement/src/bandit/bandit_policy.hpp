@@ -50,4 +50,17 @@ using GreedyBanditPolicy = ::policy::GreedyPolicy< //
     BanditWeightedAverageStepSizeTaker<ENVIRON_T>  //
     >;
 
+template <typename ENVIRON_T, auto DEGREE_OF_EXPLORATION>
+using BanditUpperCBoundStateActionValue =
+    ::policy::UpperConfidenceBoundStateActionValue<ENVIRON_T,
+                                                   DEGREE_OF_EXPLORATION>;
+
+template <typename ENVIRON_T, auto DEGREE_OF_EXPLORATION>
+using UpperConfidenceBoundGreedyBanditPolicy = ::policy::GreedyPolicy<   //
+    ENVIRON_T,                                                           //
+    BanditStateActionKeymapper<ENVIRON_T>,                               //
+    BanditUpperCBoundStateActionValue<ENVIRON_T, DEGREE_OF_EXPLORATION>, //
+    BanditWeightedAverageStepSizeTaker<ENVIRON_T>                        //
+    >;
+
 } // namespace bandit

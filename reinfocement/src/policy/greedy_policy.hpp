@@ -40,15 +40,15 @@ struct GreedyPolicy : Policy<ENVIRON_T> {
   // Search over a space of actions and return the one with the highest
   // reward
   ActionSpace operator()(const StateType &s) override {
-    PrecisionType maxVal = 0;
+    auto maxVal = ValueType();
     auto action = random_spec_gen<
         typename ActionSpace::SpecType>(); // start with a random action so we
                                            // at least have one that is
                                            // permissible
 
     for (auto &[k, v] : q_table) {
-      if (maxVal < v.value) {
-        maxVal = v.value;
+      if (maxVal < v) {
+        maxVal = v;
         action = KeyMaker::get_action_from_key(k);
       }
     }
@@ -71,6 +71,15 @@ struct GreedyPolicy : Policy<ENVIRON_T> {
       v.step++;
     } else {
       q_table.emplace(key, QTableValueType{reward, 1});
+    }
+
+    // Go over all the other actions and update them with their global callback
+    // A better mechanism might be to start with a state factory that holds
+    // global state
+    for (auto &[k, v] : q_table) {
+      if (k != key) {
+        v.noFocusUpdate();
+      }
     }
   };
 

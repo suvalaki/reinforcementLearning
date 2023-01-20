@@ -28,8 +28,8 @@ struct Action : T::DataType {
   // When an action modifies the state space impliment anew
   virtual StateType step(const StateType &state) const { return state; }
 
-  friend bool operator==(const Action &lhs, const Action &rhs) {
-    return static_cast<const typename T::DataType &>(lhs) ==
+  bool operator==(const Action &rhs) {
+    return static_cast<const typename T::DataType &>(*this) ==
            static_cast<const typename T::DataType &>(rhs);
   }
 
