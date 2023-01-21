@@ -4,6 +4,7 @@
 
 #include "bandit.hpp"
 #include "bandit_environment.hpp"
+#include "policy/distribution_policy.hpp"
 #include "policy/epsilon_greedy_policy.hpp"
 #include "policy/greedy_policy.hpp"
 #include "policy/policy.hpp"
@@ -22,6 +23,7 @@ struct BanditStateActionKeymapper
   using KeyType = typename baseType::KeyType;
   using StateType = typename baseType::StateType;
   using ActionSpace = typename baseType::ActionSpace;
+  using EnvironmentType = ENVIRON_T;
 
   static KeyType make(const StateType &s, const ActionSpace &action) {
     return action;
@@ -61,6 +63,18 @@ using UpperConfidenceBoundGreedyBanditPolicy = ::policy::GreedyPolicy<   //
     BanditStateActionKeymapper<ENVIRON_T>,                               //
     BanditUpperCBoundStateActionValue<ENVIRON_T, DEGREE_OF_EXPLORATION>, //
     BanditWeightedAverageStepSizeTaker<ENVIRON_T>                        //
+    >;
+
+template <typename ENVIRON_T>
+using BanditDistributionStateActionValue =
+    ::policy::DistributionStateActionValue<ENVIRON_T>;
+
+template <typename ENVIRON_T>
+using BanditDistributionPolicy = ::policy::DistributionPolicy< //
+    ENVIRON_T,                                                 //
+    BanditStateActionKeymapper<ENVIRON_T>,                     //
+    BanditDistributionStateActionValue<ENVIRON_T>,             //
+    BanditWeightedAverageStepSizeTaker<ENVIRON_T>              //
     >;
 
 } // namespace bandit

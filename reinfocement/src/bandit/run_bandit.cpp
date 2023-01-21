@@ -212,5 +212,28 @@ int main() {
   ucbEpsilonGreedy.printQTable();
   banditEnv.printDistributions();
 
+  // Create a distribution policy and run the bandit over them.
+  auto distributionPolicy = BanditDistributionPolicy<NBanditEnvironment>{};
+  std::cout << "DISTRIBUTION ACTIONS\n";
+  std::cout << "Initialising with random actions \n";
+  for (int i = 0; i < 100; i++) {
+    auto recommendedAction = banditRandom(banditEnv.state);
+    auto transition = banditEnv.step(recommendedAction);
+    distributionPolicy.update(transition);
+    banditEnv.update(transition);
+  }
+  for (int i = 0; i < 10000; i++) {
+    auto recommendedAction = distributionPolicy(banditEnv.state);
+    auto transition = banditEnv.step(recommendedAction);
+    distributionPolicy.update(transition);
+    banditEnv.update(transition);
+    // std::cout << transition.state << transition.action << " "
+    //           << recommendedAction << " " << banditGreedy.greedyValue() <<
+    //           "\n";
+  }
+
+  distributionPolicy.printQTable();
+  banditEnv.printDistributions();
+
   return 0;
 }

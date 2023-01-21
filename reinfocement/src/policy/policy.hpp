@@ -18,11 +18,8 @@ using spec::isBoundedArraySpec;
 using spec::isCategoricalArraySpec;
 
 template <environment::EnvironmentType ENVIRON_T> struct Policy {
+  SETUP_TYPES(SINGLE_ARG(ENVIRON_T));
   using EnvironmentType = ENVIRON_T;
-  using PrecisionType = typename EnvironmentType::PrecisionType;
-  using StateType = typename EnvironmentType::StateType;
-  using ActionSpace = typename EnvironmentType::ActionSpace;
-  using TransitionType = typename EnvironmentType::TransitionType;
 
   // Run the policy over the current state of the environment
   virtual ActionSpace operator()(const StateType &s) = 0;

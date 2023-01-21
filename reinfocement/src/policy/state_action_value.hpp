@@ -18,8 +18,8 @@ concept isStateActionValueFactory = requires(T t) {
 };
 
 template <environment::EnvironmentType ENVIRON_T> struct StateActionValue {
+  SETUP_TYPES(ENVIRON_T)
   using EnvironmentType = ENVIRON_T;
-  using PrecisionType = typename ENVIRON_T::PrecisionType;
   // Current state-action-value estimatae
   PrecisionType value = 0;
   // number of steps taken for this state-action estimate
@@ -58,8 +58,8 @@ struct UpperConfidenceBoundStateActionValue
   static_assert(DEGREE_OF_EXPLORATION > 0.0F,
                 "Degree of exploration must be greater than 0.0F");
 
+  SETUP_TYPES(ENVIRON_T)
   using EnvironmentType = ENVIRON_T;
-  using PrecisionType = typename ENVIRON_T::PrecisionType;
   using StateActionValueType = StateActionValue<ENVIRON_T>;
   using StateActionValueType::step;
   using StateActionValueType::value;

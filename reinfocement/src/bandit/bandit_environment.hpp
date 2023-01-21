@@ -130,11 +130,10 @@ template <std::size_t N_BANDITS, environment::RewardType REWARD_T,
 struct BanditEnvironment
     : environment::Environment<BanditStep<N_BANDITS>, REWARD_T, RETURN_T> {
 
-  using BaseType =
-      environment::Environment<BanditStep<N_BANDITS>, REWARD_T, RETURN_T>;
-  using PrecisionType = typename BaseType::PrecisionType;
-  using StepType = typename BaseType::StepType;
-  using StateType = typename BaseType::StateType;
+  SETUP_TYPES(SINGLE_ARG(
+      environment::Environment<BanditStep<N_BANDITS>, REWARD_T, RETURN_T>));
+  using EnvironmentType = BanditEnvironment<N_BANDITS, REWARD_T, RETURN_T>;
+
   constexpr static std::size_t N = N_BANDITS;
 
   std::minstd_rand &engine;

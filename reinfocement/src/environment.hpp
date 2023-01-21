@@ -67,4 +67,16 @@ concept EnvironmentType = std::is_base_of_v<
                 typename ENVIRON_T::ReturnType>,
     ENVIRON_T>;
 
+#define SINGLE_ARG(...) __VA_ARGS__
+#define SETUP_TYPES(BASE_T)                                                    \
+  using BaseType = BASE_T;                                                     \
+  using StateType = typename BASE_T::StateType;                                \
+  using ActionSpace = typename BASE_T::ActionSpace;                            \
+  using ActionSpecType = typename BASE_T::ActionSpecType;                      \
+  using PrecisionType = typename BASE_T::PrecisionType;                        \
+  using StepType = typename BASE_T::StepType;                                  \
+  using TransitionType = typename BASE_T::TransitionType;                      \
+  using RewardType = typename BASE_T::RewardType;                              \
+  using ReturnType = typename BASE_T::ReturnType;
+
 } // namespace environment
