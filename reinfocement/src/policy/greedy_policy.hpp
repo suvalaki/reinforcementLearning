@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <random>
 #include <xtensor/xfixed.hpp>
 #include <xtensor/xrandom.hpp>
@@ -37,21 +38,26 @@ struct GreedyPolicy : Policy<ENVIRON_T> {
   using QTableValueType = ValueType;
   std::unordered_map<KeyType, QTableValueType, typename KeyMaker::Hash> q_table;
 
+  typename ValueType::Factory valueFactory{};
+
   // Search over a space of actions and return the one with the highest
   // reward
   ActionSpace operator()(const StateType &s) override {
-    auto maxVal = ValueType();
+    auto maxVal = valueFactory.create();
     auto action = random_spec_gen<
         typename ActionSpace::SpecType>(); // start with a random action so we
                                            // at least have one that is
                                            // permissible
 
-    for (auto &[k, v] : q_table) {
-      if (maxVal < v) {
-        maxVal = v;
-        action = KeyMaker::get_action_from_key(k);
-      }
+    if (q_table.empty()) {
+      return action;
     }
+
+    auto maxIdx = std::max_element(
+        q_table.begin(), q_table.end(),
+        [](const auto &p1, const auto &p2) { return p1.second < p2.second; });
+
+    action = KeyMaker::get_action_from_key(maxIdx->first);
 
     return action;
   }
@@ -70,17 +76,13 @@ struct GreedyPolicy : Policy<ENVIRON_T> {
       v.value = v.value + StepSizeTaker::getStepSize(v) * (reward - v.value);
       v.step++;
     } else {
-      q_table.emplace(key, QTableValueType{reward, 1});
+      q_table.emplace(key, valueFactory.create(reward, 1));
     }
 
     // Go over all the other actions and update them with their global callback
     // A better mechanism might be to start with a state factory that holds
     // global state
-    for (auto &[k, v] : q_table) {
-      if (k != key) {
-        v.noFocusUpdate();
-      }
-    }
+    valueFactory.update();
   };
 
   virtual PrecisionType greedyValue() {

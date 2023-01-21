@@ -11,6 +11,12 @@
 
 namespace policy {
 
+template <typename T>
+concept isStateActionValueFactory = requires(T t) {
+  { t.create() } -> std::same_as<typename T::ValueType>;
+  { t.update() } -> std::same_as<void>;
+};
+
 template <environment::EnvironmentType ENVIRON_T> struct StateActionValue {
   using EnvironmentType = ENVIRON_T;
   using PrecisionType = typename ENVIRON_T::PrecisionType;
@@ -27,12 +33,23 @@ template <environment::EnvironmentType ENVIRON_T> struct StateActionValue {
   }
 
   virtual void noFocusUpdate() {}
+
+  struct Factory {
+    using ValueType = StateActionValue;
+    StateActionValue create(const PrecisionType &value = 0,
+                            const std::size_t &step = 0) {
+      return StateActionValue{value, step};
+    }
+
+    void update() {}
+  };
 };
 
 template <typename T>
 concept isStateActionValue =
-    std::is_base_of_v<StateActionValue<typename T::EnvironmentType>, T> ||
-    std::is_same_v<StateActionValue<typename T::EnvironmentType>, T>;
+    (std::is_base_of_v<StateActionValue<typename T::EnvironmentType>, T> ||
+     std::is_same_v<StateActionValue<typename T::EnvironmentType>,
+                    T>)&&isStateActionValueFactory<typename T::Factory>;
 
 template <environment::EnvironmentType ENVIRON_T, auto DEGREE_OF_EXPLORATION>
 struct UpperConfidenceBoundStateActionValue
@@ -50,11 +67,11 @@ struct UpperConfidenceBoundStateActionValue
   static float constexpr degree_of_exploration = DEGREE_OF_EXPLORATION;
 
   // total count over all steps over all actions.
-  std::size_t total_step = 0;
+  std::size_t &total_step;
 
-  UpperConfidenceBoundStateActionValue(const PrecisionType &value = 0,
-                                       const std::size_t &step = 0,
-                                       const std::size_t &total_step = 0)
+  UpperConfidenceBoundStateActionValue(const PrecisionType &value,
+                                       const std::size_t &step,
+                                       std::size_t &total_step)
       : StateActionValueType{value, step}, total_step(total_step) {}
 
   PrecisionType getUpperConfidenceBound() const {
@@ -68,6 +85,21 @@ struct UpperConfidenceBoundStateActionValue
   }
 
   virtual void noFocusUpdate() { total_step++; }
+
+  struct Factory {
+
+    using ValueType = UpperConfidenceBoundStateActionValue;
+    // total count over all steps over all actions.
+    std::size_t total_step = 0;
+
+    UpperConfidenceBoundStateActionValue create(const PrecisionType &value = 0,
+                                                const std::size_t &step = 0) {
+      return UpperConfidenceBoundStateActionValue{value, step,
+                                                  this->total_step};
+    }
+
+    void update() { total_step++; }
+  };
 };
 
 } // namespace policy
