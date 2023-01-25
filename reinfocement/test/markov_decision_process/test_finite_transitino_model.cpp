@@ -10,40 +10,9 @@
 #include "policy/random_policy.hpp"
 #include "policy/state_action_keymaker.hpp"
 
+#include "coin_mdp.hpp"
+
 TEST_CASE("Finite MDP creating a type works") {
-
-  // simple 2 state model - coin toss
-  using CoinSpecComponent = spec::BoundedAarraySpec<float, 0.0F, 1.0F, 1>;
-  using CoinSpec = spec::CompositeArraySpec<CoinSpecComponent>;
-
-  using CoinState = state::State<float, CoinSpec>;
-  using CoinAction = action::Action<CoinState, CoinSpec>;
-  using CoinStep = step::Step<CoinAction>;
-
-  struct CoinReward : reward::Reward<CoinAction> {
-    static PrecisionType reward(const TransitionType &t) {
-      // return t.nextState.value == 1 ? 1.0F : 0.0F;
-      return 1.0F;
-    }
-  };
-
-  using CoinReturn = returns::Return<CoinReward>;
-
-  using BaseEnviron =
-      environment::Environment<CoinStep, CoinReward, CoinReturn>;
-
-  using T = typename BaseEnviron::TransitionType;
-  using P = typename BaseEnviron::PrecisionType;
-
-  struct CoinEnviron
-      : environment::MarkovDecisionEnvironment<CoinStep, CoinReward,
-                                               CoinReturn> {
-    using environment::MarkovDecisionEnvironment<
-        CoinStep, CoinReward, CoinReturn>::MarkovDecisionEnvironment;
-    void reset() override { this->state = CoinState{0.0F, {}}; }
-  };
-
-  using CoinTransitionModel = typename CoinEnviron::TransitionModel;
 
   // Fill out the entire matrix of transition probs
   auto s0 = CoinState{0.0F, {}};

@@ -9,6 +9,7 @@
 #include "action.hpp"
 #include "environment.hpp"
 #include "greedy_policy.hpp"
+#include "random_policy.hpp"
 #include "spec.hpp"
 #include "state_action_value.hpp"
 
@@ -57,6 +58,7 @@ struct DistributionPolicy
     : GreedyPolicy<ENVIRON_T, KEYMAPPER_T, VALUE_T, STEPSIZE_TAKER_T> {
 
   SETUP_TYPES(SINGLE_ARG(Policy<ENVIRON_T>));
+  using EnvironmentType = ENVIRON_T;
 
   using KeyMaker = KEYMAPPER_T;
   using KeyType = typename KeyMaker::KeyType;
@@ -67,6 +69,20 @@ struct DistributionPolicy
   std::unordered_map<KeyType, QTableValueType, typename KeyMaker::Hash> q_table;
 
   typename ValueType::Factory valueFactory{};
+
+  void initialise(EnvironmentType &environ, const std::size_t &iterations) {
+    auto randomPolicy = policy::RandomPolicy<ENVIRON_T>();
+
+    for (int i = 0; i < iterations; i++) {
+      auto recommendedAction = randomPolicy(environ.state);
+      auto transition = environ.step(recommendedAction);
+      // update this policy with the result of the random init
+      update(transition);
+      environ.update(transition);
+    }
+
+    environ.reset();
+  }
 
   // Sample from the softmax distribution from the state to actions
   ActionSpace operator()(const StateType &s) override {

@@ -45,6 +45,10 @@ struct State {
     os << "State(" << rhs.observable << ", " << rhs.hidden << ")";
     return os;
   }
+
+  struct Hash {
+    std::size_t operator()(const State &t) const { return t.hash(); }
+  };
 };
 
 template <typename STATE_T>
