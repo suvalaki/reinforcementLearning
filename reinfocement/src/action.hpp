@@ -21,6 +21,7 @@ struct Action : T::DataType {
   using SpecType = T;
   using StateType = STATE_T;
   using PrecisionType = typename StateType::PrecisionType;
+  using DataType = T::DataType;
 
   // Add type which adheres to the spec
   Action(const typename T::DataType &d) : T::DataType(d) {}

@@ -28,18 +28,32 @@ struct State {
   using ObservableDataType = typename ObservableSpecType::DataType;
   using HiddenDataType = typename HiddenSpecType::DataType;
 
-  ObservableDataType observable;
-  HiddenDataType hidden;
+  ObservableDataType observable = spec::default_spec_gen<ObservableSpecType>();
+  HiddenDataType hidden = spec::default_spec_gen<HiddenSpecType>();
+
+  State() = default;
+  State(const ObservableDataType &o, const HiddenDataType &h)
+      : observable(o), hidden(h){};
 
   virtual std::size_t hash() const { return observable.hash(); }
 
   friend bool operator==(const State &lhs, const State &rhs) {
     return lhs.observable == rhs.observable;
   }
+
+  friend std::ostream &operator<<(std::ostream &os, const State &rhs) {
+    os << "State(" << rhs.observable << ", " << rhs.hidden << ")";
+    return os;
+  }
 };
 
 template <typename STATE_T>
-concept StateType =
-    std::is_base_of_v<State<typename STATE_T::PrecisionType>, STATE_T>;
+concept StateType = std::is_base_of_v<
+    State<typename STATE_T::PrecisionType, typename STATE_T::ObservableSpecType,
+          typename STATE_T::HiddenSpecType>,
+    STATE_T> || std::is_same_v<State<typename STATE_T::PrecisionType,
+                                     typename STATE_T::ObservableSpecType,
+                                     typename STATE_T::HiddenSpecType>,
+                               STATE_T>;
 
 } // namespace state

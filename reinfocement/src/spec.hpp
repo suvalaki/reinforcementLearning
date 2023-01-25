@@ -89,10 +89,16 @@ concept AnyArraySpecType = isBoundedArraySpec<T> || isCategoricalArraySpec<T>;
 template <typename... T>
 concept AllElementsAnyArraySpecType = (AnyArraySpecType<T> && ...);
 
+template <typename T> struct type_getter_bound { using type = T::ValueType; };
+template <typename T> struct type_getter_cat { using type = double; };
+
 template <AllElementsAnyArraySpecType... T>
 struct CompositeArray : std::tuple<typename T::DataType...> {
   using tupleType = std::tuple<T...>;
   using tupleDataType = std::tuple<typename T::DataType...>;
+  using tupleValueType = std::tuple<
+      typename std::conditional_t<isCategoricalArraySpec<T>, type_getter_cat<T>,
+                                  type_getter_bound<T>>::type...>;
 
   using tupleDataType::tupleDataType;
 
@@ -148,6 +154,75 @@ concept CompositeArraySpecType =
 }
 (std::make_index_sequence<std::tuple_size_v<typename T::tupleType>>());
 
+// methods to return a default data type given the spec
+// For now we are using the min as the default
+
+template <isBoundedArraySpec T>
+std::enable_if_t<isBoundedArraySpec<T> || isCategoricalArraySpec<T>,
+                 typename T::DataType>
+default_spec_gen() {
+  return xt::ones<typename T::ValueType>(T::shape);
+}
+
+template <CompositeArraySpecType T>
+requires CompositeArraySpecType<T> std::enable_if_t < CompositeArraySpecType<T>,
+typename T::DataType > default_spec_gen() {
+
+  // Tuple of the random types
+  return []<std::size_t... N>(std::index_sequence<N...>) {
+    return typename T::DataType(
+        default_spec_gen<std::tuple_element_t<N, typename T::tupleType>>()...);
+  }
+  (std::make_index_sequence<std::tuple_size_v<typename T::tupleType>>());
+}
+
+// Mechanism for a constant data for the spec
+
+template <isBoundedArraySpec T>
+std::enable_if_t<isBoundedArraySpec<T>, typename T::DataType>
+constant_spec_gen(const typename T::ValueType &value) {
+  return value * xt::ones<typename T::ValueType>(T::shape);
+}
+
+template <isBoundedArraySpec T>
+std::enable_if_t<isCategoricalArraySpec<T>, typename T::DataType>
+constant_spec_gen(const typename T::ValueType &value) {
+  return value * xt::ones<double>(T::shape);
+}
+
+// Applies the same constant to all elements of the composite array
+template <CompositeArraySpecType T>
+requires CompositeArraySpecType<T> std::enable_if_t < CompositeArraySpecType<T>,
+typename T::DataType > constant_spec_gen(const double &value) {
+
+  // Tuple of the random types
+  return [&value]<std::size_t... N>(std::index_sequence<N...>) {
+    return typename T::DataType(
+        constant_spec_gen<std::tuple_element_t<N, typename T::tupleType>>(
+            static_cast<
+                typename std::tuple_element_t<N, typename T::tupleValueType>>(
+                value))...);
+  }
+  (std::make_index_sequence<std::tuple_size_v<typename T::tupleType>>());
+}
+
+// Specify each element for each eleemnt of the spec
+template <CompositeArraySpecType T>
+requires CompositeArraySpecType<T> std::enable_if_t < CompositeArraySpecType<T>,
+typename T::DataType >
+    constant_spec_gen(const typename T::tupleValueType &value) {
+
+  // Tuple of the random types
+  return [&value]<std::size_t... N>(std::index_sequence<N...>) {
+    return typename T::DataType(
+        constant_spec_gen<std::tuple_element_t<N, typename T::tupleType>>(
+            static_cast<
+                typename std::tuple_element_t<N, typename T::tupleValueType>>(
+                value))...);
+  }
+  (std::make_index_sequence<std::tuple_size_v<typename T::tupleType>>());
+}
+
 // Turn spec into a tuple
 template <isBoundedArraySpec T> struct BoundedArray {
   using SpecType = T;
@@ -155,7 +230,7 @@ template <isBoundedArraySpec T> struct BoundedArray {
   using ValueType = typename T::ValueType;
   constexpr static ValueType min = T::min;
   constexpr static ValueType max = T::max;
-  DataType array;
+  DataType array = default_spec_gen<SpecType>();
 };
 
 } // namespace spec
