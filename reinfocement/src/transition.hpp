@@ -23,6 +23,11 @@ template <ActionType ACTION0> struct Transition {
   StateType state;
   ActionSpace action;
   StateType nextState;
+
+  bool operator==(const Transition &rhs) const {
+    return state == rhs.state and action == rhs.action &&
+           nextState == rhs.nextState;
+  }
 };
 
 template <typename TRANSITION_T>
