@@ -28,6 +28,12 @@ template <ActionType ACTION0> struct Transition {
     return state == rhs.state and action == rhs.action &&
            nextState == rhs.nextState;
   }
+
+  struct Hash {
+    std::size_t operator()(const Transition &t) const {
+      return t.state.hash() ^ t.action.hash() ^ t.nextState.hash();
+    }
+  };
 };
 
 template <typename TRANSITION_T>
