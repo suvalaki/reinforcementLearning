@@ -156,6 +156,20 @@ struct DistributionPolicy
     return std::exp(q_table.at(key).value) / getSoftmaxNorm();
   }
 
+  std::vector<std::pair<KeyType, PrecisionType>>
+  getProbabilities(const StateType &s) const {
+    std::vector<std::pair<KeyType, PrecisionType>> probs;
+    for (const auto &[k, v] : q_table) {
+      probs.emplace_back(k, getProbability(s, k));
+    }
+    return probs;
+  }
+
+  void setProbability(const StateType &s, const KeyType &key,
+                      const PrecisionType &p) {
+    q_table.at(key).value = std::log(p * getSoftmaxNorm(s));
+  }
+
   void printQTable() const {
 
     std::cout << "QTable\n=====\n";

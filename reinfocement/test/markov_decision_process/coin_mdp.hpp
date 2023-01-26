@@ -36,6 +36,10 @@ using P = typename BaseEnviron::PrecisionType;
 
 struct CoinEnviron
     : environment::MarkovDecisionEnvironment<CoinStep, CoinReward, CoinReturn> {
+
+  SETUP_TYPES(SINGLE_ARG(environment::MarkovDecisionEnvironment<
+                         CoinStep, CoinReward, CoinReturn>));
+
   using environment::MarkovDecisionEnvironment<
       CoinStep, CoinReward, CoinReturn>::MarkovDecisionEnvironment;
   void reset() override { this->state = CoinState{0.0F, {}}; }
