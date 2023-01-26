@@ -2,9 +2,14 @@
 #include <iostream>
 
 #include "coin_mdp.hpp"
+#include "markov_decision_process/finite_state_value_function.hpp"
+#include "markov_decision_process/finite_transition_model.hpp"
 #include "markov_decision_process/policy_iteration.hpp"
 #include "policy/distribution_policy.hpp"
 #include "policy/random_policy.hpp"
+
+using namespace environment;
+using namespace markov_decision_process;
 
 TEST_CASE("Coin MPD can undergo policy iteration") {
 
@@ -31,15 +36,14 @@ TEST_CASE("Coin MPD can undergo policy iteration") {
 
   policy.printQTable();
 
-  using CoinValueFunction =
-      dp::ValueFunction<CoinDistributionPolicy, 0.0F, 0.5F>;
+  using CoinValueFunction = FiniteStateValueFunction<CoinEnviron, 0.0F, 0.5F>;
   auto valueFunction = CoinValueFunction{};
 
   SECTION("Several iterations of value iteration steps succesfully update the "
           "value") {
     auto initialValue = valueFunction.valueAt(s0);
     for (int i = 0; i < 100; ++i) {
-      auto val = dp::policy_evaluation_step(valueFunction, environ, policy, s0);
+      auto val = policy_evaluation_step(valueFunction, environ, policy, s0);
       // std::cout << val << "\n";
       valueFunction.valueEstimates.at(s0) = val;
       // valueFunction.policy_improvement_step(environ, policy, s0);
@@ -54,7 +58,7 @@ TEST_CASE("Coin MPD can undergo policy iteration") {
     valueFunction.initialize(environ);
     auto initialValues = valueFunction.valueEstimates;
     // valueFunction.policy_evaluation(environ, policy, 1e-3F);
-    dp::policy_evaluation(valueFunction, environ, policy, 1e-3F);
+    policy_evaluation(valueFunction, environ, policy, 1e-3F);
     for (auto &[state, value] : valueFunction.valueEstimates) {
       CHECK(value != initialValues.at(state));
     }
