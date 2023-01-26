@@ -10,6 +10,43 @@
 
 namespace markov_decision_process {
 
+template <isFiniteStateValueFunction VALUE_FUNCTION_T,
+          policy::isDistributionPolicy POLICY_T, auto INITIAL_VALUE = 0.0F,
+          auto DISCOUNT_RATE = 0.0F>
+typename VALUE_FUNCTION_T::PrecisionType value_from_state_action(
+    VALUE_FUNCTION_T &valueFunction,
+    const typename VALUE_FUNCTION_T::EnvironmentType &environment,
+    const POLICY_T &policy,
+    const typename VALUE_FUNCTION_T::EnvironmentType::StateType &state,
+    const typename VALUE_FUNCTION_T::EnvironmentType::ActionSpace &action) {
+
+  using EnvironmentType = typename VALUE_FUNCTION_T::EnvironmentType;
+  using PrecisionType = typename EnvironmentType::PrecisionType;
+  using RewardType = typename EnvironmentType::RewardType;
+  using StateType = typename EnvironmentType::StateType;
+  using TransitionType = typename EnvironmentType::TransitionType;
+
+  const auto &transitionModel = environment.transitionModel;
+
+  auto reachableStates = environment.getReachableStates(state, action);
+  auto value = std::accumulate(
+      reachableStates.begin(), reachableStates.end(), 0.0F,
+      [&](const auto &value, const auto &nextState) {
+        auto transition = TransitionType{state, action, nextState};
+
+        if (transitionModel.find(transition) == transitionModel.end())
+          return value;
+
+        return value +
+               transitionModel.at(transition) *
+                   (RewardType::reward(transition) +
+                    valueFunction.discount_rate *
+                        valueFunction.valueEstimates
+                            .emplace(nextState, valueFunction.initial_value)
+                            .first->second);
+      });
+}
+
 // This mechanism requires the transition model for the finite state
 // markov model
 template <isFiniteStateValueFunction VALUE_FUNCTION_T,
