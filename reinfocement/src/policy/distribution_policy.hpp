@@ -167,4 +167,10 @@ struct DistributionPolicy
   }
 };
 
+template <typename T>
+concept isDistributionPolicy = std::is_base_of_v<
+    DistributionPolicy<typename T::EnvironmentType, typename T::KeyMaker,
+                       typename T::ValueType, typename T::StepSizeTaker>,
+    T>;
+
 } // namespace policy

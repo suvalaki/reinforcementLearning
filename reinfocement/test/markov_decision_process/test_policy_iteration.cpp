@@ -39,7 +39,7 @@ TEST_CASE("Coin MPD can undergo policy iteration") {
           "value") {
     auto initialValue = valueFunction.valueAt(s0);
     for (int i = 0; i < 100; ++i) {
-      auto val = valueFunction.policy_evaluation_step(environ, policy, s0);
+      auto val = dp::policy_evaluation_step(valueFunction, environ, policy, s0);
       // std::cout << val << "\n";
       valueFunction.valueEstimates.at(s0) = val;
       // valueFunction.policy_improvement_step(environ, policy, s0);
@@ -49,21 +49,12 @@ TEST_CASE("Coin MPD can undergo policy iteration") {
     CHECK_FALSE(initialValue == valueFunction.valueEstimates.at(s0));
   }
 
-  SECTION("Policy evaluation works") {
-    // the same but with the complete logic for policy evvaluation including
-    // exit conditions reset the value to zero - otherwise the above test
-    auto initialValue = valueFunction.valueAt(s0);
-    auto val = valueFunction.policy_evaluation(environ, policy, s0, 1e-3F);
-
-    // Validate that the value iteration has indeed updated the value
-    CHECK_FALSE(initialValue == valueFunction.valueEstimates.at(s0));
-  }
-
   SECTION("Complete pass over all states works") {
     // because we need to compare the values we must at least initialise them.
     valueFunction.initialize(environ);
     auto initialValues = valueFunction.valueEstimates;
-    valueFunction.policy_evaluation(environ, policy, 1e-3F);
+    // valueFunction.policy_evaluation(environ, policy, 1e-3F);
+    dp::policy_evaluation(valueFunction, environ, policy, 1e-3F);
     for (auto &[state, value] : valueFunction.valueEstimates) {
       CHECK(value != initialValues.at(state));
     }
