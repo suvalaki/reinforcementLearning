@@ -56,7 +56,8 @@ struct MarkovDecisionEnvironment : Environment<STEP_T, REWARD_T, RETURN_T> {
   std::vector<ActionSpace> getReachableActions(const StateType &s) const {
     std::vector<ActionSpace> actions;
     for (const auto &t : transitionModel) {
-      if (t.first.state == s) {
+      if (t.first.state == s and std::find(actions.begin(), actions.end(),
+                                           t.first.action) == actions.end()) {
         actions.push_back(t.first.action);
       }
     }

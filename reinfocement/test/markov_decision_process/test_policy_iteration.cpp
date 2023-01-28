@@ -11,7 +11,7 @@
 using namespace environment;
 using namespace markov_decision_process;
 
-TEST_CASE("Coin MPD can undergo policy iteration") {
+TEST_CASE("Coin MPD can undergo policy evaluation") {
 
   auto s0 = CoinState{0.0F, {}};
   auto s1 = CoinState{1.0F, {}};
@@ -34,7 +34,7 @@ TEST_CASE("Coin MPD can undergo policy iteration") {
   // itialise the q-table inside the policy by using the random policy
   policy.initialise(environ, 100);
 
-  policy.printQTable();
+  policy.printQTable(environ);
 
   using CoinValueFunction = FiniteStateValueFunction<CoinEnviron, 0.0F, 0.5F>;
   auto valueFunction = CoinValueFunction{};
@@ -88,7 +88,7 @@ TEST_CASE("Coin MPD can undergo policy improvement") {
   // itialise the q-table inside the policy by using the random policy
   policy.initialise(environ, 100);
 
-  policy.printQTable();
+  policy.printQTable(environ);
 
   using CoinValueFunction = FiniteStateValueFunction<CoinEnviron, 0.0F, 0.5F>;
   auto valueFunction = CoinValueFunction{};
@@ -102,6 +102,16 @@ TEST_CASE("Coin MPD can undergo policy improvement") {
     policy_evaluation(valueFunction, environ, policy, 1e-3F);
     auto updated = policy_improvement_step(valueFunction, environ, policy, s0);
     CHECK_FALSE(updated); // the policy updated
+    std::cout << policy.getProbability(
+                     environ, s0,
+                     CoinDistributionPolicy::KeyMaker::make(s0, a0))
+              << "\n";
+    std::cout << policy.getProbability(
+                     environ, s0,
+                     CoinDistributionPolicy::KeyMaker::make(s0, a1))
+              << "\n";
+
+    policy.printQTable(environ);
   }
 
   SECTION("Complete Policy improvement") {
@@ -110,9 +120,51 @@ TEST_CASE("Coin MPD can undergo policy improvement") {
     policy.q_table.at(CoinDistributionPolicy::KeyMaker::make(s0, a1)) = 0.0F;
     policy.q_table.at(CoinDistributionPolicy::KeyMaker::make(s1, a0)) = 0.0F;
     policy.q_table.at(CoinDistributionPolicy::KeyMaker::make(s1, a1)) = 0.0F;
-    policy_improvement(valueFunction, environ, policy, 1e-3F);
+    policy_evaluation(valueFunction, environ, policy, 1e-3F);
+    policy_improvement(valueFunction, environ, policy);
     auto p = policy.getProbability(
-        s0, CoinDistributionPolicy::KeyMaker::make(s0, a0));
+        environ, s0, CoinDistributionPolicy::KeyMaker::make(s0, a0));
     CHECK(p != 1.0F);
   }
+}
+
+TEST_CASE("Coin MPD can undergo policy iteration") {
+
+  auto s0 = CoinState{0.0F, {}};
+  auto s1 = CoinState{1.0F, {}};
+  auto a0 = CoinAction{0};
+  auto a1 = CoinAction{1};
+  auto transitionModel = CoinTransitionModel{                       //
+                                             {T{s0, a0, s0}, 0.8F}, //
+                                             {T{s0, a0, s1}, 0.2F}, //
+                                             {T{s0, a1, s0}, 0.3F}, //
+                                             {T{s0, a1, s1}, 0.7F}, //
+                                             {T{s1, a0, s0}, 0.1F}, //
+                                             {T{s1, a0, s1}, 0.9F}, //
+                                             {T{s1, a1, s0}, 0.5F}, //
+                                             {T{s1, a1, s1}, 0.5F}};
+
+  auto environ = CoinEnviron{transitionModel, s0};
+
+  using CoinDistributionPolicy = policy::DistributionPolicy<CoinEnviron>;
+  auto policy = CoinDistributionPolicy{};
+  // itialise the q-table inside the policy by using the random policy
+  policy.initialise(environ, 100);
+
+  policy.printQTable(environ);
+
+  using CoinValueFunction = FiniteStateValueFunction<CoinEnviron, 0.0F, 0.5F>;
+  auto valueFunction = CoinValueFunction{};
+
+  // force the q_table to have non-optimal values
+  policy.q_table.at(CoinDistributionPolicy::KeyMaker::make(s0, a0)) = 1.0F;
+  policy.q_table.at(CoinDistributionPolicy::KeyMaker::make(s0, a1)) = 1.0F;
+  policy.q_table.at(CoinDistributionPolicy::KeyMaker::make(s1, a0)) = 0.0F;
+  policy.q_table.at(CoinDistributionPolicy::KeyMaker::make(s1, a1)) = 0.0F;
+  policy_iteration(valueFunction, environ, policy, 1e-3F);
+  auto p = policy.getProbability(
+      environ, s0, CoinDistributionPolicy::KeyMaker::make(s0, a0));
+  CHECK(p != 1.0F);
+
+  policy.printQTable(environ);
 }
