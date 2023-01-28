@@ -10,13 +10,29 @@
 
 namespace markov_decision_process {
 
-template <isFiniteStateValueFunction VALUE_FUNCTION_T,
-          policy::isDistributionPolicy POLICY_T, auto INITIAL_VALUE = 0.0F,
-          auto DISCOUNT_RATE = 0.0F>
+/**
+ * @brief The exected future Value funciton for a given state under a determined
+ * action.
+ *
+ * @details
+ * \begin{equation}
+ * E_{pi} [R_{t+1} + gamma * V_{pi}(S_{t+1}) | S_{t} = s, A_{t} = a]
+ *  = \sum_{s', r} p(s', r | s, a) [r + gamma * V_{pi}(s')]
+ * \end{equation}
+ *
+ * @tparam VALUE_FUNCTION_T The value function type which will hold a mapping
+ * from state to value
+ * @param valueFunction The value function to use for the value estimates
+ * @param environment The environment to use for the transition model
+ * @param state The state to evaluate the value for
+ * @param action The action to evaluate the value for. Alongside state and the
+ * transition model this defines the reachable states
+ * @return VALUE_FUNCTION_T::PrecisionType The expected value
+ */
+template <isFiniteStateValueFunction VALUE_FUNCTION_T>
 typename VALUE_FUNCTION_T::PrecisionType value_from_state_action(
     VALUE_FUNCTION_T &valueFunction,
     const typename VALUE_FUNCTION_T::EnvironmentType &environment,
-    const POLICY_T &policy,
     const typename VALUE_FUNCTION_T::EnvironmentType::StateType &state,
     const typename VALUE_FUNCTION_T::EnvironmentType::ActionSpace &action) {
 
@@ -76,8 +92,8 @@ typename VALUE_FUNCTION_T::PrecisionType policy_evaluation_step(
             environment.getReachableStates(state, action);
         return value +
                policy.getProbability(environment, state, {state, action}) *
-                   value_from_state_action(valueFunction, environment, policy,
-                                           state, action);
+                   value_from_state_action(valueFunction, environment, state,
+                                           action);
       });
 
   return nextValueEstimate;
@@ -142,10 +158,8 @@ bool policy_improvement_step(
                                          // always pick a single action
       reachableActions.begin(), reachableActions.end(),
       [&](const auto &lhs, const auto &rhs) {
-        return value_from_state_action(valueFunction, environment, policy,
-                                       state, lhs) <
-               value_from_state_action(valueFunction, environment, policy,
-                                       state, rhs);
+        return value_from_state_action(valueFunction, environment, state, lhs) <
+               value_from_state_action(valueFunction, environment, state, rhs);
       });
   const auto nextAction = *nextActionIdx;
   const auto policyStable = oldAction == nextAction;
