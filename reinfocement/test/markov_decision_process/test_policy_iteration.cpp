@@ -124,7 +124,7 @@ TEST_CASE("Coin MPD can undergo policy improvement") {
     policy_improvement(valueFunction, environ, policy);
     auto p = policy.getProbability(
         environ, s0, CoinDistributionPolicy::KeyMaker::make(s0, a0));
-    CHECK(p != 1.0F);
+    CHECK(p != Approx(1.0F));
   }
 }
 
@@ -164,7 +164,7 @@ TEST_CASE("Coin MPD can undergo policy iteration") {
   policy_iteration(valueFunction, environ, policy, 1e-3F);
   auto p = policy.getProbability(
       environ, s0, CoinDistributionPolicy::KeyMaker::make(s0, a0));
-  CHECK(p != 1.0F);
+  CHECK(p != Approx(1.0F));
 
   policy.printQTable(environ);
 }
