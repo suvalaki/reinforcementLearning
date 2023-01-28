@@ -59,6 +59,7 @@ struct Environment {
     return TransitionType{state, action, StepType::step(state, action)};
   };
   void update(const TransitionType &t) { state = t.nextState; }
+  virtual StateType getNullState() const = 0;
 };
 
 template <typename ENVIRON_T>

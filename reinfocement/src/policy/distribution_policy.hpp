@@ -2,6 +2,7 @@
 #include "environment.hpp"
 #include <cmath>
 #include <exception>
+#include <limits>
 #include <random>
 #include <xtensor/xfixed.hpp>
 #include <xtensor/xrandom.hpp>
@@ -77,7 +78,7 @@ struct DistributionPolicy
       auto recommendedAction = randomPolicy(environ.state);
       auto transition = environ.step(recommendedAction);
       // update this policy with the result of the random init
-      update(transition);
+      update(environ, transition);
       environ.update(transition);
     }
 
@@ -85,7 +86,7 @@ struct DistributionPolicy
   }
 
   // Sample from the softmax distribution from the state to actions
-  ActionSpace operator()(const StateType &s) override {
+  ActionSpace operator()(const EnvironmentType &e, const StateType &s) {
 
     if (q_table.empty()) {
       throw std::domain_error(
@@ -93,7 +94,7 @@ struct DistributionPolicy
           "not yet populated. Please initialise the q_table.");
     }
 
-    auto norm = getSoftmaxNorm(s);
+    auto norm = getSoftmaxNorm(e, s);
     auto r = xt::random::rand<double>({1})[0] * norm;
     auto it = q_table.begin();
     while (true) {
@@ -106,7 +107,7 @@ struct DistributionPolicy
     return KeyMaker::get_action_from_key(it->first);
   }
 
-  virtual void update(const TransitionType &s) {
+  virtual void update(const EnvironmentType &e, const TransitionType &s) {
     auto reward = RewardType::reward(s);
 
     auto key = KeyMaker::make(s.state, s.action);
@@ -118,7 +119,7 @@ struct DistributionPolicy
       // H(t, A(t)) + alpha * (R(t) - RAve(t)) * (1 - pi(t, A(t)))
       v.value = v.value + StepSizeTaker::getStepSize(v) *
                               (reward - valueFactory.averageReturn) *
-                              (1 - getProbability(s.state, key));
+                              (1 - getProbability(e, s.state, key));
       v.step++;
     } else {
       q_table.emplace(key, valueFactory.create(0.0F, 1));
@@ -129,7 +130,7 @@ struct DistributionPolicy
       if (k != key) {
         v.value = v.value + StepSizeTaker::getStepSize(v) *
                                 (reward - valueFactory.averageReturn) *
-                                (-getProbability(s.state, k));
+                                (-getProbability(e, s.state, k));
       }
     }
 
@@ -137,46 +138,69 @@ struct DistributionPolicy
   }
 
   /// @brief Norm over the potential reachable actions from this state
-  PrecisionType getSoftmaxNorm(const StateType &s) const {
-    return std::accumulate(q_table.begin(), q_table.end(), 0.0F,
-                           [](const auto &v, const auto &p) {
-                             return v + std::exp(p.second.value);
-                           });
+  PrecisionType getSoftmaxNorm(const EnvironmentType &e,
+                               const StateType &s) const {
+    auto reachableActions = e.getReachableActions(s);
+    auto norm =
+        std::accumulate(reachableActions.begin(), reachableActions.end(), 0.0F,
+                        [this, &s](const auto &v, const auto &a) {
+                          auto key = KeyMaker::make(s, a);
+                          if (q_table.find(key) == q_table.end()) {
+                            return v;
+                          }
+                          return v + std::exp(q_table.at(key).value);
+                        });
+    return norm;
   }
-  PrecisionType getSoftmaxNorm() const {
-    return std::accumulate(q_table.begin(), q_table.end(), 0.0F,
-                           [](const auto &v, const auto &p) {
-                             return v + std::exp(p.second.value);
-                           });
-  }
-  PrecisionType getProbability(const StateType &s, const KeyType &key) const {
-    return std::exp(q_table.at(key).value) / getSoftmaxNorm(s);
-  }
-  PrecisionType getProbability(const KeyType &key) const {
-    return std::exp(q_table.at(key).value) / getSoftmaxNorm();
+  PrecisionType getProbability(const EnvironmentType &e, const StateType &s,
+                               const KeyType &key) const {
+    return std::exp(q_table.at(key).value) / getSoftmaxNorm(e, s);
   }
 
   std::vector<std::pair<KeyType, PrecisionType>>
-  getProbabilities(const StateType &s) const {
+  getProbabilities(const EnvironmentType &e, const StateType &s) const {
     std::vector<std::pair<KeyType, PrecisionType>> probs;
     for (const auto &[k, v] : q_table) {
-      probs.emplace_back(k, getProbability(s, k));
+      probs.emplace_back(k, getProbability(e, s, k));
     }
     return probs;
   }
 
-  void setProbability(const StateType &s, const KeyType &key,
-                      const PrecisionType &p) {
-    q_table.at(key).value = std::log(p * getSoftmaxNorm(s));
+  void setProbability(const EnvironmentType &e, const StateType &s,
+                      const KeyType &key, const PrecisionType &p) {
+
+    q_table.at(key).value = std::log(p * getSoftmaxNorm(e, s));
   }
 
-  void printQTable() const {
+  void setDeterministicPolicy(const EnvironmentType &e, const StateType &s,
+                              const KeyType &key) {
+
+    auto reachaleActions = e.getReachableActions(s);
+
+    for (const auto &a : reachaleActions) {
+      auto k = KeyMaker::make(s, a);
+
+      if (q_table.find(k) == q_table.end()) {
+        continue;
+      }
+
+      if (k == key) {
+        q_table.at(k).value = 10.0F;
+      } else {
+        q_table.at(k).value = -10.0F;
+      }
+    }
+  }
+
+  void printQTable(const EnvironmentType &e) const {
 
     std::cout << "QTable\n=====\n";
     for (const auto &[k, v] : q_table) {
 
+      auto s = KeyMaker::get_state_from_key(e, k);
+
       std::cout << k << "\t" << v.value << "\t" << v.step << "\t"
-                << getProbability(k) << "\n";
+                << getProbability(e, s, k) << "\n";
     }
   }
 };

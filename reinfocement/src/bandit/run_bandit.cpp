@@ -219,20 +219,20 @@ int main() {
   for (int i = 0; i < 100; i++) {
     auto recommendedAction = banditRandom(banditEnv.state);
     auto transition = banditEnv.step(recommendedAction);
-    distributionPolicy.update(transition);
+    distributionPolicy.update(banditEnv, transition);
     banditEnv.update(transition);
   }
   for (int i = 0; i < 10000; i++) {
-    auto recommendedAction = distributionPolicy(banditEnv.state);
+    auto recommendedAction = distributionPolicy(banditEnv, banditEnv.state);
     auto transition = banditEnv.step(recommendedAction);
-    distributionPolicy.update(transition);
+    distributionPolicy.update(banditEnv, transition);
     banditEnv.update(transition);
     // std::cout << transition.state << transition.action << " "
     //           << recommendedAction << " " << banditGreedy.greedyValue() <<
     //           "\n";
   }
 
-  distributionPolicy.printQTable();
+  distributionPolicy.printQTable(banditEnv);
   banditEnv.printDistributions();
 
   return 0;

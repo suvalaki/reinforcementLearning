@@ -43,6 +43,7 @@ struct CoinEnviron
   using environment::MarkovDecisionEnvironment<
       CoinStep, CoinReward, CoinReturn>::MarkovDecisionEnvironment;
   void reset() override { this->state = CoinState{0.0F, {}}; }
+  StateType getNullState() const override { return CoinState{0.0F, {}}; }
 };
 
 using CoinTransitionModel = typename CoinEnviron::TransitionModel;

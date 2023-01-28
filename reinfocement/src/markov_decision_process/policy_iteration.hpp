@@ -74,9 +74,10 @@ typename VALUE_FUNCTION_T::PrecisionType policy_evaluation_step(
       [&](const auto &value, const auto &action) {
         const auto reachableStates =
             environment.getReachableStates(state, action);
-        return value + policy.getProbability(state, {state, action}) *
-                           value_from_state_action(valueFunction, environment,
-                                                   policy, state, action);
+        return value +
+               policy.getProbability(environment, state, {state, action}) *
+                   value_from_state_action(valueFunction, environment, policy,
+                                           state, action);
       });
 
   return nextValueEstimate;
@@ -122,7 +123,7 @@ bool policy_improvement_step(
 
   using KeyMaker = typename POLICY_T::KeyMaker;
 
-  const auto oldActions = policy.getProbabilities(state);
+  const auto oldActions = policy.getProbabilities(environment, state);
   const auto oldActionIdx =
       std::max_element(oldActions.begin(), oldActions.end(),
                        [&](const auto &lhs, const auto &rhs) {
@@ -149,12 +150,30 @@ bool policy_improvement_step(
   const auto nextAction = *nextActionIdx;
   const auto policyStable = oldAction == nextAction;
 
+  // std::cout << "State: " << state << " Old action: " << oldAction
+  //           << " New action: " << nextAction << std::endl;
+
   // update the policy - by setting the policy to be deterministic on the
   // new argmax
-  for (const auto &action : reachableActions) {
-    if (action == nextAction)
-      policy.setProbability(state, {state, action}, 1.0F);
-    policy.setProbability(state, {state, action}, 0.0F);
+  policy.setDeterministicPolicy(environment, state, {state, nextAction});
+
+  return policyStable;
+}
+
+template <isFiniteStateValueFunction VALUE_FUNCTION_T,
+          policy::isDistributionPolicy POLICY_T, auto INITIAL_VALUE = 0.0F,
+          auto DISCOUNT_RATE = 0.0F>
+bool policy_improvement(
+    VALUE_FUNCTION_T &valueFunction,
+    const typename VALUE_FUNCTION_T::EnvironmentType &environment,
+    POLICY_T &policy) {
+
+  bool policyStable = true;
+
+  const auto allStates = environment.getAllPossibleStates();
+  for (const auto &state : allStates) {
+    policyStable &=
+        not policy_improvement_step(valueFunction, environment, policy, state);
   }
 
   return policyStable;
@@ -163,21 +182,18 @@ bool policy_improvement_step(
 template <isFiniteStateValueFunction VALUE_FUNCTION_T,
           policy::isDistributionPolicy POLICY_T, auto INITIAL_VALUE = 0.0F,
           auto DISCOUNT_RATE = 0.0F>
-void policy_improvement(
+void policy_iteration(
     VALUE_FUNCTION_T &valueFunction,
     const typename VALUE_FUNCTION_T::EnvironmentType &environment,
     POLICY_T &policy, const typename VALUE_FUNCTION_T::PrecisionType &epsilon) {
 
-  bool policyStable = false;
+  bool policyStable = true;
 
   // While any of the policies are not stable keep improving them
   do {
     policy_evaluation(valueFunction, environment, policy, epsilon);
-    const auto allStates = environment.getAllPossibleStates();
-    for (const auto &state : allStates) {
-      policyStable |=
-          policy_improvement_step(valueFunction, environment, policy, state);
-    }
+    policyStable &= policy_improvement(valueFunction, environment, policy);
+
   } while (not policyStable);
 }
 

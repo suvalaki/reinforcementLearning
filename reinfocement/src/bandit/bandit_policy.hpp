@@ -29,6 +29,11 @@ struct BanditStateActionKeymapper
     return action;
   }
 
+  static StateType get_state_from_key(const EnvironmentType &e,
+                                      const KeyType &key) {
+    return e.getNullState();
+  }
+
   static ActionSpace get_action_from_key(const KeyType &key) { return key; }
 
   static std::size_t hash(const KeyType &key) { return key.hash(); }

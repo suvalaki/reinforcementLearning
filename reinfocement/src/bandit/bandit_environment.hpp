@@ -83,7 +83,7 @@ struct BanditAction
   using typename BaseType::BaseType;
   using typename BaseType::StateType;
 
-  std::array<bool, N_BANDITS> banditChoice;
+  // std::array<bool, N_BANDITS> banditChoice;
 
   std::array<float, N_BANDITS>
   sample(std::minstd_rand &engine,
@@ -178,6 +178,19 @@ struct BanditEnvironment
       std::cout << "bandit " << i << ": " << means[i] << " (+/- " << stddevs[i]
                 << ")\n";
     }
+  }
+
+  StateType getNullState() const {
+    return StateType(engine, means, stddevs, {0});
+  }
+
+  std::vector<ActionSpace> getReachableActions(const StateType &s) const {
+    std::vector<ActionSpace> actions;
+    for (int i = 0; i < N_BANDITS; i++) {
+      actions.push_back(
+          ActionSpace(typename ActionSpace::BaseType::DataType{i}));
+    }
+    return actions;
   }
 };
 

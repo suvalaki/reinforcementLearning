@@ -24,6 +24,8 @@ struct StateActionKeymaker {
   using KeyType = KEY_T;
 
   static KeyType make(const StateType &s, const ActionSpace &action);
+  static StateType get_state_from_key(const EnvironmentType &e,
+                                      const KeyType &key);
   static ActionSpace get_action_from_key(const KeyType &key);
   static std::size_t hash(const KEY_T &key);
 
@@ -61,6 +63,13 @@ struct DefaultActionKeymaker
 
   static KeyType make(const StateType &s, const ActionSpace &action) {
     return std::make_pair(s, action);
+  }
+
+  static typename ENVIRON_T::StateType
+  get_state_from_key(const EnvironmentType &e,
+                     const std::pair<typename ENVIRON_T::StateType,
+                                     typename ENVIRON_T::ActionSpace> &key) {
+    return key.first;
   }
 
   static typename ENVIRON_T::ActionSpace
