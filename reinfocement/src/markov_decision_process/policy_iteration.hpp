@@ -11,22 +11,23 @@
 namespace markov_decision_process {
 
 /**
- * @brief The exected future Value funciton for a given state under a determined
- * action.
+ * @brief The exected future Value funciton for a given state under a
+ * determined action.
  *
- * @details
- * \begin{equation}
- * E_{pi} [R_{t+1} + gamma * V_{pi}(S_{t+1}) | S_{t} = s, A_{t} = a]
- *  = \sum_{s', r} p(s', r | s, a) [r + gamma * V_{pi}(s')]
- * \end{equation}
+ * @details Under a markov decision process the expected future value of a
+ * state is the sum of the expected reward for each reachable state and the
+ * expected return of that state following the action. This is given by the
+ * following \begin{equation} E_{pi} [R_{t+1} + gamma * V_{pi}(S_{t+1}) |
+ * S_{t} = s, A_{t} = a] = \sum_{s', r} p(s', r | s, a) [r + gamma *
+ * V_{pi}(s')] \end{equation} The Action is fixed in this situation.
  *
- * @tparam VALUE_FUNCTION_T The value function type which will hold a mapping
- * from state to value
+ * @tparam VALUE_FUNCTION_T The value function type which will hold a
+ * mapping from state to value
  * @param valueFunction The value function to use for the value estimates
  * @param environment The environment to use for the transition model
  * @param state The state to evaluate the value for
- * @param action The action to evaluate the value for. Alongside state and the
- * transition model this defines the reachable states
+ * @param action The action to evaluate the value for. Alongside state and
+ * the transition model this defines the reachable states
  * @return VALUE_FUNCTION_T::PrecisionType The expected value
  */
 template <isFiniteStateValueFunction VALUE_FUNCTION_T>
@@ -65,9 +66,37 @@ typename VALUE_FUNCTION_T::PrecisionType value_from_state_action(
 
 // This mechanism requires the transition model for the finite state
 // markov model
+
+/**
+ * @brief Perform a single step of policy evaluation for a given state.
+ *
+ * @details This is the core of the policy evaluation for a single state.
+ * From this state what is the total expected future Return given we start in
+ * state S. This is given by the Return of the state action pair and the
+ * expected return of the next state reached by taking those actions. The policy
+ * implies the probability of taking each action from this state. Hence the
+ * value function under policy
+ * $\pi$ at S is given by:
+ *
+ * \begin{equation}
+ * v_{\pi}(s) = E_{\pi} [G_{t} | S_{t} = s]
+ * = E_{\pi} [R_{t+1} + gamma * G_{t+1} | S_{t} = s]
+ * = E_{\pi} [R_{t+1} + gamma * V_{\pi}(S_{t+1}) | S_{t} = s]
+ * = \sum_{a} \pi(a | s) \sum_{s', r} p(s', r | s, a) [r + gamma * v_{\pi}(s')]
+ * \end{equation}
+ *
+ * @tparam VALUE_FUNCTION_T The value function type which will hold a mapping
+ * from state to value
+ * @tparam POLICY_T The policy type which stochastically decides actions from
+ * the given state
+ * @param valueFunction The value function to use for the value estimates
+ * @param environment The environment to use for the transition model
+ * @param policy The policy to use for the action selection
+ * @param state The state to evaluate the value for
+ * @return VALUE_FUNCTION_T::PrecisionType The estimated value of the state
+ */
 template <isFiniteStateValueFunction VALUE_FUNCTION_T,
-          policy::isDistributionPolicy POLICY_T, auto INITIAL_VALUE = 0.0F,
-          auto DISCOUNT_RATE = 0.0F>
+          policy::isDistributionPolicy POLICY_T>
 typename VALUE_FUNCTION_T::PrecisionType policy_evaluation_step(
     VALUE_FUNCTION_T &valueFunction,
     const typename VALUE_FUNCTION_T::EnvironmentType &environment,
@@ -99,9 +128,26 @@ typename VALUE_FUNCTION_T::PrecisionType policy_evaluation_step(
   return nextValueEstimate;
 }
 
+/**
+ * @brief Perform a policy evaluation sweep over all states in the environment.
+ *
+ * @details This is the core of the policy evaluation. We sweep over all states
+ * and perform a step of policy evaluation for each state. When finally no
+ * states change significantly we have converged and can exit. The updates occur
+ * in place such that the values for some of the updates are actually the
+ * updated values from the current itteration - which has been shown to also
+ * converge (and converges faster).
+ *
+ * @tparam VALUE_FUNCTION_T
+ * @tparam POLICY_T
+ * @param valueFunction The value function to use for the value estimates
+ * @param environment The environment to use for the transition model
+ * @param policy The policy to use for the action selection
+ * @param epsilon The convergence threshold. When the value function at any
+ * state changes by less than epsilon we have converged.
+ */
 template <isFiniteStateValueFunction VALUE_FUNCTION_T,
-          policy::isDistributionPolicy POLICY_T, auto INITIAL_VALUE = 0.0F,
-          auto DISCOUNT_RATE = 0.0F>
+          policy::isDistributionPolicy POLICY_T>
 void policy_evaluation(
     VALUE_FUNCTION_T &valueFunction,
     const typename POLICY_T::EnvironmentType &environment, POLICY_T &policy,
@@ -122,9 +168,42 @@ void policy_evaluation(
   } while (delta > epsilon);
 }
 
+/**
+ * @brief Perform a single step of policy improvement. Improve the choice of
+ * action taken under the policy from this given state.
+ *
+ * @details The idea behing policy improvement is to consider selecting action a
+ * at state S and thereafter continuing to follow the policy. The value of
+ * behaving in this way is the reward under that action plus the value of the
+ * next state under the policy.
+ *
+ * \begin{equation}
+ * q_{\pi} (s,a) = E_{\pi} [R_{t+1} + gamma * V_{\pi}(S_{t+1}) | S_{t} = s,
+ * A_{t}
+ * \end{equation}
+ *
+ * If this improves the value then taking the new action is a better alternative
+ * and is a more optimal policy. Hence we can improve the policy by selecting
+ * the action which maximises this value. The policy improvement step is given
+ * by:
+ *
+ * \begin{equation}
+ * \pi'(s) = argmax_{a} q_{\pi}(s, a) = argmax_{a} E_{\pi}
+ * [R_{t+1} + gamma * V_{\pi}(S_{t+1}) | S_{t} = s, A_{t} = a] = argmax_{a}
+ * \sum_{s', r} p(s', r | s, a) [r + gamma * v_{\pi}(s')]
+ * \end{equation}
+ *
+ * @tparam VALUE_FUNCTION_T
+ * @tparam POLICY_T
+ * @param valueFunction The value function to use for the value estimates
+ * @param environment The environment to use for the transition model
+ * @param policy The policy to use for the action selection
+ * @param state The state to improve the policy for
+ * @return true If the policy was improved
+ * @return false If the policy was not improved
+ */
 template <isFiniteStateValueFunction VALUE_FUNCTION_T,
-          policy::isDistributionPolicy POLICY_T, auto INITIAL_VALUE = 0.0F,
-          auto DISCOUNT_RATE = 0.0F>
+          policy::isDistributionPolicy POLICY_T>
 bool policy_improvement_step(
     VALUE_FUNCTION_T &valueFunction,
     const typename VALUE_FUNCTION_T::EnvironmentType &environment,
@@ -154,8 +233,7 @@ bool policy_improvement_step(
   // the action = 1.0
 
   const auto reachableActions = environment.getReachableActions(state);
-  auto nextActionIdx = std::max_element( // warn: under this current approach we
-                                         // always pick a single action
+  auto nextActionIdx = std::max_element(
       reachableActions.begin(), reachableActions.end(),
       [&](const auto &lhs, const auto &rhs) {
         return value_from_state_action(valueFunction, environment, state, lhs) <
@@ -164,19 +242,33 @@ bool policy_improvement_step(
   const auto nextAction = *nextActionIdx;
   const auto policyStable = oldAction == nextAction;
 
-  // std::cout << "State: " << state << " Old action: " << oldAction
-  //           << " New action: " << nextAction << std::endl;
-
   // update the policy - by setting the policy to be deterministic on the
   // new argmax
+  // warn: under this current approach we always pick a single action
   policy.setDeterministicPolicy(environment, state, {state, nextAction});
 
   return policyStable;
 }
 
+/**
+ * @brief Perform policy improvement over all states until the policy is stable
+ *
+ * @details Policy improvement is performed by considering the value of taking a
+ * given action at a given state and then continuing to follow the policy. The
+ * value of behaving in this way is the reward under that action plus the value
+ * of the next state under the policy.
+ *
+ * @tparam VALUE_FUNCTION_T
+ * @tparam POLICY_T
+ * @param valueFunction The value function to use for the value estimates
+ * @param environment The environment to use for the transition model
+ * @param policy The policy to use for the action selection
+ * @return true If the policy is stable (no action updates were made)
+ * @return false If the policy is not stable (at least one action update was
+ * made)
+ */
 template <isFiniteStateValueFunction VALUE_FUNCTION_T,
-          policy::isDistributionPolicy POLICY_T, auto INITIAL_VALUE = 0.0F,
-          auto DISCOUNT_RATE = 0.0F>
+          policy::isDistributionPolicy POLICY_T>
 bool policy_improvement(
     VALUE_FUNCTION_T &valueFunction,
     const typename VALUE_FUNCTION_T::EnvironmentType &environment,
@@ -193,9 +285,21 @@ bool policy_improvement(
   return policyStable;
 }
 
+/**
+ * @brief Perform policy iteration on the given value function and policy.
+ *
+ * @details Policy iteration is performed by first performing policy evaluation
+ * and then policy improvement.
+ *
+ * @tparam VALUE_FUNCTION_T
+ * @tparam POLICY_T
+ * @param valueFunction The value function to use for the value estimates
+ * @param environment The environment to use for the transition model
+ * @param policy The policy to use for the action selection
+ * @param epsilon The precision to use for the policy evaluation
+ */
 template <isFiniteStateValueFunction VALUE_FUNCTION_T,
-          policy::isDistributionPolicy POLICY_T, auto INITIAL_VALUE = 0.0F,
-          auto DISCOUNT_RATE = 0.0F>
+          policy::isDistributionPolicy POLICY_T>
 void policy_iteration(
     VALUE_FUNCTION_T &valueFunction,
     const typename VALUE_FUNCTION_T::EnvironmentType &environment,

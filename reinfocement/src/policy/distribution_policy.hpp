@@ -16,6 +16,9 @@
 
 namespace policy {
 
+constexpr auto min_policy_value = -10.0F;
+constexpr auto max_policy_value = 10.0F;
+
 template <environment::EnvironmentType ENVIRON_T>
 struct DistributionStateActionValue : public StateActionValue<ENVIRON_T> {
 
@@ -185,9 +188,9 @@ struct DistributionPolicy
       }
 
       if (k == key) {
-        q_table.at(k).value = 10.0F;
+        q_table.at(k).value = max_policy_value;
       } else {
-        q_table.at(k).value = -10.0F;
+        q_table.at(k).value = min_policy_value;
       }
     }
   }
