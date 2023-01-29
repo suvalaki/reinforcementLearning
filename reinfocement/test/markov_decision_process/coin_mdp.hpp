@@ -33,20 +33,30 @@ struct CoinReward : reward::Reward<CoinAction> {
 
 using CoinReturn = returns::Return<CoinReward>;
 
-using BaseEnviron = environment::Environment<CoinStep, CoinReward, CoinReturn>;
+constexpr auto EpisodeLength = 20;
+using BaseEnviron =
+    environment::Environment<CoinStep, CoinReward, CoinReturn, EpisodeLength>;
 
 using T = typename BaseEnviron::TransitionType;
 using P = typename BaseEnviron::PrecisionType;
 
+static CoinState s0 = CoinState{0.0F, {}};
+static CoinState s1 = CoinState{1.0F, {}};
+
 struct CoinEnviron
-    : environment::MarkovDecisionEnvironment<CoinStep, CoinReward, CoinReturn> {
+    : environment::MarkovDecisionEnvironment<CoinStep, CoinReward, CoinReturn,
+                                             EpisodeLength> {
 
   SETUP_TYPES(SINGLE_ARG(environment::MarkovDecisionEnvironment<
-                         CoinStep, CoinReward, CoinReturn>));
+                         CoinStep, CoinReward, CoinReturn, EpisodeLength>));
 
   using environment::MarkovDecisionEnvironment<
-      CoinStep, CoinReward, CoinReturn>::MarkovDecisionEnvironment;
-  void reset() override { this->state = CoinState{0.0F, {}}; }
+      CoinStep, CoinReward, CoinReturn,
+      EpisodeLength>::MarkovDecisionEnvironment;
+  StateType reset() override {
+    this->state = CoinState{0.0F, {}};
+    return this->state;
+  }
   StateType getNullState() const override { return CoinState{0.0F, {}}; }
 };
 

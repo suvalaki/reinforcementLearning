@@ -126,13 +126,16 @@ struct BanditStep : environment::Step<BanditAction<N_BANDITS>> {
 };
 
 template <std::size_t N_BANDITS, environment::RewardType REWARD_T,
-          environment::ReturnType RETURN_T>
+          environment::ReturnType RETURN_T, std::size_t MAX_EPISODE_LEN = 0>
 struct BanditEnvironment
-    : environment::Environment<BanditStep<N_BANDITS>, REWARD_T, RETURN_T> {
+    : environment::Environment<BanditStep<N_BANDITS>, REWARD_T, RETURN_T,
+                               MAX_EPISODE_LEN> {
 
-  SETUP_TYPES(SINGLE_ARG(
-      environment::Environment<BanditStep<N_BANDITS>, REWARD_T, RETURN_T>));
-  using EnvironmentType = BanditEnvironment<N_BANDITS, REWARD_T, RETURN_T>;
+  SETUP_TYPES(
+      SINGLE_ARG(environment::Environment<BanditStep<N_BANDITS>, REWARD_T,
+                                          RETURN_T, MAX_EPISODE_LEN>));
+  using EnvironmentType =
+      BanditEnvironment<N_BANDITS, REWARD_T, RETURN_T, MAX_EPISODE_LEN>;
 
   constexpr static std::size_t N = N_BANDITS;
 
@@ -165,12 +168,14 @@ struct BanditEnvironment
     }
   }
 
-  void reset() override {
+  StateType reset() override {
 
     resetDistributions();
 
     // Setup the initial State
     this->state = StateType::nullFactory(engine, means, stddevs);
+
+    return this->state;
   }
 
   void printDistributions() const {

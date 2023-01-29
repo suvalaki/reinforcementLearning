@@ -13,6 +13,9 @@ namespace transition {
 using action::ActionType;
 using step::Step;
 
+// Terminal transitions precipitate a reset of the environment
+enum class TransitionKind { NON_TERMINAL, TERMINAL };
+
 template <ActionType ACTION0> struct Transition {
   using StateType = typename ACTION0::StateType;
   using PrecisionType = typename StateType::PrecisionType;
@@ -23,6 +26,7 @@ template <ActionType ACTION0> struct Transition {
   StateType state;
   ActionSpace action;
   StateType nextState;
+  TransitionKind kind = TransitionKind::NON_TERMINAL;
 
   bool operator==(const Transition &rhs) const {
     return state == rhs.state and action == rhs.action &&
@@ -34,6 +38,8 @@ template <ActionType ACTION0> struct Transition {
       return t.state.hash() ^ t.action.hash() ^ t.nextState.hash();
     }
   };
+
+  bool isDone() const { return kind == TransitionKind::TERMINAL; }
 };
 
 template <typename TRANSITION_T>
