@@ -37,11 +37,12 @@ AverageReturnsMap<VALUE_FUNCTION_T> n_visit_returns_initialisation(
 
 template <environment::EnvironmentType ENVIRON_T> struct StopCondition {
   using EnvironmentType = ENVIRON_T;
-  virtual bool operator()(
-      std::vector<typename ENVIRON_T::TransitionType>::const_iterator start,
-      std::vector<typename ENVIRON_T::TransitionType>::const_iterator end,
-      const typename ENVIRON_T::EnvironmentType::TransitionType &transition)
-      const = 0;
+
+  // template <typename EPISODE_T>
+  // bool operator()(typename EPISODE_T::DataContainer::const_iterator start,
+  //                 typename EPISODE_T::DataContainer::const_iterator end,
+  //                 const typename ENVIRON_T::EnvironmentType::TransitionType
+  //                     &transition) const = 0;
 };
 
 template <typename T>
@@ -51,11 +52,11 @@ concept isStopCondition =
 template <environment::EnvironmentType ENVIRON_T>
 struct FirstVisitStopCondition : StopCondition<ENVIRON_T> {
   // Only update the average for the first visit in the episode
-  bool operator()(
-      std::vector<typename ENVIRON_T::TransitionType>::const_iterator start,
-      std::vector<typename ENVIRON_T::TransitionType>::const_iterator end,
-      const typename ENVIRON_T::EnvironmentType::TransitionType &transition)
-      const override {
+  template <typename EPISODE_T>
+  bool operator()(typename EPISODE_T::DataContainer::const_iterator start,
+                  typename EPISODE_T::DataContainer::const_iterator end,
+                  const typename ENVIRON_T::EnvironmentType::TransitionType
+                      &transition) const {
     // if any of the earlier transitions have the state then they make
     // a better first visit.
     return not std::any_of(start, end, [&transition](const auto &t) {
@@ -75,18 +76,21 @@ void visit_valueEstimate_step(
     const STOP_CONDITION_T &stop_condition) {
 
   using EnvironmentType = typename VALUE_FUNCTION_T::EnvironmentType;
+  using EpisodeType =
+      std::conditional_t<max_episode_length == 0, Episode<EnvironmentType>,
+                         Episode<EnvironmentType, max_episode_length>>;
 
   // Generate an episode following policy pi
-  Episode<EnvironmentType> episode;
+  EpisodeType episode;
   if constexpr (max_episode_length == 0) {
     // It is assumed that the terminal state will be generated in the normal
     // operation of the environments step funciton.
     episode = generate_episode(environment, policy);
-  } else {
+  } else if constexpr (max_episode_length != 0) {
     // Either the step function will generate an episode termination or the
     // maximum episode length will be reached - and so the episode will stop
     // early.
-    episode = generate_episode(environment, policy, max_episode_length);
+    episode = generate_episode<max_episode_length>(environment, policy);
   }
 
   // Initialise the return to 0
@@ -99,8 +103,8 @@ void visit_valueEstimate_step(
         valueFunction.discount_rate * G;
 
     // If the state does not appear in an earlier transition
-    if (stop_condition(episode.GetTransitions().begin(), (it + 1).base(),
-                       *it)) {
+    if (stop_condition.template operator()<EpisodeType>(
+            episode.GetTransitions().begin(), (it + 1).base(), *it)) {
       // Add the return to the list of returns
       returns[it->state].push_back(G);
       // Update the value function to be the average of returns from that
@@ -138,10 +142,10 @@ void first_visit_valueEstimate(
 template <environment::EnvironmentType ENVIRON_T>
 struct EveryVisitStopCondition : StopCondition<ENVIRON_T> {
   // We always update the average at every visit.
-  bool operator()(
-      std::vector<typename ENVIRON_T::TransitionType>::const_iterator start,
-      std::vector<typename ENVIRON_T::TransitionType>::const_iterator end,
-      const typename ENVIRON_T::TransitionType &transition) const override {
+  template <typename EPISODE_T>
+  bool operator()(typename EPISODE_T::DataContainer::const_iterator start,
+                  typename EPISODE_T::DataContainer::const_iterator end,
+                  const typename ENVIRON_T::TransitionType &transition) const {
     return true;
   }
 };

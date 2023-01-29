@@ -68,6 +68,9 @@ concept CategoricalArraySpecType = requires {
   typename T::ChoicesType;
   typename T::Shape;
   typename T::DataType;
+  T::shape;
+  T::min;
+  T::max;
   T::dims;
   T::nDim;
 }
@@ -157,16 +160,15 @@ concept CompositeArraySpecType =
 // methods to return a default data type given the spec
 // For now we are using the min as the default
 
-template <isBoundedArraySpec T>
-std::enable_if_t<isBoundedArraySpec<T> || isCategoricalArraySpec<T>,
-                 typename T::DataType>
-default_spec_gen() {
+template <isCategoricalArraySpec T> decltype(auto) default_spec_gen() {
+  return xt::ones<double>(T::shape);
+}
+
+template <isBoundedArraySpec T> decltype(auto) default_spec_gen() {
   return xt::ones<typename T::ValueType>(T::shape);
 }
 
-template <CompositeArraySpecType T>
-requires CompositeArraySpecType<T> std::enable_if_t < CompositeArraySpecType<T>,
-typename T::DataType > default_spec_gen() {
+template <CompositeArraySpecType T> typename T::DataType default_spec_gen() {
 
   // Tuple of the random types
   return []<std::size_t... N>(std::index_sequence<N...>) {

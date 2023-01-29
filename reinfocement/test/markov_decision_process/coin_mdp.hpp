@@ -18,6 +18,9 @@
 // simple 2 state model - coin toss
 enum e0 { HEADS, TAILS };
 using CoinSpecComponent = spec::CategoricalArraySpec<e0, 2, 1>;
+
+static_assert(spec::isCategoricalArraySpec<CoinSpecComponent>, "SPEC FAILED");
+
 using CoinSpec = spec::CompositeArraySpec<CoinSpecComponent>;
 
 using CoinState = state::State<float, CoinSpec>;

@@ -7,31 +7,52 @@
 
 namespace monte_carlo {
 
-template <environment::EnvironmentType ENVIRONMENT_T> class Episode {
+template <typename T, std::size_t N = 0> class Episode;
+
+template <environment::EnvironmentType ENVIRONMENT_T>
+class Episode<ENVIRONMENT_T> {
 public:
   using EnvironmentType = ENVIRONMENT_T;
+  using DataContainer = std::vector<typename ENVIRONMENT_T::TransitionType>;
 
   void AddTransition(const typename ENVIRONMENT_T::TransitionType &transition) {
     transitions_.push_back(transition);
   }
 
-  const std::vector<typename ENVIRONMENT_T::TransitionType> &
-  GetTransitions() const {
-    return transitions_;
-  }
+  const DataContainer &GetTransitions() const { return transitions_; }
 
 private:
-  std::vector<typename ENVIRONMENT_T::TransitionType> transitions_;
+  DataContainer transitions_;
+};
+
+// Template Specialistaion - for compile time episode.
+template <environment::EnvironmentType ENVIRONMENT_T, std::size_t episode_size>
+class Episode<ENVIRONMENT_T, episode_size> {
+public:
+  using EnvironmentType = ENVIRONMENT_T;
+  using DataContainer =
+      transition::TransitionSequence<episode_size,
+                                     typename ENVIRONMENT_T::ActionSpace>;
+
+  void AddTransition(const typename ENVIRONMENT_T::TransitionType &transition) {
+    if (currIdx_ >= episode_size) {
+      throw std::runtime_error("Episode is full");
+    }
+    transitions_[currIdx_++] = transition;
+  }
+
+  const DataContainer &GetTransitions() const { return transitions_; }
+
+private:
+  DataContainer transitions_;
+  std::size_t currIdx_ = 0;
 };
 
 template <typename T>
 concept isEpisode = requires(T t) {
   typename T::EnvironmentType;
   {t.AddTransition()};
-  {
-    t.GetTransitions()
-    } -> std::convertible_to<
-        std::vector<typename T::EnvironmentType::TransitionType>>;
+  { t.GetTransitions() } -> std::convertible_to<typename T::DataContainer>;
 };
 
 template <environment::EnvironmentType ENVIRONMENT_T,
@@ -72,21 +93,26 @@ Episode<ENVIRONMENT_T> generate_episode(ENVIRONMENT_T &environment,
     environment.update(transition);
   }
   return episode;
-}
+};
 
-template <environment::EnvironmentType ENVIRONMENT_T,
+template <std::size_t T>
+concept NonZero = (T > 0);
+
+template <std::size_t episode_max_length,
+          environment::EnvironmentType ENVIRONMENT_T,
           policy::PolicyType POLICY_T>
-Episode<ENVIRONMENT_T> generate_episode(ENVIRONMENT_T &environment,
-                                        POLICY_T &policy,
-                                        std::size_t episode_max_length) {
-  auto episode = Episode<ENVIRONMENT_T>{};
+requires NonZero<episode_max_length> Episode<ENVIRONMENT_T, episode_max_length>
+generate_episode(ENVIRONMENT_T &environment, POLICY_T &policy) {
+  auto episode = Episode<ENVIRONMENT_T, episode_max_length>{};
   auto state = environment.reset();
+
+  std::size_t insertion = 0;
   while (true) {
     auto action = policy(environment, state);
     auto transition = environment.step(action);
     episode.AddTransition(transition);
-    if (transition.isDone() ||
-        episode.GetTransitions().size() >= episode_max_length) {
+    insertion++;
+    if (transition.isDone() || insertion >= episode_max_length) {
       break;
     }
     state = transition.nextState;

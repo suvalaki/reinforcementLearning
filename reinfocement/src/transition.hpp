@@ -23,9 +23,9 @@ template <ActionType ACTION0> struct Transition {
   using ActionSpecType = typename ActionSpace::SpecType;
   using StepType = Step<ActionSpace>;
 
-  StateType state;
-  ActionSpace action;
-  StateType nextState;
+  StateType state = StateType();
+  ActionSpace action = ActionSpace();
+  StateType nextState = StateType();
   TransitionKind kind = TransitionKind::NON_TERMINAL;
 
   bool operator==(const Transition &rhs) const {

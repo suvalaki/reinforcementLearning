@@ -24,6 +24,7 @@ struct Action : T::DataType {
   using DataType = T::DataType;
 
   // Add type which adheres to the spec
+  Action() = default;
   Action(const typename T::DataType &d) : T::DataType(d) {}
 
   // When an action modifies the state space impliment anew
