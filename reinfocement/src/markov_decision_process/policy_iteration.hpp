@@ -8,6 +8,14 @@
 #include "markov_decision_process/finite_state_value_function.hpp"
 #include "markov_decision_process/finite_transition_model.hpp"
 
+// The key concept for MDPs is that the best policy can always be determined
+// by looking at the value for each state. This is because whenever we find
+// ourselves at a state we can always choose the action that maximises the
+// future state return. We can always know which deterministic policy to
+// take that will maximise future returns as we know the transition model
+// already. This is the basis of policy iteration. We are estimating V(S).
+// Given the transition model and V(S)then q(s,a) (the value of taking action a
+// in state s) is KNOWN.
 namespace markov_decision_process {
 
 /**
