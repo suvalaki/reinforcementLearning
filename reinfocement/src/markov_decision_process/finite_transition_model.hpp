@@ -12,13 +12,10 @@ namespace environment {
 // from state,action -> next state
 // As such the model has limited usefulness
 
-template <StepType STEP_T, RewardType REWARD_T, ReturnType RETURN_T,
-          std::size_t MAX_EPISODE_LEN>
-struct MarkovDecisionEnvironment
-    : Environment<STEP_T, REWARD_T, RETURN_T, MAX_EPISODE_LEN> {
+template <StepType STEP_T, RewardType REWARD_T, ReturnType RETURN_T>
+struct MarkovDecisionEnvironment : Environment<STEP_T, REWARD_T, RETURN_T> {
 
-  SETUP_TYPES(
-      SINGLE_ARG(Environment<STEP_T, REWARD_T, RETURN_T, MAX_EPISODE_LEN>));
+  SETUP_TYPES(SINGLE_ARG(Environment<STEP_T, REWARD_T, RETURN_T>));
 
   using TransitionModel = std::unordered_map<TransitionType, PrecisionType,
                                              typename TransitionType::Hash>;
@@ -108,10 +105,10 @@ struct MarkovDecisionEnvironment
 };
 
 template <typename ENVIRON_T>
-concept MarkovDecisionEnvironmentType = std::is_base_of_v<
-    MarkovDecisionEnvironment<
-        typename ENVIRON_T::StepType, typename ENVIRON_T::RewardType,
-        typename ENVIRON_T::ReturnType, ENVIRON_T::max_episode_length>,
-    ENVIRON_T>;
+concept MarkovDecisionEnvironmentType =
+    std::is_base_of_v<MarkovDecisionEnvironment<typename ENVIRON_T::StepType,
+                                                typename ENVIRON_T::RewardType,
+                                                typename ENVIRON_T::ReturnType>,
+                      ENVIRON_T>;
 
 } // namespace environment

@@ -126,16 +126,13 @@ struct BanditStep : environment::Step<BanditAction<N_BANDITS>> {
 };
 
 template <std::size_t N_BANDITS, environment::RewardType REWARD_T,
-          environment::ReturnType RETURN_T, std::size_t MAX_EPISODE_LEN = 0>
+          environment::ReturnType RETURN_T>
 struct BanditEnvironment
-    : environment::Environment<BanditStep<N_BANDITS>, REWARD_T, RETURN_T,
-                               MAX_EPISODE_LEN> {
+    : environment::Environment<BanditStep<N_BANDITS>, REWARD_T, RETURN_T> {
 
-  SETUP_TYPES(
-      SINGLE_ARG(environment::Environment<BanditStep<N_BANDITS>, REWARD_T,
-                                          RETURN_T, MAX_EPISODE_LEN>));
-  using EnvironmentType =
-      BanditEnvironment<N_BANDITS, REWARD_T, RETURN_T, MAX_EPISODE_LEN>;
+  SETUP_TYPES(SINGLE_ARG(
+      environment::Environment<BanditStep<N_BANDITS>, REWARD_T, RETURN_T>));
+  using EnvironmentType = BanditEnvironment<N_BANDITS, REWARD_T, RETURN_T>;
 
   constexpr static std::size_t N = N_BANDITS;
 

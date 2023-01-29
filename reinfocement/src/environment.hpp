@@ -34,12 +34,10 @@ using transition::Transition;
 using transition::TransitionKind;
 using transition::TransitionSequence;
 
-template <StepType STEP_T, RewardType REWARD_T, ReturnType RETURN_T,
-          std::size_t MAX_EPISODE_LEN = 0>
+template <StepType STEP_T, RewardType REWARD_T, ReturnType RETURN_T>
 struct Environment {
 
-  using EnvironmentType =
-      Environment<STEP_T, REWARD_T, RETURN_T, MAX_EPISODE_LEN>;
+  using EnvironmentType = Environment<STEP_T, REWARD_T, RETURN_T>;
   using StateType = typename STEP_T::StateType;
   using ActionSpace = typename STEP_T::ActionSpace;
   using ActionSpecType = typename ActionSpace::SpecType;
@@ -51,8 +49,6 @@ struct Environment {
 
   template <std::size_t EPISODE_LENGTH>
   using EpisodeType = TransitionSequence<EPISODE_LENGTH, ActionSpace>;
-
-  constexpr static std::size_t max_episode_length = MAX_EPISODE_LEN;
 
   StateType state;
 
@@ -76,7 +72,7 @@ struct Environment {
 template <typename ENVIRON_T>
 concept EnvironmentType = std::is_base_of_v<
     Environment<typename ENVIRON_T::StepType, typename ENVIRON_T::RewardType,
-                typename ENVIRON_T::ReturnType, ENVIRON_T::max_episode_length>,
+                typename ENVIRON_T::ReturnType>,
     ENVIRON_T>;
 
 #define SINGLE_ARG(...) __VA_ARGS__

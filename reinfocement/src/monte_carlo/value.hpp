@@ -64,7 +64,8 @@ struct FirstVisitStopCondition : StopCondition<ENVIRON_T> {
   }
 };
 
-template <markov_decision_process::isFiniteStateValueFunction VALUE_FUNCTION_T,
+template <std::size_t max_episode_length,
+          markov_decision_process::isFiniteStateValueFunction VALUE_FUNCTION_T,
           policy::isDistributionPolicy POLICY_T,
           isStopCondition STOP_CONDITION_T>
 void visit_valueEstimate_step(
@@ -77,7 +78,7 @@ void visit_valueEstimate_step(
 
   // Generate an episode following policy pi
   Episode<EnvironmentType> episode;
-  if constexpr (EnvironmentType::max_episode_length == 0) {
+  if constexpr (max_episode_length == 0) {
     // It is assumed that the terminal state will be generated in the normal
     // operation of the environments step funciton.
     episode = generate_episode(environment, policy);
@@ -85,8 +86,7 @@ void visit_valueEstimate_step(
     // Either the step function will generate an episode termination or the
     // maximum episode length will be reached - and so the episode will stop
     // early.
-    episode = generate_episode(environment, policy,
-                               EnvironmentType::max_episode_length);
+    episode = generate_episode(environment, policy, max_episode_length);
   }
 
   // Initialise the return to 0
@@ -115,7 +115,8 @@ void visit_valueEstimate_step(
 
 /** @brief The value v_{pi}(s) is the average of all returns following the first
  * visit to s. */
-template <markov_decision_process::isFiniteStateValueFunction VALUE_FUNCTION_T,
+template <std::size_t max_episode_length,
+          markov_decision_process::isFiniteStateValueFunction VALUE_FUNCTION_T,
           policy::isDistributionPolicy POLICY_T>
 void first_visit_valueEstimate(
     VALUE_FUNCTION_T &valueFunction,
@@ -128,7 +129,7 @@ void first_visit_valueEstimate(
   // Loop forever over episodes - Here we actually only loop for the requested
   // number of episodes
   for (std::size_t i = 0; i < episodes; ++i) {
-    visit_valueEstimate_step(
+    visit_valueEstimate_step<max_episode_length>(
         valueFunction, environment, policy, returns,
         FirstVisitStopCondition<typename VALUE_FUNCTION_T::EnvironmentType>());
   }
@@ -147,7 +148,8 @@ struct EveryVisitStopCondition : StopCondition<ENVIRON_T> {
 
 /** @brief The value v_{pi}(s) is the average of all returns following all
  * visits to s. */
-template <markov_decision_process::isFiniteStateValueFunction VALUE_FUNCTION_T,
+template <std::size_t max_episode_length,
+          markov_decision_process::isFiniteStateValueFunction VALUE_FUNCTION_T,
           policy::isDistributionPolicy POLICY_T>
 void every_visit_valueEstimate(
     VALUE_FUNCTION_T &valueFunction,
@@ -160,7 +162,7 @@ void every_visit_valueEstimate(
   // Loop forever over episodes - Here we actually only loop for the requested
   // number of episodes
   for (std::size_t i = 0; i < episodes; ++i) {
-    visit_valueEstimate_step(
+    visit_valueEstimate_step<max_episode_length>(
         valueFunction, environment, policy, returns,
         EveryVisitStopCondition<typename VALUE_FUNCTION_T::EnvironmentType>());
   }
