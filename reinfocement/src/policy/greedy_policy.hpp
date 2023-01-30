@@ -10,6 +10,8 @@
 #include "random_policy.hpp"
 #include "spec.hpp"
 
+#include "policy/value.hpp"
+
 namespace policy {
 
 using spec::CompositeArraySpecType;
@@ -21,7 +23,10 @@ template <environment::EnvironmentType ENVIRON_T,
           isStateActionValue VALUE_T = StateActionValue<ENVIRON_T>,
           step_size_taker STEPSIZE_TAKER_T =
               weighted_average_step_size_taker<VALUE_T>>
-struct GreedyPolicy : Policy<ENVIRON_T> {
+struct GreedyPolicy
+    : Policy<ENVIRON_T>,
+      FiniteValueFunctionMixin<
+          ValueFunctionPrototype<ENVIRON_T, KEYMAPPER_T, 0.0F, 0.0F>, VALUE_T> {
   using baseType = Policy<ENVIRON_T>;
   using EnvironmentType = typename baseType::EnvironmentType;
   using StateType = typename baseType::StateType;
@@ -36,7 +41,6 @@ struct GreedyPolicy : Policy<ENVIRON_T> {
   using StepSizeTaker = STEPSIZE_TAKER_T;
 
   using QTableValueType = ValueType;
-  std::unordered_map<KeyType, QTableValueType, typename KeyMaker::Hash> q_table;
 
   typename ValueType::Factory valueFactory{};
 
@@ -49,12 +53,12 @@ struct GreedyPolicy : Policy<ENVIRON_T> {
                                            // at least have one that is
                                            // permissible
 
-    if (q_table.empty()) {
+    if (this->empty()) {
       return action;
     }
 
     auto maxIdx = std::max_element(
-        q_table.begin(), q_table.end(),
+        this->begin(), this->end(),
         [](const auto &p1, const auto &p2) { return p1.second < p2.second; });
 
     action = KeyMaker::get_action_from_key(maxIdx->first);
@@ -69,14 +73,14 @@ struct GreedyPolicy : Policy<ENVIRON_T> {
     auto reward = RewardType::reward(s);
 
     auto key = KeyMaker::make(s.state, s.action);
-    if (q_table.find(key) != q_table.end()) {
+    if (this->find(key) != this->end()) {
       // Update the Q-table with the reward from the transition
-      auto &v = q_table.at(key);
+      auto &v = this->at(key);
       // Replace with the updated monte carlo avergae
       v.value = v.value + StepSizeTaker::getStepSize(v) * (reward - v.value);
       v.step++;
     } else {
-      q_table.emplace(key, valueFactory.create(reward, 1));
+      this->emplace(key, valueFactory.create(reward, 1));
     }
 
     // Go over all the other actions and update them with their global callback
@@ -87,7 +91,7 @@ struct GreedyPolicy : Policy<ENVIRON_T> {
 
   virtual PrecisionType greedyValue() {
     PrecisionType maxVal = 0;
-    for (auto &[k, v] : q_table) {
+    for (auto &[k, v] : *this) {
       if (maxVal < v.value) {
         maxVal = v.value;
       }
@@ -98,7 +102,7 @@ struct GreedyPolicy : Policy<ENVIRON_T> {
   void printQTable() const {
 
     std::cout << "QTable\n=====\n";
-    for (const auto &[k, v] : q_table) {
+    for (const auto &[k, v] : *this) {
 
       std::cout << k << "\t" << v.value << "\t" << v.step << "\n";
     }

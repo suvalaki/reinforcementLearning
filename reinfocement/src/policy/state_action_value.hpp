@@ -32,6 +32,14 @@ template <environment::EnvironmentType ENVIRON_T> struct StateActionValue {
     return value < other.value;
   }
 
+  bool operator<(const PrecisionType &other) const { return value < other; }
+  bool operator>(const PrecisionType &other) const { return value > other; }
+  bool operator==(const PrecisionType &other) const { return value == other; }
+
+  bool operator==(const StateActionValue &other) const {
+    return value == other.value && step == other.step;
+  }
+
   virtual void noFocusUpdate() {}
 
   struct Factory {
@@ -82,6 +90,11 @@ struct UpperConfidenceBoundStateActionValue
 
   bool operator<(const UpperConfidenceBoundStateActionValue &other) const {
     return getUpperConfidenceBound() < other.getUpperConfidenceBound();
+  }
+
+  bool operator==(const UpperConfidenceBoundStateActionValue &other) const {
+    return value == other.value && step == other.step &&
+           total_step == other.total_step;
   }
 
   virtual void noFocusUpdate() { total_step++; }

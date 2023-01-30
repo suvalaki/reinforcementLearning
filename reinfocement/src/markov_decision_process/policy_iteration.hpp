@@ -5,8 +5,9 @@
 #include "environment.hpp"
 #include "policy/distribution_policy.hpp"
 
-#include "markov_decision_process/finite_state_value_function.hpp"
+//#include "markov_decision_process/finite_state_value_function.hpp"
 #include "markov_decision_process/finite_transition_model.hpp"
+#include "policy/value.hpp"
 
 // The key concept for MDPs is that the best policy can always be determined
 // by looking at the value for each state. This is because whenever we find
@@ -38,7 +39,7 @@ namespace markov_decision_process {
  * the transition model this defines the reachable states
  * @return VALUE_FUNCTION_T::PrecisionType The expected value
  */
-template <isFiniteStateValueFunction VALUE_FUNCTION_T>
+template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T>
 typename VALUE_FUNCTION_T::PrecisionType value_from_state_action(
     VALUE_FUNCTION_T &valueFunction,
     const typename VALUE_FUNCTION_T::EnvironmentType &environment,
@@ -66,9 +67,9 @@ typename VALUE_FUNCTION_T::PrecisionType value_from_state_action(
                transitionModel.at(transition) *
                    (RewardType::reward(transition) +
                     valueFunction.discount_rate *
-                        valueFunction.valueEstimates
+                        valueFunction
                             .emplace(nextState, valueFunction.initial_value)
-                            .first->second);
+                            .first->second.value);
       });
 }
 
@@ -103,7 +104,7 @@ typename VALUE_FUNCTION_T::PrecisionType value_from_state_action(
  * @param state The state to evaluate the value for
  * @return VALUE_FUNCTION_T::PrecisionType The estimated value of the state
  */
-template <isFiniteStateValueFunction VALUE_FUNCTION_T,
+template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T,
           policy::isDistributionPolicy POLICY_T>
 typename VALUE_FUNCTION_T::PrecisionType policy_evaluation_step(
     VALUE_FUNCTION_T &valueFunction,
@@ -154,7 +155,7 @@ typename VALUE_FUNCTION_T::PrecisionType policy_evaluation_step(
  * @param epsilon The convergence threshold. When the value function at any
  * state changes by less than epsilon we have converged.
  */
-template <isFiniteStateValueFunction VALUE_FUNCTION_T,
+template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T,
           policy::isDistributionPolicy POLICY_T>
 void policy_evaluation(
     VALUE_FUNCTION_T &valueFunction,
@@ -171,7 +172,7 @@ void policy_evaluation(
       auto newValue =
           policy_evaluation_step(valueFunction, environment, policy, state);
       delta = std::max(delta, std::abs(oldValue - newValue));
-      valueFunction.valueEstimates.at(state) = newValue;
+      valueFunction.at(state).value = newValue;
     }
   } while (delta > epsilon);
 }
@@ -210,7 +211,7 @@ void policy_evaluation(
  * @return true If the policy was improved
  * @return false If the policy was not improved
  */
-template <isFiniteStateValueFunction VALUE_FUNCTION_T,
+template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T,
           policy::isDistributionPolicy POLICY_T>
 bool policy_improvement_step(
     VALUE_FUNCTION_T &valueFunction,
@@ -275,7 +276,7 @@ bool policy_improvement_step(
  * @return false If the policy is not stable (at least one action update was
  * made)
  */
-template <isFiniteStateValueFunction VALUE_FUNCTION_T,
+template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T,
           policy::isDistributionPolicy POLICY_T>
 bool policy_improvement(
     VALUE_FUNCTION_T &valueFunction,
@@ -306,7 +307,7 @@ bool policy_improvement(
  * @param policy The policy to use for the action selection
  * @param epsilon The precision to use for the policy evaluation
  */
-template <isFiniteStateValueFunction VALUE_FUNCTION_T,
+template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T,
           policy::isDistributionPolicy POLICY_T>
 void policy_iteration(
     VALUE_FUNCTION_T &valueFunction,

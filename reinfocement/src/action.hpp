@@ -40,6 +40,10 @@ struct Action : T::DataType {
   virtual std::size_t hash() const {
     return static_cast<const typename T::DataType &>(*this).hash();
   }
+
+  struct Hash {
+    std::size_t operator()(const Action &t) const { return t.hash(); }
+  };
 };
 
 template <typename ACTION_T>

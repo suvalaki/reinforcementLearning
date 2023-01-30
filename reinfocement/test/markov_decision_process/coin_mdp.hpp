@@ -9,11 +9,12 @@
 // XTensor View:
 #include "xtensor/xview.hpp"
 
-#include "markov_decision_process/finite_state_value_function.hpp"
 #include "markov_decision_process/finite_transition_model.hpp"
 #include "policy/distribution_policy.hpp"
 #include "policy/random_policy.hpp"
 #include "policy/state_action_keymaker.hpp"
+#include "policy/state_action_value.hpp"
+#include "policy/value.hpp"
 
 // simple 2 state model - coin toss
 enum e0 { HEADS, TAILS };
@@ -61,8 +62,30 @@ struct CoinEnviron
 
 using CoinTransitionModel = typename CoinEnviron::TransitionModel;
 using CoinDistributionPolicy = policy::DistributionPolicy<CoinEnviron>;
-using CoinValueFunction =
-    markov_decision_process::FiniteStateValueFunction<CoinEnviron, 0.0F, 0.5F>;
+using CoinValueFunction = policy::FiniteStateValueFunction<CoinEnviron>;
+
+using CoinMapGetter = policy::FiniteValueFunctionMapGetter<
+    policy::DefaultActionKeymaker<CoinEnviron>>;
+
+using CoinFiniteValueFunctionPrototype =
+    policy::ValueFunctionPrototype<CoinEnviron>;
+
+using CoinFiniteValueFunctionMixin =
+    policy::ValueFunctionPrototype<CoinEnviron>;
+
+using CoinStateValueFunction = policy::StateValueFunction<CoinEnviron>;
+
+using CoinStateActionValueFunction =
+    policy::StateActionValueFunction<CoinEnviron>;
+
+using CoinFiniteStateActionValueFunction =
+    policy::FiniteStateActionValueFunction<CoinEnviron>;
+
+using CoinFiniteStateValueFunction =
+    policy::FiniteStateValueFunction<CoinEnviron>;
+
+using CoinFiniteActionValueFunction =
+    policy::FiniteActionValueFunction<CoinEnviron>;
 
 struct CoinModelDataFixture {
 
@@ -127,6 +150,9 @@ private:
       return std::forward<T>(t).valueFunction;
   }
 };
+
+static_assert(policy::FullyKnownFiniteStateEnvironment<CoinEnviron>);
+static_assert(policy::FullyKnownConditionalStateActionEnvironment<CoinEnviron>);
 
 namespace std {
 template <>

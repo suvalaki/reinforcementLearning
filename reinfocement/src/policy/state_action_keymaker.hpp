@@ -87,6 +87,70 @@ struct DefaultActionKeymaker
   using Hash = HashBuilder<DefaultActionKeymaker<ENVIRON_T>>;
 };
 
+template <environment::EnvironmentType ENVIRON_T>
+struct ActionKeymaker
+    : StateActionKeymaker<ENVIRON_T, typename ENVIRON_T::ActionSpace> {
+
+  using baseType =
+      StateActionKeymaker<ENVIRON_T, typename ENVIRON_T::ActionSpace>;
+
+  using EnvironmentType = typename baseType::EnvironmentType;
+  using StateType = typename baseType::StateType;
+  using ActionSpace = typename baseType::ActionSpace;
+  using KeyType = typename baseType::KeyType;
+
+  static KeyType make(const StateType &s, const ActionSpace &action) {
+    return action;
+  }
+
+  static typename ENVIRON_T::StateType
+  get_state_from_key(const EnvironmentType &e, const KeyType &key) {
+    // Always return the null type
+    return e.getNullState();
+  }
+
+  static typename ENVIRON_T::ActionSpace
+  get_action_from_key(const KeyType &key) {
+    return key;
+  }
+
+  static std::size_t hash(const KeyType &key) { return key.hash(); }
+
+  using Hash = HashBuilder<ActionKeymaker<ENVIRON_T>>;
+};
+
+template <environment::EnvironmentType ENVIRON_T>
+struct StateKeymaker
+    : StateActionKeymaker<ENVIRON_T, typename ENVIRON_T::StateType> {
+
+  using baseType =
+      StateActionKeymaker<ENVIRON_T, typename ENVIRON_T::StateType>;
+
+  using EnvironmentType = typename baseType::EnvironmentType;
+  using StateType = typename baseType::StateType;
+  using ActionSpace = typename baseType::ActionSpace;
+  using KeyType = typename baseType::KeyType;
+
+  static KeyType make(const StateType &s, const ActionSpace &action) {
+    return s;
+  }
+
+  static typename ENVIRON_T::StateType
+  get_state_from_key(const EnvironmentType &e, const KeyType &key) {
+    // Always return the null type
+    return key;
+  }
+
+  static typename ENVIRON_T::ActionSpace
+  get_action_from_key(const KeyType &key) {
+    return ActionSpace();
+  }
+
+  static std::size_t hash(const KeyType &key) { return key.hash(); }
+
+  using Hash = HashBuilder<StateKeymaker<ENVIRON_T>>;
+};
+
 // Helper to print the default key type
 template <typename T0, typename T1>
 std::ostream &operator<<(std::ostream &os, const std::pair<T0, T1> &p) {

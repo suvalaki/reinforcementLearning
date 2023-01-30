@@ -2,7 +2,6 @@
 #include <iostream>
 
 #include "coin_mdp.hpp"
-#include "markov_decision_process/finite_state_value_function.hpp"
 #include "markov_decision_process/finite_transition_model.hpp"
 #include "markov_decision_process/policy_iteration.hpp"
 #include "policy/distribution_policy.hpp"
@@ -25,21 +24,21 @@ TEST_CASE("Coin MPD can undergo policy evaluation") {
     for (int i = 0; i < 100; ++i) {
       auto val = policy_evaluation_step(valueFunction, environ, policy, s0);
       // std::cout << val << "\n";
-      valueFunction.valueEstimates.at(s0) = val;
+      valueFunction.at(s0) = val;
       // valueFunction.policy_improvement_step(environ, policy, s0);
     }
 
     // Validate that the value iteration has indeed updated the value
-    CHECK_FALSE(initialValue == valueFunction.valueEstimates.at(s0));
+    CHECK_FALSE(initialValue == valueFunction.at(s0).value);
   }
 
   SECTION("Complete pass over all states works") {
     // because we need to compare the values we must at least initialise them.
     valueFunction.initialize(environ);
-    auto initialValues = valueFunction.valueEstimates;
+    auto initialValues = valueFunction;
     // valueFunction.policy_evaluation(environ, policy, 1e-3F);
     policy_evaluation(valueFunction, environ, policy, 1e-3F);
-    for (auto &[state, value] : valueFunction.valueEstimates) {
+    for (auto &[state, value] : valueFunction) {
       CHECK(value != initialValues.at(state));
     }
   }

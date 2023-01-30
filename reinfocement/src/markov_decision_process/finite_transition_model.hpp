@@ -102,6 +102,15 @@ struct MarkovDecisionEnvironment : Environment<STEP_T, REWARD_T, RETURN_T> {
     }
     return states;
   }
+
+  std::unordered_set<ActionSpace, typename ActionSpace::Hash>
+  getAllPossibleActions() const {
+    std::unordered_set<ActionSpace, typename ActionSpace::Hash> states;
+    for (const auto &t : transitionModel) {
+      states.emplace(t.first.state);
+    }
+    return states;
+  }
 };
 
 template <typename ENVIRON_T>

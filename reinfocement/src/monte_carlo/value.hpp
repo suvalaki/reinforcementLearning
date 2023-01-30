@@ -3,23 +3,23 @@
 #include <unordered_map>
 #include <vector>
 
-#include "markov_decision_process/finite_state_value_function.hpp"
 #include "monte_carlo/episode.hpp"
 #include "policy/distribution_policy.hpp"
+#include "policy/value.hpp"
 
 namespace monte_carlo {
 
 /// Each occurance of a state within an episode is called a visit.
-template <markov_decision_process::isFiniteStateValueFunction VALUE_FUNCTION_T>
+template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T>
 using AverageReturnsMap =
     std::unordered_map<typename VALUE_FUNCTION_T::StateType,
                        std::vector<typename VALUE_FUNCTION_T::PrecisionType>,
                        typename VALUE_FUNCTION_T::StateType::Hash>;
 
-template <markov_decision_process::isFiniteStateValueFunction VALUE_FUNCTION_T>
+template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T>
 AverageReturnsMap<VALUE_FUNCTION_T> n_visit_returns_initialisation(
     VALUE_FUNCTION_T &valueFunction,
-    const typename VALUE_FUNCTION_T::EnvironmentType &environment) {
+    typename VALUE_FUNCTION_T::EnvironmentType &environment) {
 
   // Initialisation step
   // initialise the value function to the initial value
@@ -66,7 +66,7 @@ struct FirstVisitStopCondition : StopCondition<ENVIRON_T> {
 };
 
 template <std::size_t max_episode_length,
-          markov_decision_process::isFiniteStateValueFunction VALUE_FUNCTION_T,
+          policy::isFiniteStateValueFunction VALUE_FUNCTION_T,
           policy::isDistributionPolicy POLICY_T,
           isStopCondition STOP_CONDITION_T>
 void visit_valueEstimate_step(
@@ -109,7 +109,7 @@ void visit_valueEstimate_step(
       returns[it->state].push_back(G);
       // Update the value function to be the average of returns from that
       // state
-      valueFunction.valueEstimates[it->state] =
+      valueFunction[it->state].value =
           std::accumulate(returns[it->state].begin(), returns[it->state].end(),
                           0.0F) /
           returns[it->state].size();
@@ -120,7 +120,7 @@ void visit_valueEstimate_step(
 /** @brief The value v_{pi}(s) is the average of all returns following the first
  * visit to s. */
 template <std::size_t max_episode_length,
-          markov_decision_process::isFiniteStateValueFunction VALUE_FUNCTION_T,
+          policy::isFiniteStateValueFunction VALUE_FUNCTION_T,
           policy::isDistributionPolicy POLICY_T>
 void first_visit_valueEstimate(
     VALUE_FUNCTION_T &valueFunction,
@@ -153,7 +153,7 @@ struct EveryVisitStopCondition : StopCondition<ENVIRON_T> {
 /** @brief The value v_{pi}(s) is the average of all returns following all
  * visits to s. */
 template <std::size_t max_episode_length,
-          markov_decision_process::isFiniteStateValueFunction VALUE_FUNCTION_T,
+          policy::isFiniteStateValueFunction VALUE_FUNCTION_T,
           policy::isDistributionPolicy POLICY_T>
 void every_visit_valueEstimate(
     VALUE_FUNCTION_T &valueFunction,
