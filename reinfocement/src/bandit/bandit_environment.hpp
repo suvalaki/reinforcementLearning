@@ -13,8 +13,7 @@
 
 namespace bandit {
 
-template <std::size_t N_BANDITS>
-struct BanditState : environment::State<float> {
+template <std::size_t N_BANDITS> struct BanditState : environment::State<float> {
 
   using BaseType = environment::State<float>;
   using typename BaseType::PrecisionType;
@@ -28,14 +27,12 @@ struct BanditState : environment::State<float> {
               const std::array<float, N_BANDITS> &hiddenBanditMeans,
               const std::array<float, N_BANDITS> &hiddenBanditStd,
               const std::array<float, N_BANDITS> &observableBanditSample)
-      : BaseType(), hiddenRandomEngine(engine),
-        hiddenBanditMeans(hiddenBanditMeans), hiddenBanditStd(hiddenBanditStd),
+      : BaseType(), hiddenRandomEngine(engine), hiddenBanditMeans(hiddenBanditMeans), hiddenBanditStd(hiddenBanditStd),
         observableBanditSample(observableBanditSample) {}
 
-  BanditState static nullFactory(
-      std::minstd_rand &engine,
-      const std::array<float, N_BANDITS> &hiddenBanditMeans,
-      const std::array<float, N_BANDITS> &hiddenBanditStd) {
+  BanditState static nullFactory(std::minstd_rand &engine,
+                                 const std::array<float, N_BANDITS> &hiddenBanditMeans,
+                                 const std::array<float, N_BANDITS> &hiddenBanditStd) {
     return BanditState{engine, hiddenBanditMeans, hiddenBanditStd, {0}};
   }
 
@@ -72,28 +69,23 @@ struct BanditState : environment::State<float> {
 enum class BanditActionChoices { NO = 0, YES = 1 };
 
 template <std::size_t N_BANDITS>
-using BanditActionSpec = spec::CompositeArraySpec<
-    spec::CategoricalArraySpec<bandit::BanditActionChoices, N_BANDITS>>;
+using BanditActionSpec = spec::CompositeArraySpec<spec::CategoricalArraySpec<bandit::BanditActionChoices, N_BANDITS>>;
 
 template <std::size_t N_BANDITS>
-struct BanditAction
-    : action::Action<BanditState<N_BANDITS>, BanditActionSpec<N_BANDITS>> {
-  using BaseType =
-      action::Action<BanditState<N_BANDITS>, BanditActionSpec<N_BANDITS>>;
+struct BanditAction : action::Action<BanditState<N_BANDITS>, BanditActionSpec<N_BANDITS>> {
+  using BaseType = action::Action<BanditState<N_BANDITS>, BanditActionSpec<N_BANDITS>>;
   using typename BaseType::BaseType;
   using typename BaseType::StateType;
 
   // std::array<bool, N_BANDITS> banditChoice;
 
-  std::array<float, N_BANDITS>
-  sample(std::minstd_rand &engine,
-         const std::array<float, N_BANDITS> &hiddenBanditMeans,
-         const std::array<float, N_BANDITS> &hiddenBanditStd) const {
+  std::array<float, N_BANDITS> sample(std::minstd_rand &engine,
+                                      const std::array<float, N_BANDITS> &hiddenBanditMeans,
+                                      const std::array<float, N_BANDITS> &hiddenBanditStd) const {
     std::array<float, N_BANDITS> samples;
     for (std::size_t i = 0; i < N_BANDITS; i++) {
       // if (banditChoice[i]) {
-      samples[i] = std::normal_distribution<float>(hiddenBanditMeans[i],
-                                                   hiddenBanditStd[i])(engine);
+      samples[i] = std::normal_distribution<float>(hiddenBanditMeans[i], hiddenBanditStd[i])(engine);
       //} else {
       //  samples[i] = 0; // Only the sampled bandit is seen
       //}
@@ -102,11 +94,10 @@ struct BanditAction
   }
 
   StateType step(const StateType &state) const override {
-    return StateType{state.hiddenRandomEngine, state.hiddenBanditMeans,
+    return StateType{state.hiddenRandomEngine,
+                     state.hiddenBanditMeans,
                      state.hiddenBanditStd,
-                     this->sample(state.hiddenRandomEngine,
-                                  state.hiddenBanditMeans,
-                                  state.hiddenBanditStd)};
+                     this->sample(state.hiddenRandomEngine, state.hiddenBanditMeans, state.hiddenBanditStd)};
   }
 
   friend std::ostream &operator<<(std::ostream &os, const BanditAction &b) {
@@ -115,8 +106,7 @@ struct BanditAction
   }
 };
 
-template <std::size_t N_BANDITS>
-struct BanditStep : environment::Step<BanditAction<N_BANDITS>> {
+template <std::size_t N_BANDITS> struct BanditStep : environment::Step<BanditAction<N_BANDITS>> {
   using BaseType = environment::Step<BanditAction<N_BANDITS>>;
   using typename BaseType::ActionSpace;
   using typename BaseType::PrecisionType;
@@ -125,15 +115,11 @@ struct BanditStep : environment::Step<BanditAction<N_BANDITS>> {
   using BaseType::step;
 };
 
-template <std::size_t N_BANDITS, environment::RewardType REWARD_T,
-          environment::ReturnType RETURN_T>
-struct BanditEnvironment
-    : environment::Environment<BanditStep<N_BANDITS>, REWARD_T, RETURN_T> {
+template <std::size_t N_BANDITS, environment::RewardType REWARD_T, environment::ReturnType RETURN_T>
+struct BanditEnvironment : environment::Environment<BanditStep<N_BANDITS>, REWARD_T, RETURN_T> {
 
-  SETUP_TYPES_W_ENVIRON(
-      SINGLE_ARG(
-          environment::Environment<BanditStep<N_BANDITS>, REWARD_T, RETURN_T>),
-      SINGLE_ARG(BanditEnvironment<N_BANDITS, REWARD_T, RETURN_T>));
+  SETUP_TYPES_W_ENVIRON(SINGLE_ARG(environment::Environment<BanditStep<N_BANDITS>, REWARD_T, RETURN_T>),
+                        SINGLE_ARG(BanditEnvironment<N_BANDITS, REWARD_T, RETURN_T>));
 
   constexpr static std::size_t N = N_BANDITS;
 
@@ -143,12 +129,12 @@ struct BanditEnvironment
   std::array<PrecisionType, N_BANDITS> means;
   std::array<PrecisionType, N_BANDITS> stddevs;
 
-  BanditEnvironment(std::minstd_rand &engine, PrecisionType prior_mu_ave = 0,
+  BanditEnvironment(std::minstd_rand &engine,
+                    PrecisionType prior_mu_ave = 0,
                     PrecisionType prior_mu_stddev = 1,
                     PrecisionType prior_var_ave = 0,
                     PrecisionType prior_var_stddev = 1)
-      : engine(engine), prior_mu(prior_mu_ave, prior_mu_stddev),
-        prior_var(prior_var_ave, prior_var_stddev),
+      : engine(engine), prior_mu(prior_mu_ave, prior_mu_stddev), prior_var(prior_var_ave, prior_var_stddev),
         BaseType(StateType::nullFactory(engine, means, stddevs)) {
     reset();
   }
@@ -178,20 +164,16 @@ struct BanditEnvironment
 
   void printDistributions() const {
     for (int i = 0; i < N_BANDITS; i++) {
-      std::cout << "bandit " << i << ": " << means[i] << " (+/- " << stddevs[i]
-                << ")\n";
+      std::cout << "bandit " << i << ": " << means[i] << " (+/- " << stddevs[i] << ")\n";
     }
   }
 
-  StateType getNullState() const {
-    return StateType(engine, means, stddevs, {0});
-  }
+  StateType getNullState() const { return StateType(engine, means, stddevs, {0}); }
 
   std::vector<ActionSpace> getReachableActions(const StateType &s) const {
     std::vector<ActionSpace> actions;
     for (int i = 0; i < N_BANDITS; i++) {
-      actions.push_back(
-          ActionSpace(typename ActionSpace::BaseType::DataType{i}));
+      actions.push_back(ActionSpace(typename ActionSpace::BaseType::DataType{i}));
     }
     return actions;
   }
@@ -217,8 +199,7 @@ struct ConstantReward : environment::Reward<BanditAction<N_BANDITS>> {
 
     const auto actions = std::get<0>(transition.action);
     for (const auto &val : actions) {
-      reward += transition.nextState
-                    .observableBanditSample[static_cast<std::size_t>(val)];
+      reward += transition.nextState.observableBanditSample[static_cast<std::size_t>(val)];
     }
 
     return reward;

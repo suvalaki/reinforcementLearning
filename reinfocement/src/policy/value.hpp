@@ -18,9 +18,9 @@ namespace policy {
  * keys is much smaller than the number of state-action permutations.
  */
 template <environment::EnvironmentType ENVIRONMENT_T,
-          isStateActionKeymaker KEYMAPPER_T =
-              DefaultActionKeymaker<ENVIRONMENT_T>,
-          auto INITIAL_VALUE = 0.0F, auto DISCOUNT_RATE = 0.0F>
+          isStateActionKeymaker KEYMAPPER_T = DefaultActionKeymaker<ENVIRONMENT_T>,
+          auto INITIAL_VALUE = 0.0F,
+          auto DISCOUNT_RATE = 0.0F>
 struct ValueFunctionPrototype {
 
   SETUP_TYPES(SINGLE_ARG(ENVIRONMENT_T));
@@ -38,13 +38,11 @@ struct ValueFunctionPrototype {
 
 template <typename T>
 concept isValueFunctionPrototype = std::is_base_of_v<
-    ValueFunctionPrototype<typename T::EnvironmentType, typename T::KeyMaker,
-                           T::initial_value, T::discount_rate>,
+    ValueFunctionPrototype<typename T::EnvironmentType, typename T::KeyMaker, T::initial_value, T::discount_rate>,
     T>;
 
 template <isStateActionKeymaker KEYMAPPER_T,
-          isStateActionValue VALUE_T =
-              StateActionValue<typename KEYMAPPER_T::EnvironmentType>>
+          isStateActionValue VALUE_T = StateActionValue<typename KEYMAPPER_T::EnvironmentType>>
 struct FiniteValueFunctionMapGetter {
   using KeyMaker = KEYMAPPER_T;
   using KeyType = typename KeyMaker::KeyType;
@@ -58,30 +56,20 @@ struct FiniteValueFunctionMapGetter {
 
 template <typename T>
 concept FullyKnownFiniteActionStateEnvironment = requires(T t) {
-  {
-    t.getAllPossibleStates()
-    } -> std::same_as<
-        std::unordered_set<typename T::StateType, typename T::StateType::Hash>>;
+  { t.getAllPossibleStates() } -> std::same_as<std::unordered_set<typename T::StateType, typename T::StateType::Hash>>;
   {
     t.getAllPossibleActions()
-    } -> std::same_as<std::unordered_set<typename T::ActionSpace,
-                                         typename T::ActionSpace::Hash>>;
+    } -> std::same_as<std::unordered_set<typename T::ActionSpace, typename T::ActionSpace::Hash>>;
 };
 
 template <typename T>
 concept FullyKnownFiniteStateEnvironment = requires(T t) {
-  {
-    t.getAllPossibleStates()
-    } -> std::same_as<
-        std::unordered_set<typename T::StateType, typename T::StateType::Hash>>;
+  { t.getAllPossibleStates() } -> std::same_as<std::unordered_set<typename T::StateType, typename T::StateType::Hash>>;
 };
 
 template <typename T>
 concept FullyKnownConditionalStateActionEnvironment = requires(T t) {
-  {
-    t.getAllPossibleStates()
-    } -> std::same_as<
-        std::unordered_set<typename T::StateType, typename T::StateType::Hash>>;
+  { t.getAllPossibleStates() } -> std::same_as<std::unordered_set<typename T::StateType, typename T::StateType::Hash>>;
   {
     t.getReachableActions(std::declval<const typename T::StateType &>())
     } -> std::same_as<std::vector<typename T::ActionSpace>>;
@@ -89,8 +77,7 @@ concept FullyKnownConditionalStateActionEnvironment = requires(T t) {
 
 template <isValueFunctionPrototype VALUE_FUNCTION_T, isStateActionValue VALUE_T>
 struct FiniteValueFunctionMixin
-    : public FiniteValueFunctionMapGetter<typename VALUE_FUNCTION_T::KeyMaker,
-                                          VALUE_T>::type,
+    : public FiniteValueFunctionMapGetter<typename VALUE_FUNCTION_T::KeyMaker, VALUE_T>::type,
       VALUE_FUNCTION_T {
   using ValueFunctionBaseType = VALUE_FUNCTION_T;
   using EnvironmentType = typename VALUE_FUNCTION_T::EnvironmentType;
@@ -101,8 +88,7 @@ struct FiniteValueFunctionMixin
   using ValueType = VALUE_T;
   using QTableValueType = ValueType;
 
-  constexpr static typename EnvironmentType::PrecisionType initial_value =
-      VALUE_FUNCTION_T::initial_value;
+  constexpr static typename EnvironmentType::PrecisionType initial_value = VALUE_FUNCTION_T::initial_value;
 
   constexpr static auto iterations = 1000;
 
@@ -111,14 +97,12 @@ struct FiniteValueFunctionMixin
   /// @brief Extra getter to yield the value no matter the underlying
   /// type being held within the valueEstimates table. value is always a member.
   PrecisionType valueAt(const KeyType &s) {
-    return this->emplace(s, valueFactory.create(initial_value, 1))
-        .first->second.value;
+    return this->emplace(s, valueFactory.create(initial_value, 1)).first->second.value;
   }
 
   void initialize(EnvironmentType &environment) {
 
-    if constexpr (FullyKnownConditionalStateActionEnvironment<
-                      EnvironmentType>) {
+    if constexpr (FullyKnownConditionalStateActionEnvironment<EnvironmentType>) {
       /// Since we know the model well enough to ask the environment to generate
       /// all possible states we do so.
       for (const auto &state : environment.getAllPossibleStates()) {
@@ -160,61 +144,50 @@ struct FiniteValueFunctionMixin
 };
 
 template <typename T>
-concept isFiniteStateValueFunction = std::is_base_of_v<
-    FiniteValueFunctionMixin<typename T::ValueFunctionBaseType,
-                             typename T::ValueType>,
-    T>;
+concept isFiniteStateValueFunction =
+    std::is_base_of_v<FiniteValueFunctionMixin<typename T::ValueFunctionBaseType, typename T::ValueType>, T>;
 
 /** @brief A mapping fromm (state, action) to value. q(s, a). Estimating this
  * is required when the transition model isnt present (as is the case for
  * monte carlo model free approximation).
  */
-template <environment::EnvironmentType ENVIRONMENT_T, auto INITIAL_VALUE = 0.0F,
-          auto DISCOUNT_RATE = 0.0F>
+template <environment::EnvironmentType ENVIRONMENT_T, auto INITIAL_VALUE = 0.0F, auto DISCOUNT_RATE = 0.0F>
 using StateActionValueFunction =
-    ValueFunctionPrototype<ENVIRONMENT_T, DefaultActionKeymaker<ENVIRONMENT_T>,
-                           INITIAL_VALUE, DISCOUNT_RATE>;
+    ValueFunctionPrototype<ENVIRONMENT_T, DefaultActionKeymaker<ENVIRONMENT_T>, INITIAL_VALUE, DISCOUNT_RATE>;
 
 /** @brief A mapping of states to values v(s). When the finite model is fully
  * known this is enough to calculcate future expected returns under a given
  * policy ( as is the case in MDP).
  */
-template <environment::EnvironmentType ENVIRONMENT_T, auto INITIAL_VALUE = 0.0F,
-          auto DISCOUNT_RATE = 0.0F>
+template <environment::EnvironmentType ENVIRONMENT_T, auto INITIAL_VALUE = 0.0F, auto DISCOUNT_RATE = 0.0F>
 using StateValueFunction =
-    ValueFunctionPrototype<ENVIRONMENT_T, StateKeymaker<ENVIRONMENT_T>,
-                           INITIAL_VALUE, DISCOUNT_RATE>;
+    ValueFunctionPrototype<ENVIRONMENT_T, StateKeymaker<ENVIRONMENT_T>, INITIAL_VALUE, DISCOUNT_RATE>;
 
 /** @brief A mapping of actions to valus : a -> q(a)
  */
-template <environment::EnvironmentType ENVIRONMENT_T, auto INITIAL_VALUE = 0.0F,
-          auto DISCOUNT_RATE = 0.0F>
+template <environment::EnvironmentType ENVIRONMENT_T, auto INITIAL_VALUE = 0.0F, auto DISCOUNT_RATE = 0.0F>
 using ActionValueFunction =
-    ValueFunctionPrototype<ENVIRONMENT_T, ActionKeymaker<ENVIRONMENT_T>,
-                           INITIAL_VALUE, DISCOUNT_RATE>;
+    ValueFunctionPrototype<ENVIRONMENT_T, ActionKeymaker<ENVIRONMENT_T>, INITIAL_VALUE, DISCOUNT_RATE>;
 
 template <environment::EnvironmentType ENVIRONMENT_T,
           isStateActionValue VALUE_T = StateActionValue<ENVIRONMENT_T>,
-          auto INITIAL_VALUE = 0.0F, auto DISCOUNT_RATE = 0.0F>
+          auto INITIAL_VALUE = 0.0F,
+          auto DISCOUNT_RATE = 0.0F>
 struct FiniteStateActionValueFunction
-    : FiniteValueFunctionMixin<
-          StateActionValueFunction<ENVIRONMENT_T, INITIAL_VALUE, DISCOUNT_RATE>,
-          VALUE_T> {};
+    : FiniteValueFunctionMixin<StateActionValueFunction<ENVIRONMENT_T, INITIAL_VALUE, DISCOUNT_RATE>, VALUE_T> {};
 
 template <environment::EnvironmentType ENVIRONMENT_T,
           isStateActionValue VALUE_T = StateActionValue<ENVIRONMENT_T>,
-          auto INITIAL_VALUE = 0.0F, auto DISCOUNT_RATE = 0.0F>
+          auto INITIAL_VALUE = 0.0F,
+          auto DISCOUNT_RATE = 0.0F>
 struct FiniteStateValueFunction
-    : FiniteValueFunctionMixin<
-          StateValueFunction<ENVIRONMENT_T, INITIAL_VALUE, DISCOUNT_RATE>,
-          VALUE_T> {};
+    : FiniteValueFunctionMixin<StateValueFunction<ENVIRONMENT_T, INITIAL_VALUE, DISCOUNT_RATE>, VALUE_T> {};
 
 template <environment::EnvironmentType ENVIRONMENT_T,
           isStateActionValue VALUE_T = StateActionValue<ENVIRONMENT_T>,
-          auto INITIAL_VALUE = 0.0F, auto DISCOUNT_RATE = 0.0F>
+          auto INITIAL_VALUE = 0.0F,
+          auto DISCOUNT_RATE = 0.0F>
 struct FiniteActionValueFunction
-    : FiniteValueFunctionMixin<
-          ActionValueFunction<ENVIRONMENT_T, INITIAL_VALUE, DISCOUNT_RATE>,
-          VALUE_T> {};
+    : FiniteValueFunctionMixin<ActionValueFunction<ENVIRONMENT_T, INITIAL_VALUE, DISCOUNT_RATE>, VALUE_T> {};
 
 } // namespace policy

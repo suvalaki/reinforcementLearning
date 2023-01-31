@@ -17,8 +17,7 @@ struct MarkovDecisionEnvironment : Environment<STEP_T, REWARD_T, RETURN_T> {
 
   SETUP_TYPES(SINGLE_ARG(Environment<STEP_T, REWARD_T, RETURN_T>));
 
-  using TransitionModel = std::unordered_map<TransitionType, PrecisionType,
-                                             typename TransitionType::Hash>;
+  using TransitionModel = std::unordered_map<TransitionType, PrecisionType, typename TransitionType::Hash>;
   /// @brief  The mapping from (state, action, nextState) to probabiliies
   TransitionModel transitionModel;
 
@@ -28,22 +27,19 @@ struct MarkovDecisionEnvironment : Environment<STEP_T, REWARD_T, RETURN_T> {
 
   MarkovDecisionEnvironment() = delete;
   MarkovDecisionEnvironment(const TransitionModel &t) : transitionModel(t){};
-  MarkovDecisionEnvironment(const TransitionModel &t, const StateType s)
-      : BaseType(s), transitionModel(t){};
+  MarkovDecisionEnvironment(const TransitionModel &t, const StateType s) : BaseType(s), transitionModel(t){};
 
   TransitionType step(const ActionSpace &action) override {
 
     // sample next state according to the transition model
     auto nextStates = getReachableStates(this->state, action);
-    auto nextStatesProbabilities =
-        getTransitionProbabilities(this->state, action);
+    auto nextStatesProbabilities = getTransitionProbabilities(this->state, action);
     auto nextState = sample(nextStates, nextStatesProbabilities);
 
     return TransitionType{this->state, action, nextState};
   }
 
-  std::vector<TransitionType> getTransitions(const StateType &s,
-                                             const ActionSpace &a) const {
+  std::vector<TransitionType> getTransitions(const StateType &s, const ActionSpace &a) const {
     std::vector<TransitionType> transitions;
     for (const auto &t : transitionModel) {
       if (t.first.state == s and t.first.action == a) {
@@ -56,16 +52,14 @@ struct MarkovDecisionEnvironment : Environment<STEP_T, REWARD_T, RETURN_T> {
   std::vector<ActionSpace> getReachableActions(const StateType &s) const {
     std::vector<ActionSpace> actions;
     for (const auto &t : transitionModel) {
-      if (t.first.state == s and std::find(actions.begin(), actions.end(),
-                                           t.first.action) == actions.end()) {
+      if (t.first.state == s and std::find(actions.begin(), actions.end(), t.first.action) == actions.end()) {
         actions.push_back(t.first.action);
       }
     }
     return actions;
   }
 
-  std::vector<StateType> getReachableStates(const StateType &s,
-                                            const ActionSpace &a) const {
+  std::vector<StateType> getReachableStates(const StateType &s, const ActionSpace &a) const {
     std::vector<StateType> states;
     for (const auto &t : transitionModel) {
       if (t.first.state == s and t.first.action == a) {
@@ -75,8 +69,7 @@ struct MarkovDecisionEnvironment : Environment<STEP_T, REWARD_T, RETURN_T> {
     return states;
   }
 
-  std::vector<PrecisionType> getTransitionProbabilities(const StateType &s,
-                                                        const ActionSpace &a) {
+  std::vector<PrecisionType> getTransitionProbabilities(const StateType &s, const ActionSpace &a) {
     std::vector<PrecisionType> probabilities;
     for (const auto &t : transitionModel) {
       if (t.first.state == s and t.first.action == a) {
@@ -86,16 +79,13 @@ struct MarkovDecisionEnvironment : Environment<STEP_T, REWARD_T, RETURN_T> {
     return probabilities;
   }
 
-  StateType sample(const std::vector<StateType> &states,
-                   const std::vector<PrecisionType> &probabilities) {
-    std::discrete_distribution<size_t> distribution(probabilities.begin(),
-                                                    probabilities.end());
+  StateType sample(const std::vector<StateType> &states, const std::vector<PrecisionType> &probabilities) {
+    std::discrete_distribution<size_t> distribution(probabilities.begin(), probabilities.end());
     return states[distribution(gen)];
   }
 
   /// @brief Get all possible states under the finite transation model
-  std::unordered_set<StateType, typename StateType::Hash>
-  getAllPossibleStates() const {
+  std::unordered_set<StateType, typename StateType::Hash> getAllPossibleStates() const {
     std::unordered_set<StateType, typename StateType::Hash> states;
     for (const auto &t : transitionModel) {
       states.emplace(t.first.state);
@@ -103,8 +93,7 @@ struct MarkovDecisionEnvironment : Environment<STEP_T, REWARD_T, RETURN_T> {
     return states;
   }
 
-  std::unordered_set<ActionSpace, typename ActionSpace::Hash>
-  getAllPossibleActions() const {
+  std::unordered_set<ActionSpace, typename ActionSpace::Hash> getAllPossibleActions() const {
     std::unordered_set<ActionSpace, typename ActionSpace::Hash> states;
     for (const auto &t : transitionModel) {
       states.emplace(t.first.state);
@@ -114,10 +103,9 @@ struct MarkovDecisionEnvironment : Environment<STEP_T, REWARD_T, RETURN_T> {
 };
 
 template <typename ENVIRON_T>
-concept MarkovDecisionEnvironmentType =
-    std::is_base_of_v<MarkovDecisionEnvironment<typename ENVIRON_T::StepType,
-                                                typename ENVIRON_T::RewardType,
-                                                typename ENVIRON_T::ReturnType>,
-                      ENVIRON_T>;
+concept MarkovDecisionEnvironmentType = std::is_base_of_v<MarkovDecisionEnvironment<typename ENVIRON_T::StepType,
+                                                                                    typename ENVIRON_T::RewardType,
+                                                                                    typename ENVIRON_T::ReturnType>,
+                                                          ENVIRON_T>;
 
 } // namespace environment

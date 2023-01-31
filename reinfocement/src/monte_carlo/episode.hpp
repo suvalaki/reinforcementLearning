@@ -9,15 +9,12 @@ namespace monte_carlo {
 
 template <typename T, std::size_t N = 0> class Episode;
 
-template <environment::EnvironmentType ENVIRONMENT_T>
-class Episode<ENVIRONMENT_T> {
+template <environment::EnvironmentType ENVIRONMENT_T> class Episode<ENVIRONMENT_T> {
 public:
   using EnvironmentType = ENVIRONMENT_T;
   using DataContainer = std::vector<typename ENVIRONMENT_T::TransitionType>;
 
-  void AddTransition(const typename ENVIRONMENT_T::TransitionType &transition) {
-    transitions_.push_back(transition);
-  }
+  void AddTransition(const typename ENVIRONMENT_T::TransitionType &transition) { transitions_.push_back(transition); }
 
   const DataContainer &GetTransitions() const { return transitions_; }
 
@@ -30,9 +27,7 @@ template <environment::EnvironmentType ENVIRONMENT_T, std::size_t episode_size>
 class Episode<ENVIRONMENT_T, episode_size> {
 public:
   using EnvironmentType = ENVIRONMENT_T;
-  using DataContainer =
-      transition::TransitionSequence<episode_size,
-                                     typename ENVIRONMENT_T::ActionSpace>;
+  using DataContainer = transition::TransitionSequence<episode_size, typename ENVIRONMENT_T::ActionSpace>;
 
   void AddTransition(const typename ENVIRONMENT_T::TransitionType &transition) {
     if (currIdx_ >= episode_size) {
@@ -55,12 +50,11 @@ concept isEpisode = requires(T t) {
   { t.GetTransitions() } -> std::convertible_to<typename T::DataContainer>;
 };
 
-template <environment::EnvironmentType ENVIRONMENT_T,
-          policy::PolicyType POLICY_T>
-Episode<ENVIRONMENT_T> generate_episode_base(
-    ENVIRONMENT_T &environment, POLICY_T &policy,
-    const std::function<bool(const typename ENVIRONMENT_T::TransitionType &)>
-        &stop_condition) {
+template <environment::EnvironmentType ENVIRONMENT_T, policy::PolicyType POLICY_T>
+Episode<ENVIRONMENT_T>
+generate_episode_base(ENVIRONMENT_T &environment,
+                      POLICY_T &policy,
+                      const std::function<bool(const typename ENVIRONMENT_T::TransitionType &)> &stop_condition) {
   auto episode = Episode<ENVIRONMENT_T>{};
   auto state = environment.reset();
   while (true) {
@@ -76,10 +70,8 @@ Episode<ENVIRONMENT_T> generate_episode_base(
   return episode;
 }
 
-template <environment::EnvironmentType ENVIRONMENT_T,
-          policy::PolicyType POLICY_T>
-Episode<ENVIRONMENT_T> generate_episode(ENVIRONMENT_T &environment,
-                                        POLICY_T &policy) {
+template <environment::EnvironmentType ENVIRONMENT_T, policy::PolicyType POLICY_T>
+Episode<ENVIRONMENT_T> generate_episode(ENVIRONMENT_T &environment, POLICY_T &policy) {
   auto episode = Episode<ENVIRONMENT_T>{};
   auto state = environment.reset();
   while (true) {
@@ -98,9 +90,7 @@ Episode<ENVIRONMENT_T> generate_episode(ENVIRONMENT_T &environment,
 template <std::size_t T>
 concept NonZero = (T > 0);
 
-template <std::size_t episode_max_length,
-          environment::EnvironmentType ENVIRONMENT_T,
-          policy::PolicyType POLICY_T>
+template <std::size_t episode_max_length, environment::EnvironmentType ENVIRONMENT_T, policy::PolicyType POLICY_T>
 requires NonZero<episode_max_length> Episode<ENVIRONMENT_T, episode_max_length>
 generate_episode(ENVIRONMENT_T &environment, POLICY_T &policy) {
   auto episode = Episode<ENVIRONMENT_T, episode_max_length>{};

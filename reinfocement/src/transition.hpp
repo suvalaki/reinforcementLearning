@@ -29,23 +29,18 @@ template <ActionType ACTION0> struct Transition {
   TransitionKind kind = TransitionKind::NON_TERMINAL;
 
   bool operator==(const Transition &rhs) const {
-    return state == rhs.state and action == rhs.action &&
-           nextState == rhs.nextState;
+    return state == rhs.state and action == rhs.action && nextState == rhs.nextState;
   }
 
   struct Hash {
-    std::size_t operator()(const Transition &t) const {
-      return t.state.hash() ^ t.action.hash() ^ t.nextState.hash();
-    }
+    std::size_t operator()(const Transition &t) const { return t.state.hash() ^ t.action.hash() ^ t.nextState.hash(); }
   };
 
   bool isDone() const { return kind == TransitionKind::TERMINAL; }
 };
 
 template <typename TRANSITION_T>
-concept isTransitionType =
-    std::is_base_of_v<Transition<typename TRANSITION_T::ActionSpace>,
-                      TRANSITION_T>;
+concept isTransitionType = std::is_base_of_v<Transition<typename TRANSITION_T::ActionSpace>, TRANSITION_T>;
 
 template <std::size_t SEQUENCE_LENGTH, ActionType ACTION0>
 struct TransitionSequence : std::array<Transition<ACTION0>, SEQUENCE_LENGTH> {

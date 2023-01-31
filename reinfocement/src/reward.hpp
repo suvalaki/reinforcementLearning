@@ -28,12 +28,10 @@ template <ActionType ACTION0> struct Reward<ACTION0> {
 };
 
 template <typename REWARD_T>
-concept RewardBaseType =
-    std::is_base_of_v<Reward<typename REWARD_T::ActionSpace>, REWARD_T>;
+concept RewardBaseType = std::is_base_of_v<Reward<typename REWARD_T::ActionSpace>, REWARD_T>;
 
 template <typename REWARD_T>
-concept RewardProtocol = requires(REWARD_T t,
-                                  const typename REWARD_T::TransitionType &tn) {
+concept RewardProtocol = requires(REWARD_T t, const typename REWARD_T::TransitionType &tn) {
   // Reqyure that the Object implementing the reward protocol to implement
   // static PrecisionType reward(const TransitionType& t) {return 0.0F;}
   {REWARD_T::reward(tn)};
@@ -58,12 +56,9 @@ template <RewardProtocol REWARD_T> struct Return {
 
   // Discounted Return of future SEQUENCE_LENGTH time steps
   template <std::size_t SEQUENCE_LENGTH>
-  static PrecisionType
-  value(const TransitionSequence<SEQUENCE_LENGTH,
-                                 typename RewardType::ActionSpace> &t) {
+  static PrecisionType value(const TransitionSequence<SEQUENCE_LENGTH, typename RewardType::ActionSpace> &t) {
     auto arr = future_value(t);
-    return std::accumulate(arr.begin(), arr.end(),
-                           static_cast<PrecisionType>(0));
+    return std::accumulate(arr.begin(), arr.end(), static_cast<PrecisionType>(0));
   }
 
   // Return raw rewards for future time steps without discounting or any other

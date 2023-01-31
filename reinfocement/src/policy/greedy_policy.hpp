@@ -18,25 +18,21 @@ using spec::CompositeArraySpecType;
 using spec::isBoundedArraySpec;
 using spec::isCategoricalArraySpec;
 
-#define SETUP_POLICY_TYPES(BASE_T, KEYMAPPER_T, VALUE_T)                       \
-  SETUP_TYPES(SINGLE_ARG(BASE_T))                                              \
-  using EnvironmentType = typename BaseType::EnvironmentType;                  \
-  using KeyMaker = KEYMAPPER_T;                                                \
-  using KeyType = typename KeyMaker::KeyType;                                  \
+#define SETUP_POLICY_TYPES(BASE_T, KEYMAPPER_T, VALUE_T)                                                               \
+  SETUP_TYPES(SINGLE_ARG(BASE_T))                                                                                      \
+  using EnvironmentType = typename BaseType::EnvironmentType;                                                          \
+  using KeyMaker = KEYMAPPER_T;                                                                                        \
+  using KeyType = typename KeyMaker::KeyType;                                                                          \
   using ValueType = VALUE_T;
 
 template <environment::EnvironmentType ENVIRON_T,
           isStateActionKeymaker KEYMAPPER_T = DefaultActionKeymaker<ENVIRON_T>,
           isStateActionValue VALUE_T = StateActionValue<ENVIRON_T>,
-          step_size_taker STEPSIZE_TAKER_T =
-              weighted_average_step_size_taker<VALUE_T>>
-struct GreedyPolicy
-    : Policy<ENVIRON_T>,
-      FiniteValueFunctionMixin<
-          ValueFunctionPrototype<ENVIRON_T, KEYMAPPER_T, 0.0F, 0.0F>, VALUE_T> {
+          step_size_taker STEPSIZE_TAKER_T = weighted_average_step_size_taker<VALUE_T>>
+struct GreedyPolicy : Policy<ENVIRON_T>,
+                      FiniteValueFunctionMixin<ValueFunctionPrototype<ENVIRON_T, KEYMAPPER_T, 0.0F, 0.0F>, VALUE_T> {
 
-  SETUP_POLICY_TYPES(SINGLE_ARG(Policy<ENVIRON_T>), SINGLE_ARG(KEYMAPPER_T),
-                     SINGLE_ARG(VALUE_T));
+  SETUP_POLICY_TYPES(SINGLE_ARG(Policy<ENVIRON_T>), SINGLE_ARG(KEYMAPPER_T), SINGLE_ARG(VALUE_T));
   using StepSizeTaker = STEPSIZE_TAKER_T;
 
   typename ValueType::Factory valueFactory{};
@@ -45,18 +41,16 @@ struct GreedyPolicy
   // reward
   ActionSpace operator()(const StateType &s) override {
     auto maxVal = valueFactory.create();
-    auto action = random_spec_gen<
-        typename ActionSpace::SpecType>(); // start with a random action so we
-                                           // at least have one that is
-                                           // permissible
+    auto action = random_spec_gen<typename ActionSpace::SpecType>(); // start with a random action so we
+                                                                     // at least have one that is
+                                                                     // permissible
 
     if (this->empty()) {
       return action;
     }
 
     auto maxIdx = std::max_element(
-        this->begin(), this->end(),
-        [](const auto &p1, const auto &p2) { return p1.second < p2.second; });
+        this->begin(), this->end(), [](const auto &p1, const auto &p2) { return p1.second < p2.second; });
 
     action = KeyMaker::get_action_from_key(maxIdx->first);
 
@@ -106,12 +100,12 @@ struct GreedyPolicy
   }
 };
 
-#define SETUP_KEYPOLICY_TYPES(POLICY_T)                                        \
-  SETUP_TYPES(SINGLE_ARG(POLICY_T))                                            \
-  using EnvironmentType = typename BaseType::EnvironmentType;                  \
-  using KeyMaker = typename BaseType::KeyMaker;                                \
-  using KeyType = typename KeyMaker::KeyType;                                  \
-  using ValueType = typename BaseType::ValueType;                              \
+#define SETUP_KEYPOLICY_TYPES(POLICY_T)                                                                                \
+  SETUP_TYPES(SINGLE_ARG(POLICY_T))                                                                                    \
+  using EnvironmentType = typename BaseType::EnvironmentType;                                                          \
+  using KeyMaker = typename BaseType::KeyMaker;                                                                        \
+  using KeyType = typename KeyMaker::KeyType;                                                                          \
+  using ValueType = typename BaseType::ValueType;                                                                      \
   using StepSizeTaker = typename BaseType::StepSizeTaker;
 
 } // namespace policy

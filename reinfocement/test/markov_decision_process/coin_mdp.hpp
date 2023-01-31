@@ -45,14 +45,11 @@ using P = typename BaseEnviron::PrecisionType;
 static CoinState s0 = CoinState{0.0F, {}};
 static CoinState s1 = CoinState{1.0F, {}};
 
-struct CoinEnviron
-    : environment::MarkovDecisionEnvironment<CoinStep, CoinReward, CoinReturn> {
+struct CoinEnviron : environment::MarkovDecisionEnvironment<CoinStep, CoinReward, CoinReturn> {
 
-  SETUP_TYPES(SINGLE_ARG(environment::MarkovDecisionEnvironment<
-                         CoinStep, CoinReward, CoinReturn>));
+  SETUP_TYPES(SINGLE_ARG(environment::MarkovDecisionEnvironment<CoinStep, CoinReward, CoinReturn>));
 
-  using environment::MarkovDecisionEnvironment<
-      CoinStep, CoinReward, CoinReturn>::MarkovDecisionEnvironment;
+  using environment::MarkovDecisionEnvironment<CoinStep, CoinReward, CoinReturn>::MarkovDecisionEnvironment;
   StateType reset() override {
     this->state = CoinState{0.0F, {}};
     return this->state;
@@ -64,28 +61,21 @@ using CoinTransitionModel = typename CoinEnviron::TransitionModel;
 using CoinDistributionPolicy = policy::DistributionPolicy<CoinEnviron>;
 using CoinValueFunction = policy::FiniteStateValueFunction<CoinEnviron>;
 
-using CoinMapGetter = policy::FiniteValueFunctionMapGetter<
-    policy::DefaultActionKeymaker<CoinEnviron>>;
+using CoinMapGetter = policy::FiniteValueFunctionMapGetter<policy::DefaultActionKeymaker<CoinEnviron>>;
 
-using CoinFiniteValueFunctionPrototype =
-    policy::ValueFunctionPrototype<CoinEnviron>;
+using CoinFiniteValueFunctionPrototype = policy::ValueFunctionPrototype<CoinEnviron>;
 
-using CoinFiniteValueFunctionMixin =
-    policy::ValueFunctionPrototype<CoinEnviron>;
+using CoinFiniteValueFunctionMixin = policy::ValueFunctionPrototype<CoinEnviron>;
 
 using CoinStateValueFunction = policy::StateValueFunction<CoinEnviron>;
 
-using CoinStateActionValueFunction =
-    policy::StateActionValueFunction<CoinEnviron>;
+using CoinStateActionValueFunction = policy::StateActionValueFunction<CoinEnviron>;
 
-using CoinFiniteStateActionValueFunction =
-    policy::FiniteStateActionValueFunction<CoinEnviron>;
+using CoinFiniteStateActionValueFunction = policy::FiniteStateActionValueFunction<CoinEnviron>;
 
-using CoinFiniteStateValueFunction =
-    policy::FiniteStateValueFunction<CoinEnviron>;
+using CoinFiniteStateValueFunction = policy::FiniteStateValueFunction<CoinEnviron>;
 
-using CoinFiniteActionValueFunction =
-    policy::FiniteActionValueFunction<CoinEnviron>;
+using CoinFiniteActionValueFunction = policy::FiniteActionValueFunction<CoinEnviron>;
 
 struct CoinModelDataFixture {
 
@@ -109,25 +99,22 @@ struct CoinModelDataFixture {
 
   CoinModelDataFixture() { policy.initialise(environ, 100); }
 
-  using TypeList = std::tuple<CoinState, CoinState, CoinAction, CoinAction,
-                              CoinTransitionModel, CoinEnviron,
-                              CoinDistributionPolicy, CoinValueFunction>;
+  using TypeList = std::tuple<CoinState,
+                              CoinState,
+                              CoinAction,
+                              CoinAction,
+                              CoinTransitionModel,
+                              CoinEnviron,
+                              CoinDistributionPolicy,
+                              CoinValueFunction>;
 
-  template <std::size_t Index> auto &&get() & {
-    return get_helper<Index>(*this);
-  }
+  template <std::size_t Index> auto &&get() & { return get_helper<Index>(*this); }
 
-  template <std::size_t Index> auto &&get() && {
-    return get_helper<Index>(*this);
-  }
+  template <std::size_t Index> auto &&get() && { return get_helper<Index>(*this); }
 
-  template <std::size_t Index> auto &&get() const & {
-    return get_helper<Index>(*this);
-  }
+  template <std::size_t Index> auto &&get() const & { return get_helper<Index>(*this); }
 
-  template <std::size_t Index> auto &&get() const && {
-    return get_helper<Index>(*this);
-  }
+  template <std::size_t Index> auto &&get() const && { return get_helper<Index>(*this); }
 
 private:
   template <std::size_t Index, typename T> auto &&get_helper(T &&t) {
@@ -155,8 +142,7 @@ static_assert(policy::FullyKnownFiniteStateEnvironment<CoinEnviron>);
 static_assert(policy::FullyKnownConditionalStateActionEnvironment<CoinEnviron>);
 
 namespace std {
-template <>
-struct tuple_size<::CoinModelDataFixture> : integral_constant<size_t, 8> {};
+template <> struct tuple_size<::CoinModelDataFixture> : integral_constant<size_t, 8> {};
 
 template <std::size_t N> struct tuple_element<N, CoinModelDataFixture> {
   using type = decltype(std::declval<CoinModelDataFixture>().get<N>());

@@ -7,13 +7,11 @@
 #include <vector>
 
 /** @brief Base class for a single random bandit
- * 
+ *
  */
 template <class TYPE_T> class Bandit {
 public:
-  virtual TYPE_T sample(std::minstd_rand &engine) {
-    return static_cast<TYPE_T>(NULL);
-  };
+  virtual TYPE_T sample(std::minstd_rand &engine) { return static_cast<TYPE_T>(NULL); };
   virtual TYPE_T value() { return qA; }
 
 private:
@@ -34,9 +32,7 @@ public:
   }
   Bandit<TYPE_T> &getBestBandit() { return &getBestBanditIdx(); }
   TYPE_T getBestValue() { return getBestBandit().value(); }
-  virtual std::vector<TYPE_T> sample(std::minstd_rand &engine) {
-    return std::vector<TYPE_T>();
-  };
+  virtual std::vector<TYPE_T> sample(std::minstd_rand &engine) { return std::vector<TYPE_T>(); };
 
 private:
   std::vector<Bandit<TYPE_T>> bandits;
@@ -46,8 +42,7 @@ private:
 template <class TYPE_T> class NormalBandit : public Bandit<TYPE_T> {
 
 public:
-  NormalBandit(TYPE_T avg = 0, TYPE_T stddev = 1)
-      : qA(avg), avg(avg), stddev(stddev), distribution(avg, stddev){};
+  NormalBandit(TYPE_T avg = 0, TYPE_T stddev = 1) : qA(avg), avg(avg), stddev(stddev), distribution(avg, stddev){};
   TYPE_T sample(std::minstd_rand &engine) {
     TYPE_T result;
     do {
@@ -55,10 +50,8 @@ public:
     } while (result <= min);
     return result;
   };
-  friend std::ostream &operator<<(std::ostream &os,
-                                  const NormalBandit<TYPE_T> &bandit) {
-    os << "NormalBandit(avg = " << bandit.avg << ", stddev = " << bandit.stddev
-       << ")";
+  friend std::ostream &operator<<(std::ostream &os, const NormalBandit<TYPE_T> &bandit) {
+    os << "NormalBandit(avg = " << bandit.avg << ", stddev = " << bandit.stddev << ")";
     return os;
   }
   TYPE_T getValue() { return qA; };
@@ -71,8 +64,7 @@ private:
   TYPE_T min = 0;
 };
 
-template <typename TYPE_T>
-class NormalPriorNormalMultiArmedBandit : public MultiArmedBandit<TYPE_T> {
+template <typename TYPE_T> class NormalPriorNormalMultiArmedBandit : public MultiArmedBandit<TYPE_T> {
 public:
   NormalPriorNormalMultiArmedBandit() = default;
   NormalPriorNormalMultiArmedBandit(std::size_t n_bandits,

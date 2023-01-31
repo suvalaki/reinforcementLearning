@@ -31,8 +31,7 @@ struct DistributionStateActionValue : public StateActionValue<ENVIRON_T> {
     using ValueType = DistributionStateActionValue;
     PrecisionType averageReturn = 0;
     std::size_t step = 0;
-    DistributionStateActionValue create(const PrecisionType &value = 0,
-                                        const std::size_t &step = 0) {
+    DistributionStateActionValue create(const PrecisionType &value = 0, const std::size_t &step = 0) {
       return DistributionStateActionValue{value, step};
     }
 
@@ -47,22 +46,17 @@ struct DistributionStateActionValue : public StateActionValue<ENVIRON_T> {
 
 template <typename T>
 concept isDistributionStateActionValue =
-    (std::is_base_of_v<
-         DistributionStateActionValue<typename T::EnvironmentType>, T> ||
+    (std::is_base_of_v<DistributionStateActionValue<typename T::EnvironmentType>, T> ||
      std::is_same_v<DistributionStateActionValue<typename T::EnvironmentType>,
                     T>)&&isStateActionValueFactory<typename T::Factory>;
 
 template <environment::EnvironmentType ENVIRON_T,
           isStateActionKeymaker KEYMAPPER_T = DefaultActionKeymaker<ENVIRON_T>,
-          isDistributionStateActionValue VALUE_T =
-              DistributionStateActionValue<ENVIRON_T>,
-          step_size_taker STEPSIZE_TAKER_T =
-              weighted_average_step_size_taker<VALUE_T>>
-struct DistributionPolicy
-    : GreedyPolicy<ENVIRON_T, KEYMAPPER_T, VALUE_T, STEPSIZE_TAKER_T> {
+          isDistributionStateActionValue VALUE_T = DistributionStateActionValue<ENVIRON_T>,
+          step_size_taker STEPSIZE_TAKER_T = weighted_average_step_size_taker<VALUE_T>>
+struct DistributionPolicy : GreedyPolicy<ENVIRON_T, KEYMAPPER_T, VALUE_T, STEPSIZE_TAKER_T> {
 
-  SETUP_KEYPOLICY_TYPES(SINGLE_ARG(
-      GreedyPolicy<ENVIRON_T, KEYMAPPER_T, VALUE_T, STEPSIZE_TAKER_T>));
+  SETUP_KEYPOLICY_TYPES(SINGLE_ARG(GreedyPolicy<ENVIRON_T, KEYMAPPER_T, VALUE_T, STEPSIZE_TAKER_T>));
 
   void initialise(EnvironmentType &environ, const std::size_t &iterations) {
     auto randomPolicy = policy::RandomPolicy<ENVIRON_T>();
@@ -82,9 +76,8 @@ struct DistributionPolicy
   ActionSpace operator()(const EnvironmentType &e, const StateType &s) {
 
     if (this->empty()) {
-      throw std::domain_error(
-          "No actions have been taken yet - and the q table is "
-          "not yet populated. Please initialise the this->");
+      throw std::domain_error("No actions have been taken yet - and the q table is "
+                              "not yet populated. Please initialise the this->");
     }
 
     auto norm = getSoftmaxNorm(e, s);
@@ -110,8 +103,7 @@ struct DistributionPolicy
       // Sutton&Barto 2.8 Gradient Bandit Algorithms
       // H(t+1, A(t)) =
       // H(t, A(t)) + alpha * (R(t) - RAve(t)) * (1 - pi(t, A(t)))
-      v.value = v.value + StepSizeTaker::getStepSize(v) *
-                              (reward - this->valueFactory.averageReturn) *
+      v.value = v.value + StepSizeTaker::getStepSize(v) * (reward - this->valueFactory.averageReturn) *
                               (1 - getProbability(e, s.state, key));
       v.step++;
     } else {
@@ -121,8 +113,7 @@ struct DistributionPolicy
     // update all other actions
     for (auto &[k, v] : *this) {
       if (k != key) {
-        v.value = v.value + StepSizeTaker::getStepSize(v) *
-                                (reward - this->valueFactory.averageReturn) *
+        v.value = v.value + StepSizeTaker::getStepSize(v) * (reward - this->valueFactory.averageReturn) *
                                 (-getProbability(e, s.state, k));
       }
     }
@@ -131,27 +122,23 @@ struct DistributionPolicy
   }
 
   /// @brief Norm over the potential reachable actions from this state
-  PrecisionType getSoftmaxNorm(const EnvironmentType &e,
-                               const StateType &s) const {
+  PrecisionType getSoftmaxNorm(const EnvironmentType &e, const StateType &s) const {
     auto reachableActions = e.getReachableActions(s);
-    auto norm =
-        std::accumulate(reachableActions.begin(), reachableActions.end(), 0.0F,
-                        [this, &s](const auto &v, const auto &a) {
-                          auto key = KeyMaker::make(s, a);
-                          if (this->find(key) == this->end()) {
-                            return v;
-                          }
-                          return v + std::exp(this->at(key).value);
-                        });
+    auto norm = std::accumulate(
+        reachableActions.begin(), reachableActions.end(), 0.0F, [this, &s](const auto &v, const auto &a) {
+          auto key = KeyMaker::make(s, a);
+          if (this->find(key) == this->end()) {
+            return v;
+          }
+          return v + std::exp(this->at(key).value);
+        });
     return norm;
   }
-  PrecisionType getProbability(const EnvironmentType &e, const StateType &s,
-                               const KeyType &key) const {
+  PrecisionType getProbability(const EnvironmentType &e, const StateType &s, const KeyType &key) const {
     return std::exp(this->at(key).value) / getSoftmaxNorm(e, s);
   }
 
-  std::vector<std::pair<KeyType, PrecisionType>>
-  getProbabilities(const EnvironmentType &e, const StateType &s) const {
+  std::vector<std::pair<KeyType, PrecisionType>> getProbabilities(const EnvironmentType &e, const StateType &s) const {
     std::vector<std::pair<KeyType, PrecisionType>> probs;
     for (const auto &[k, v] : *this) {
       probs.emplace_back(k, getProbability(e, s, k));
@@ -159,14 +146,12 @@ struct DistributionPolicy
     return probs;
   }
 
-  void setProbability(const EnvironmentType &e, const StateType &s,
-                      const KeyType &key, const PrecisionType &p) {
+  void setProbability(const EnvironmentType &e, const StateType &s, const KeyType &key, const PrecisionType &p) {
 
     this->at(key).value = std::log(p * getSoftmaxNorm(e, s));
   }
 
-  void setDeterministicPolicy(const EnvironmentType &e, const StateType &s,
-                              const KeyType &key) {
+  void setDeterministicPolicy(const EnvironmentType &e, const StateType &s, const KeyType &key) {
 
     auto reachaleActions = e.getReachableActions(s);
 
@@ -192,16 +177,16 @@ struct DistributionPolicy
 
       auto s = KeyMaker::get_state_from_key(e, k);
 
-      std::cout << k << "\t" << v.value << "\t" << v.step << "\t"
-                << getProbability(e, s, k) << "\n";
+      std::cout << k << "\t" << v.value << "\t" << v.step << "\t" << getProbability(e, s, k) << "\n";
     }
   }
 };
 
 template <typename T>
-concept isDistributionPolicy = std::is_base_of_v<
-    DistributionPolicy<typename T::EnvironmentType, typename T::KeyMaker,
-                       typename T::ValueType, typename T::StepSizeTaker>,
-    T>;
+concept isDistributionPolicy = std::is_base_of_v<DistributionPolicy<typename T::EnvironmentType,
+                                                                    typename T::KeyMaker,
+                                                                    typename T::ValueType,
+                                                                    typename T::StepSizeTaker>,
+                                                 T>;
 
 } // namespace policy

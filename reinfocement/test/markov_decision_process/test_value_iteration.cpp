@@ -15,14 +15,12 @@ using namespace markov_decision_process::value_iteration;
 TEST_CASE("Coin MPD can undergo policy value iteration") {
 
   auto data = CoinModelDataFixture{};
-  auto &[s0, s1, a0, a1, transitionModel, environ, policy, valueFunction] =
-      data;
+  auto &[s0, s1, a0, a1, transitionModel, environ, policy, valueFunction] = data;
 
   SECTION("value iteration estimation step succesfully update the value") {
     // Validate that the value iteration has indeed updated the value
     auto initialValue = valueFunction.valueAt(s0);
-    auto val =
-        value_iteration_policy_estimation_step(valueFunction, environ, s0);
+    auto val = value_iteration_policy_estimation_step(valueFunction, environ, s0);
     valueFunction.at(s0).value = val;
     CHECK_FALSE(initialValue == valueFunction.at(s0).value);
   }
@@ -49,20 +47,16 @@ TEST_CASE("Coin MPD can undergo policy value iteration") {
     value_iteration::value_iteration(valueFunction, environ, policy, 1e-3F);
 
     // these are the optimals after 1 iteration
-    auto p00 = policy.getProbability(
-        environ, s0, CoinDistributionPolicy::KeyMaker::make(s0, a0));
+    auto p00 = policy.getProbability(environ, s0, CoinDistributionPolicy::KeyMaker::make(s0, a0));
     CHECK(p00 == Approx(0.0F));
 
-    auto p01 = policy.getProbability(
-        environ, s0, CoinDistributionPolicy::KeyMaker::make(s0, a1));
+    auto p01 = policy.getProbability(environ, s0, CoinDistributionPolicy::KeyMaker::make(s0, a1));
     CHECK(p01 == Approx(1.0F));
 
-    auto p10 = policy.getProbability(
-        environ, s0, CoinDistributionPolicy::KeyMaker::make(s1, a0));
+    auto p10 = policy.getProbability(environ, s0, CoinDistributionPolicy::KeyMaker::make(s1, a0));
     CHECK(p10 == Approx(1.0F));
 
-    auto p11 = policy.getProbability(
-        environ, s0, CoinDistributionPolicy::KeyMaker::make(s1, a1));
+    auto p11 = policy.getProbability(environ, s0, CoinDistributionPolicy::KeyMaker::make(s1, a1));
     CHECK(p11 == Approx(0.0F));
   }
 }

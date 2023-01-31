@@ -26,8 +26,7 @@ struct ExampleState : State<float> {
 };
 
 using ExampleSpec0 = spec::BoundedAarraySpec<float, -1.0F, 1.0F, 10, 20>;
-using EnumSpec0 =
-    spec::CategoricalArraySpec<bandit::BanditActionChoices, 4, 10>;
+using EnumSpec0 = spec::CategoricalArraySpec<bandit::BanditActionChoices, 4, 10>;
 
 auto &engine = xt::random::get_default_random_engine();
 
@@ -58,32 +57,27 @@ using ExampleReturn = Return<ExampleReward>;
 
 using constatntR = bandit::rewards::ConstantReward<2>;
 using constatntRet = environment::Return<bandit::rewards::ConstantReward<2>>;
-using NBanditEnvironment = bandit::BanditEnvironment<
-    3, bandit::rewards::ConstantReward<3>,
-    environment::Return<bandit::rewards::ConstantReward<3>>>;
+using NBanditEnvironment = bandit::
+    BanditEnvironment<3, bandit::rewards::ConstantReward<3>, environment::Return<bandit::rewards::ConstantReward<3>>>;
 
 using NBanditPolicy = RandomPolicy<NBanditEnvironment>;
 using KeyHashMappings = bandit::BanditStateActionKeymapper<NBanditEnvironment>;
 // using BanditGreedy = policy::GreedyPolicy<NBanditEnvironment,
 // KeyHashMappings>;
 using BanditGreedy = bandit::GreedyBanditPolicy<NBanditEnvironment>;
-using CIBanditGreedy =
-    bandit::UpperConfidenceBoundGreedyBanditPolicy<NBanditEnvironment, 0.5F>;
+using CIBanditGreedy = bandit::UpperConfidenceBoundGreedyBanditPolicy<NBanditEnvironment, 0.5F>;
 
 int main() {
 
   auto state = ExampleState{};
-  auto action = ExampleAction{
-      policy::random_spec_gen<typename ExampleAction::SpecType>()};
+  auto action = ExampleAction{policy::random_spec_gen<typename ExampleAction::SpecType>()};
   auto nextState = ExampleStep::step(state, action);
-  auto transition = ExampleTransition{
-      .state = state, .action = action, .nextState = nextState};
+  auto transition = ExampleTransition{.state = state, .action = action, .nextState = nextState};
   auto reward = ExampleReward::reward(transition);
-  auto discountReward = returns::DiscountReturn<ExampleReward, 0.5F>::value(
-      TransitionSequence<2, ExampleAction>{transition, transition});
+  auto discountReward =
+      returns::DiscountReturn<ExampleReward, 0.5F>::value(TransitionSequence<2, ExampleAction>{transition, transition});
 
-  std::cout << "Hello, world! " << nextState.val << " " << reward
-            << " Discount Reward " << discountReward << "\n";
+  std::cout << "Hello, world! " << nextState.val << " " << reward << " Discount Reward " << discountReward << "\n";
 
   std::minstd_rand generator = {};
   // auto banditState = bandit::BanditState<10>{};
@@ -163,8 +157,7 @@ int main() {
   banditGreedy.printQTable();
 
   // Create an epsilon  greedy policy and run the bandit over them.
-  auto epsilonGreedy =
-      policy::EpsilonGreedyPolicy<NBanditEnvironment, BanditGreedy>{0.1F};
+  auto epsilonGreedy = policy::EpsilonGreedyPolicy<NBanditEnvironment, BanditGreedy>{0.1F};
   std::cout << "EPSILON GREEDY ACTIONS\n";
   for (int i = 0; i < 100000; i++) {
     auto recommendedAction = epsilonGreedy(banditEnv.state);
@@ -196,8 +189,7 @@ int main() {
   banditEnv.printDistributions();
 
   // Create a UBC epsilon greedy policy and run the bandit over them.
-  auto ucbEpsilonGreedy =
-      policy::EpsilonGreedyPolicy<NBanditEnvironment, CIBanditGreedy>{0.1F};
+  auto ucbEpsilonGreedy = policy::EpsilonGreedyPolicy<NBanditEnvironment, CIBanditGreedy>{0.1F};
   std::cout << "UCB EPSILON GREEDY ACTIONS\n";
   for (int i = 0; i < 100000; i++) {
     auto recommendedAction = ucbEpsilonGreedy(banditEnv.state);

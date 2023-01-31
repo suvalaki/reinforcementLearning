@@ -40,11 +40,11 @@ namespace markov_decision_process {
  * @return VALUE_FUNCTION_T::PrecisionType The expected value
  */
 template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T>
-typename VALUE_FUNCTION_T::PrecisionType value_from_state_action(
-    VALUE_FUNCTION_T &valueFunction,
-    const typename VALUE_FUNCTION_T::EnvironmentType &environment,
-    const typename VALUE_FUNCTION_T::EnvironmentType::StateType &state,
-    const typename VALUE_FUNCTION_T::EnvironmentType::ActionSpace &action) {
+typename VALUE_FUNCTION_T::PrecisionType
+value_from_state_action(VALUE_FUNCTION_T &valueFunction,
+                        const typename VALUE_FUNCTION_T::EnvironmentType &environment,
+                        const typename VALUE_FUNCTION_T::EnvironmentType::StateType &state,
+                        const typename VALUE_FUNCTION_T::EnvironmentType::ActionSpace &action) {
 
   using EnvironmentType = typename VALUE_FUNCTION_T::EnvironmentType;
   using PrecisionType = typename EnvironmentType::PrecisionType;
@@ -56,20 +56,16 @@ typename VALUE_FUNCTION_T::PrecisionType value_from_state_action(
 
   auto reachableStates = environment.getReachableStates(state, action);
   return std::accumulate(
-      reachableStates.begin(), reachableStates.end(), 0.0F,
-      [&](const auto &value, const auto &nextState) {
+      reachableStates.begin(), reachableStates.end(), 0.0F, [&](const auto &value, const auto &nextState) {
         auto transition = TransitionType{state, action, nextState};
 
         if (transitionModel.find(transition) == transitionModel.end())
           return value;
 
-        return value +
-               transitionModel.at(transition) *
-                   (RewardType::reward(transition) +
-                    valueFunction.discount_rate *
-                        valueFunction
-                            .emplace(nextState, valueFunction.initial_value)
-                            .first->second.value);
+        return value + transitionModel.at(transition) *
+                           (RewardType::reward(transition) +
+                            valueFunction.discount_rate *
+                                valueFunction.emplace(nextState, valueFunction.initial_value).first->second.value);
       });
 }
 
@@ -104,12 +100,12 @@ typename VALUE_FUNCTION_T::PrecisionType value_from_state_action(
  * @param state The state to evaluate the value for
  * @return VALUE_FUNCTION_T::PrecisionType The estimated value of the state
  */
-template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T,
-          policy::isDistributionPolicy POLICY_T>
-typename VALUE_FUNCTION_T::PrecisionType policy_evaluation_step(
-    VALUE_FUNCTION_T &valueFunction,
-    const typename VALUE_FUNCTION_T::EnvironmentType &environment,
-    const POLICY_T &policy, const typename VALUE_FUNCTION_T::StateType &state) {
+template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T, policy::isDistributionPolicy POLICY_T>
+typename VALUE_FUNCTION_T::PrecisionType
+policy_evaluation_step(VALUE_FUNCTION_T &valueFunction,
+                       const typename VALUE_FUNCTION_T::EnvironmentType &environment,
+                       const POLICY_T &policy,
+                       const typename VALUE_FUNCTION_T::StateType &state) {
 
   using EnvironmentType = typename VALUE_FUNCTION_T::EnvironmentType;
   using PrecisionType = typename EnvironmentType::PrecisionType;
@@ -124,14 +120,10 @@ typename VALUE_FUNCTION_T::PrecisionType policy_evaluation_step(
   // expected value of the next state given the policy.
   const auto reachableActions = environment.getReachableActions(state);
   auto nextValueEstimate = std::accumulate(
-      reachableActions.begin(), reachableActions.end(), 0.0F,
-      [&](const auto &value, const auto &action) {
-        const auto reachableStates =
-            environment.getReachableStates(state, action);
-        return value +
-               policy.getProbability(environment, state, {state, action}) *
-                   value_from_state_action(valueFunction, environment, state,
-                                           action);
+      reachableActions.begin(), reachableActions.end(), 0.0F, [&](const auto &value, const auto &action) {
+        const auto reachableStates = environment.getReachableStates(state, action);
+        return value + policy.getProbability(environment, state, {state, action}) *
+                           value_from_state_action(valueFunction, environment, state, action);
       });
 
   return nextValueEstimate;
@@ -155,12 +147,11 @@ typename VALUE_FUNCTION_T::PrecisionType policy_evaluation_step(
  * @param epsilon The convergence threshold. When the value function at any
  * state changes by less than epsilon we have converged.
  */
-template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T,
-          policy::isDistributionPolicy POLICY_T>
-void policy_evaluation(
-    VALUE_FUNCTION_T &valueFunction,
-    const typename POLICY_T::EnvironmentType &environment, POLICY_T &policy,
-    const typename VALUE_FUNCTION_T::PrecisionType &epsilon) {
+template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T, policy::isDistributionPolicy POLICY_T>
+void policy_evaluation(VALUE_FUNCTION_T &valueFunction,
+                       const typename POLICY_T::EnvironmentType &environment,
+                       POLICY_T &policy,
+                       const typename VALUE_FUNCTION_T::PrecisionType &epsilon) {
 
   typename VALUE_FUNCTION_T::PrecisionType delta = 0.0F;
   // sweep over all states and update the value function. When finally no
@@ -169,8 +160,7 @@ void policy_evaluation(
     delta = 0.0F;
     for (const auto &state : environment.getAllPossibleStates()) {
       auto oldValue = valueFunction.valueAt(state);
-      auto newValue =
-          policy_evaluation_step(valueFunction, environment, policy, state);
+      auto newValue = policy_evaluation_step(valueFunction, environment, policy, state);
       delta = std::max(delta, std::abs(oldValue - newValue));
       valueFunction.at(state).value = newValue;
     }
@@ -211,13 +201,11 @@ void policy_evaluation(
  * @return true If the policy was improved
  * @return false If the policy was not improved
  */
-template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T,
-          policy::isDistributionPolicy POLICY_T>
-bool policy_improvement_step(
-    VALUE_FUNCTION_T &valueFunction,
-    const typename VALUE_FUNCTION_T::EnvironmentType &environment,
-    POLICY_T &policy,
-    const typename VALUE_FUNCTION_T::EnvironmentType::StateType &state) {
+template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T, policy::isDistributionPolicy POLICY_T>
+bool policy_improvement_step(VALUE_FUNCTION_T &valueFunction,
+                             const typename VALUE_FUNCTION_T::EnvironmentType &environment,
+                             POLICY_T &policy,
+                             const typename VALUE_FUNCTION_T::EnvironmentType::StateType &state) {
 
   using EnvironmentType = typename VALUE_FUNCTION_T::EnvironmentType;
   using PrecisionType = typename EnvironmentType::PrecisionType;
@@ -228,11 +216,8 @@ bool policy_improvement_step(
   using KeyMaker = typename POLICY_T::KeyMaker;
 
   const auto oldActions = policy.getProbabilities(environment, state);
-  const auto oldActionIdx =
-      std::max_element(oldActions.begin(), oldActions.end(),
-                       [&](const auto &lhs, const auto &rhs) {
-                         return lhs.second < rhs.second;
-                       });
+  const auto oldActionIdx = std::max_element(
+      oldActions.begin(), oldActions.end(), [&](const auto &lhs, const auto &rhs) { return lhs.second < rhs.second; });
   const auto oldAction = KeyMaker::get_action_from_key(oldActionIdx->first);
 
   // For each state action pair find the new distribution of actions
@@ -242,9 +227,8 @@ bool policy_improvement_step(
   // the action = 1.0
 
   const auto reachableActions = environment.getReachableActions(state);
-  auto nextActionIdx = std::max_element(
-      reachableActions.begin(), reachableActions.end(),
-      [&](const auto &lhs, const auto &rhs) {
+  auto nextActionIdx =
+      std::max_element(reachableActions.begin(), reachableActions.end(), [&](const auto &lhs, const auto &rhs) {
         return value_from_state_action(valueFunction, environment, state, lhs) <
                value_from_state_action(valueFunction, environment, state, rhs);
       });
@@ -276,19 +260,16 @@ bool policy_improvement_step(
  * @return false If the policy is not stable (at least one action update was
  * made)
  */
-template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T,
-          policy::isDistributionPolicy POLICY_T>
-bool policy_improvement(
-    VALUE_FUNCTION_T &valueFunction,
-    const typename VALUE_FUNCTION_T::EnvironmentType &environment,
-    POLICY_T &policy) {
+template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T, policy::isDistributionPolicy POLICY_T>
+bool policy_improvement(VALUE_FUNCTION_T &valueFunction,
+                        const typename VALUE_FUNCTION_T::EnvironmentType &environment,
+                        POLICY_T &policy) {
 
   bool policyStable = true;
 
   const auto allStates = environment.getAllPossibleStates();
   for (const auto &state : allStates) {
-    policyStable &=
-        not policy_improvement_step(valueFunction, environment, policy, state);
+    policyStable &= not policy_improvement_step(valueFunction, environment, policy, state);
   }
 
   return policyStable;
@@ -307,12 +288,11 @@ bool policy_improvement(
  * @param policy The policy to use for the action selection
  * @param epsilon The precision to use for the policy evaluation
  */
-template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T,
-          policy::isDistributionPolicy POLICY_T>
-void policy_iteration(
-    VALUE_FUNCTION_T &valueFunction,
-    const typename VALUE_FUNCTION_T::EnvironmentType &environment,
-    POLICY_T &policy, const typename VALUE_FUNCTION_T::PrecisionType &epsilon) {
+template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T, policy::isDistributionPolicy POLICY_T>
+void policy_iteration(VALUE_FUNCTION_T &valueFunction,
+                      const typename VALUE_FUNCTION_T::EnvironmentType &environment,
+                      POLICY_T &policy,
+                      const typename VALUE_FUNCTION_T::PrecisionType &epsilon) {
 
   bool policyStable = true;
 

@@ -20,13 +20,10 @@ template <ActionType ACTION0> struct Step {
 
   // Calculate the next state given the current state and the action
   // For more complex models like markov transition states this can be overriden
-  static StateType step(const StateType &state, const ActionSpace &action) {
-    return action.step(state);
-  };
+  static StateType step(const StateType &state, const ActionSpace &action) { return action.step(state); };
 };
 
 template <typename STEP_T>
-concept StepType =
-    std::is_base_of_v<Step<typename STEP_T::ActionSpace>, STEP_T>;
+concept StepType = std::is_base_of_v<Step<typename STEP_T::ActionSpace>, STEP_T>;
 
 } // namespace step

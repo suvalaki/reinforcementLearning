@@ -34,9 +34,7 @@ using transition::Transition;
 using transition::TransitionKind;
 using transition::TransitionSequence;
 
-template <StepType STEP_T, RewardType REWARD_T, ReturnType RETURN_T,
-          typename CRTP = void>
-struct Environment {
+template <StepType STEP_T, RewardType REWARD_T, ReturnType RETURN_T, typename CRTP = void> struct Environment {
 
   using EnvironmentType = Environment<STEP_T, REWARD_T, RETURN_T>;
   using StateType = typename STEP_T::StateType;
@@ -48,8 +46,7 @@ struct Environment {
   using RewardType = REWARD_T;
   using ReturnType = RETURN_T;
 
-  template <std::size_t EPISODE_LENGTH>
-  using EpisodeType = TransitionSequence<EPISODE_LENGTH, ActionSpace>;
+  template <std::size_t EPISODE_LENGTH> using EpisodeType = TransitionSequence<EPISODE_LENGTH, ActionSpace>;
 
   StateType state;
 
@@ -72,43 +69,42 @@ struct Environment {
 
 template <typename ENVIRON_T>
 concept EnvironmentType = std::is_base_of_v<
-    Environment<typename ENVIRON_T::StepType, typename ENVIRON_T::RewardType,
-                typename ENVIRON_T::ReturnType>,
+    Environment<typename ENVIRON_T::StepType, typename ENVIRON_T::RewardType, typename ENVIRON_T::ReturnType>,
     ENVIRON_T>;
 
 #define SINGLE_ARG(...) __VA_ARGS__
-#define SETUP_TYPES(BASE_T)                                                    \
-  using BaseType = BASE_T;                                                     \
-  using StateType = typename BASE_T::StateType;                                \
-  using ActionSpace = typename BASE_T::ActionSpace;                            \
-  using ActionSpecType = typename BASE_T::ActionSpecType;                      \
-  using PrecisionType = typename BASE_T::PrecisionType;                        \
-  using StepType = typename BASE_T::StepType;                                  \
-  using TransitionType = typename BASE_T::TransitionType;                      \
-  using RewardType = typename BASE_T::RewardType;                              \
+#define SETUP_TYPES(BASE_T)                                                                                            \
+  using BaseType = BASE_T;                                                                                             \
+  using StateType = typename BASE_T::StateType;                                                                        \
+  using ActionSpace = typename BASE_T::ActionSpace;                                                                    \
+  using ActionSpecType = typename BASE_T::ActionSpecType;                                                              \
+  using PrecisionType = typename BASE_T::PrecisionType;                                                                \
+  using StepType = typename BASE_T::StepType;                                                                          \
+  using TransitionType = typename BASE_T::TransitionType;                                                              \
+  using RewardType = typename BASE_T::RewardType;                                                                      \
   using ReturnType = typename BASE_T::ReturnType;
 
-#define SETUP_TYPES_FROM_ENVIRON(ENVIRON_T)                                    \
-  using EnvironmentType = ENVIRON_T;                                           \
-  using StateType = typename ENVIRON_T::StateType;                             \
-  using ActionSpace = typename ENVIRON_T::ActionSpace;                         \
-  using ActionSpecType = typename ENVIRON_T::ActionSpecType;                   \
-  using PrecisionType = typename ENVIRON_T::PrecisionType;                     \
-  using StepType = typename ENVIRON_T::StepType;                               \
-  using TransitionType = typename ENVIRON_T::TransitionType;                   \
-  using RewardType = typename ENVIRON_T::RewardType;                           \
+#define SETUP_TYPES_FROM_ENVIRON(ENVIRON_T)                                                                            \
+  using EnvironmentType = ENVIRON_T;                                                                                   \
+  using StateType = typename ENVIRON_T::StateType;                                                                     \
+  using ActionSpace = typename ENVIRON_T::ActionSpace;                                                                 \
+  using ActionSpecType = typename ENVIRON_T::ActionSpecType;                                                           \
+  using PrecisionType = typename ENVIRON_T::PrecisionType;                                                             \
+  using StepType = typename ENVIRON_T::StepType;                                                                       \
+  using TransitionType = typename ENVIRON_T::TransitionType;                                                           \
+  using RewardType = typename ENVIRON_T::RewardType;                                                                   \
   using ReturnType = typename ENVIRON_T::ReturnType;
 
-#define SETUP_TYPES_W_ENVIRON(BASE_T, ENVIRON_T)                               \
-  using BaseType = BASE_T;                                                     \
-  using EnvironmentType = ENVIRON_T;                                           \
-  using StateType = typename BASE_T::StateType;                                \
-  using ActionSpace = typename BASE_T::ActionSpace;                            \
-  using ActionSpecType = typename BASE_T::ActionSpecType;                      \
-  using PrecisionType = typename BASE_T::PrecisionType;                        \
-  using StepType = typename BASE_T::StepType;                                  \
-  using TransitionType = typename BASE_T::TransitionType;                      \
-  using RewardType = typename BASE_T::RewardType;                              \
+#define SETUP_TYPES_W_ENVIRON(BASE_T, ENVIRON_T)                                                                       \
+  using BaseType = BASE_T;                                                                                             \
+  using EnvironmentType = ENVIRON_T;                                                                                   \
+  using StateType = typename BASE_T::StateType;                                                                        \
+  using ActionSpace = typename BASE_T::ActionSpace;                                                                    \
+  using ActionSpecType = typename BASE_T::ActionSpecType;                                                              \
+  using PrecisionType = typename BASE_T::PrecisionType;                                                                \
+  using StepType = typename BASE_T::StepType;                                                                          \
+  using TransitionType = typename BASE_T::TransitionType;                                                              \
+  using RewardType = typename BASE_T::RewardType;                                                                      \
   using ReturnType = typename BASE_T::ReturnType;
 
 } // namespace environment

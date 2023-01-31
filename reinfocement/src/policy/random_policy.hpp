@@ -36,20 +36,16 @@ random_spec_gen(E &engine = xt::random::get_default_random_engine()) {
 
 template <CompositeArraySpecType T, class E = xt::random::default_engine_type>
 requires CompositeArraySpecType<T> std::enable_if_t < CompositeArraySpecType<T>,
-typename T::DataType >
-    random_spec_gen(E &engine = xt::random::get_default_random_engine()) {
+typename T::DataType > random_spec_gen(E &engine = xt::random::get_default_random_engine()) {
 
   // Tuple of the random types
   return [&engine]<std::size_t... N>(std::index_sequence<N...>) {
-    return typename T::DataType(
-        random_spec_gen<std::tuple_element_t<N, typename T::tupleType>>(
-            engine)...);
+    return typename T::DataType(random_spec_gen<std::tuple_element_t<N, typename T::tupleType>>(engine)...);
   }
   (std::make_index_sequence<std::tuple_size_v<typename T::tupleType>>());
 }
 
-template <environment::EnvironmentType ENVIRON_T>
-struct RandomPolicy : Policy<ENVIRON_T> {
+template <environment::EnvironmentType ENVIRON_T> struct RandomPolicy : Policy<ENVIRON_T> {
 
   SETUP_TYPES(SINGLE_ARG(Policy<ENVIRON_T>));
 
