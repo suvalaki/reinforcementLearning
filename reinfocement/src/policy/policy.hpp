@@ -18,8 +18,9 @@ using spec::isBoundedArraySpec;
 using spec::isCategoricalArraySpec;
 
 template <environment::EnvironmentType ENVIRON_T> struct Policy {
-  SETUP_TYPES(SINGLE_ARG(ENVIRON_T));
-  using EnvironmentType = ENVIRON_T;
+
+  SETUP_TYPES_FROM_ENVIRON(SINGLE_ARG(ENVIRON_T));
+  using BaseType = Policy<EnvironmentType>;
 
   // Run the policy over the current state of the environment
   virtual ActionSpace operator()(const StateType &s) = 0;

@@ -130,9 +130,10 @@ template <std::size_t N_BANDITS, environment::RewardType REWARD_T,
 struct BanditEnvironment
     : environment::Environment<BanditStep<N_BANDITS>, REWARD_T, RETURN_T> {
 
-  SETUP_TYPES(SINGLE_ARG(
-      environment::Environment<BanditStep<N_BANDITS>, REWARD_T, RETURN_T>));
-  using EnvironmentType = BanditEnvironment<N_BANDITS, REWARD_T, RETURN_T>;
+  SETUP_TYPES_W_ENVIRON(
+      SINGLE_ARG(
+          environment::Environment<BanditStep<N_BANDITS>, REWARD_T, RETURN_T>),
+      SINGLE_ARG(BanditEnvironment<N_BANDITS, REWARD_T, RETURN_T>));
 
   constexpr static std::size_t N = N_BANDITS;
 

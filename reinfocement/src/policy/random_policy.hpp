@@ -50,11 +50,8 @@ typename T::DataType >
 
 template <environment::EnvironmentType ENVIRON_T>
 struct RandomPolicy : Policy<ENVIRON_T> {
-  using baseType = Policy<ENVIRON_T>;
-  using EnvironmentType = typename baseType::EnvironmentType;
-  using StateType = typename baseType::StateType;
-  using ActionSpace = typename baseType::ActionSpace;
-  using TransitionType = typename baseType::TransitionType;
+
+  SETUP_TYPES(SINGLE_ARG(Policy<ENVIRON_T>));
 
   // Get a random event over the bounded specification
   ActionSpace operator()(const StateType &s) override {

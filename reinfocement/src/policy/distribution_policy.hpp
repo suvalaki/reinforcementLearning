@@ -61,16 +61,10 @@ template <environment::EnvironmentType ENVIRON_T,
 struct DistributionPolicy
     : GreedyPolicy<ENVIRON_T, KEYMAPPER_T, VALUE_T, STEPSIZE_TAKER_T> {
 
-  SETUP_TYPES(SINGLE_ARG(Policy<ENVIRON_T>));
-  using EnvironmentType = ENVIRON_T;
+  SETUP_KEYPOLICY_TYPES(SINGLE_ARG(
+      GreedyPolicy<ENVIRON_T, KEYMAPPER_T, VALUE_T, STEPSIZE_TAKER_T>));
 
-  using KeyMaker = KEYMAPPER_T;
-  using KeyType = typename KeyMaker::KeyType;
-  using ValueType = VALUE_T;
-  using StepSizeTaker = STEPSIZE_TAKER_T;
-
-  using QTableValueType = ValueType;
-  std::unordered_map<KeyType, QTableValueType, typename KeyMaker::Hash> q_table;
+  std::unordered_map<KeyType, ValueType, typename KeyMaker::Hash> q_table;
 
   typename ValueType::Factory valueFactory{};
 

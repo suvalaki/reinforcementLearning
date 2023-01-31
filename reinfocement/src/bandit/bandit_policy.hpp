@@ -18,12 +18,8 @@ template <typename ENVIRON_T>
 struct BanditStateActionKeymapper
     : policy::StateActionKeymaker<ENVIRON_T, typename ENVIRON_T::ActionSpace> {
 
-  using baseType =
-      policy::StateActionKeymaker<ENVIRON_T, typename ENVIRON_T::ActionSpace>;
-  using KeyType = typename baseType::KeyType;
-  using StateType = typename baseType::StateType;
-  using ActionSpace = typename baseType::ActionSpace;
-  using EnvironmentType = ENVIRON_T;
+  SETUP_KEYMAKER_TYPES(SINGLE_ARG(
+      policy::StateActionKeymaker<ENVIRON_T, typename ENVIRON_T::ActionSpace>));
 
   static KeyType make(const StateType &s, const ActionSpace &action) {
     return action;

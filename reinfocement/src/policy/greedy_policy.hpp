@@ -18,6 +18,13 @@ using spec::CompositeArraySpecType;
 using spec::isBoundedArraySpec;
 using spec::isCategoricalArraySpec;
 
+#define SETUP_POLICY_TYPES(BASE_T, KEYMAPPER_T, VALUE_T)                       \
+  SETUP_TYPES(SINGLE_ARG(BASE_T))                                              \
+  using EnvironmentType = typename BaseType::EnvironmentType;                  \
+  using KeyMaker = KEYMAPPER_T;                                                \
+  using KeyType = typename KeyMaker::KeyType;                                  \
+  using ValueType = VALUE_T;
+
 template <environment::EnvironmentType ENVIRON_T,
           isStateActionKeymaker KEYMAPPER_T = DefaultActionKeymaker<ENVIRON_T>,
           isStateActionValue VALUE_T = StateActionValue<ENVIRON_T>,
@@ -27,20 +34,10 @@ struct GreedyPolicy
     : Policy<ENVIRON_T>,
       FiniteValueFunctionMixin<
           ValueFunctionPrototype<ENVIRON_T, KEYMAPPER_T, 0.0F, 0.0F>, VALUE_T> {
-  using baseType = Policy<ENVIRON_T>;
-  using EnvironmentType = typename baseType::EnvironmentType;
-  using StateType = typename baseType::StateType;
-  using ActionSpace = typename baseType::ActionSpace;
-  using TransitionType = typename baseType::TransitionType;
-  using RewardType = typename EnvironmentType::RewardType;
-  using PrecisionType = typename RewardType::PrecisionType;
 
-  using KeyMaker = KEYMAPPER_T;
-  using KeyType = typename KeyMaker::KeyType;
-  using ValueType = VALUE_T;
+  SETUP_POLICY_TYPES(SINGLE_ARG(Policy<ENVIRON_T>), SINGLE_ARG(KEYMAPPER_T),
+                     SINGLE_ARG(VALUE_T));
   using StepSizeTaker = STEPSIZE_TAKER_T;
-
-  using QTableValueType = ValueType;
 
   typename ValueType::Factory valueFactory{};
 
@@ -108,5 +105,13 @@ struct GreedyPolicy
     }
   }
 };
+
+#define SETUP_KEYPOLICY_TYPES(POLICY_T)                                        \
+  SETUP_TYPES(SINGLE_ARG(POLICY_T))                                            \
+  using EnvironmentType = typename BaseType::EnvironmentType;                  \
+  using KeyMaker = typename BaseType::KeyMaker;                                \
+  using KeyType = typename KeyMaker::KeyType;                                  \
+  using ValueType = typename BaseType::ValueType;                              \
+  using StepSizeTaker = typename BaseType::StepSizeTaker;
 
 } // namespace policy

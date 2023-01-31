@@ -21,16 +21,11 @@ template <environment::EnvironmentType ENVIRON_T,
           PolicyType EXPLOIT_POLICY = GreedyPolicy<ENVIRON_T>,
           class E = xt::random::default_engine_type>
 struct EpsilonGreedyPolicy : EXPLOIT_POLICY {
-  using baseType = EXPLOIT_POLICY;
-  using EnvironmentType = typename baseType::EnvironmentType;
-  using StateType = typename baseType::StateType;
-  using ActionSpace = typename baseType::ActionSpace;
-  using TransitionType = typename baseType::TransitionType;
-  using RewardType = typename EnvironmentType::RewardType;
-  using PrecisionType = typename RewardType::PrecisionType;
+
+  SETUP_TYPES(SINGLE_ARG(EXPLOIT_POLICY));
+  using EnvironmentType = typename BaseType::EnvironmentType;
 
   RandomPolicy<ENVIRON_T> randomPolicy;
-
   PrecisionType epsilon = 0.1;
   E &engine;
 

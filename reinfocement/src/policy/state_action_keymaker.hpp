@@ -16,9 +16,8 @@ template <typename T> struct HashBuilder {
 
 template <environment::EnvironmentType ENVIRON_T, typename KEY_T>
 struct StateActionKeymaker {
-  using EnvironmentType = typename ENVIRON_T::EnvironmentType;
-  using StateType = typename EnvironmentType::StateType;
-  using ActionSpace = typename EnvironmentType::ActionSpace;
+
+  SETUP_TYPES_FROM_ENVIRON(SINGLE_ARG(ENVIRON_T));
 
   // The type that will be used for Q value lookup
   using KeyType = KEY_T;
@@ -44,6 +43,11 @@ concept isStateActionKeymaker = requires(T t) {
     } -> std::same_as<typename T::ActionSpace>;
   { T::hash(std::declval<typename T::KeyType>()) } -> std::same_as<std::size_t>;
 };
+
+#define SETUP_KEYMAKER_TYPES(BASE_T)                                           \
+  SETUP_TYPES(SINGLE_ARG(BASE_T))                                              \
+  using EnvironmentType = typename BASE_T::EnvironmentType;                    \
+  using KeyType = typename BASE_T::KeyType;
 
 template <environment::EnvironmentType ENVIRON_T>
 struct DefaultActionKeymaker
