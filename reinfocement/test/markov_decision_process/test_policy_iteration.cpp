@@ -52,10 +52,10 @@ TEST_CASE("Coin MPD can undergo policy improvement") {
 
   SECTION("Policy improvement step updates a policy") {
     // force the q_table to have non-optimal values
-    policy.q_table.at(CoinDistributionPolicy::KeyMaker::make(s0, a0)) = 1.0F;
-    policy.q_table.at(CoinDistributionPolicy::KeyMaker::make(s0, a1)) = 0.0F;
-    policy.q_table.at(CoinDistributionPolicy::KeyMaker::make(s1, a0)) = 0.0F;
-    policy.q_table.at(CoinDistributionPolicy::KeyMaker::make(s1, a1)) = 0.0F;
+    policy.at(CoinDistributionPolicy::KeyMaker::make(s0, a0)).value = 1.0F;
+    policy.at(CoinDistributionPolicy::KeyMaker::make(s0, a1)).value = 0.0F;
+    policy.at(CoinDistributionPolicy::KeyMaker::make(s1, a0)).value = 0.0F;
+    policy.at(CoinDistributionPolicy::KeyMaker::make(s1, a1)).value = 0.0F;
     policy_evaluation(valueFunction, environ, policy, 1e-3F);
     auto updated = policy_improvement_step(valueFunction, environ, policy, s0);
     CHECK_FALSE(updated); // the policy updated
@@ -73,10 +73,10 @@ TEST_CASE("Coin MPD can undergo policy improvement") {
 
   SECTION("Complete Policy improvement") {
     // force the q_table to have non-optimal values
-    policy.q_table.at(CoinDistributionPolicy::KeyMaker::make(s0, a0)) = 1.0F;
-    policy.q_table.at(CoinDistributionPolicy::KeyMaker::make(s0, a1)) = 0.0F;
-    policy.q_table.at(CoinDistributionPolicy::KeyMaker::make(s1, a0)) = 0.0F;
-    policy.q_table.at(CoinDistributionPolicy::KeyMaker::make(s1, a1)) = 0.0F;
+    policy.at(CoinDistributionPolicy::KeyMaker::make(s0, a0)).value = 1.0F;
+    policy.at(CoinDistributionPolicy::KeyMaker::make(s0, a1)).value = 0.0F;
+    policy.at(CoinDistributionPolicy::KeyMaker::make(s1, a0)).value = 0.0F;
+    policy.at(CoinDistributionPolicy::KeyMaker::make(s1, a1)).value = 0.0F;
     policy_evaluation(valueFunction, environ, policy, 1e-3F);
     policy_improvement(valueFunction, environ, policy);
     auto p = policy.getProbability(
@@ -92,10 +92,10 @@ TEST_CASE("Coin MPD can undergo policy iteration") {
       data;
 
   // force the q_table to have non-optimal values
-  policy.q_table.at(CoinDistributionPolicy::KeyMaker::make(s0, a0)) = 1.0F;
-  policy.q_table.at(CoinDistributionPolicy::KeyMaker::make(s0, a1)) = 1.0F;
-  policy.q_table.at(CoinDistributionPolicy::KeyMaker::make(s1, a0)) = 0.0F;
-  policy.q_table.at(CoinDistributionPolicy::KeyMaker::make(s1, a1)) = 0.0F;
+  policy.at(CoinDistributionPolicy::KeyMaker::make(s0, a0)).value = 1.0F;
+  policy.at(CoinDistributionPolicy::KeyMaker::make(s0, a1)).value = 1.0F;
+  policy.at(CoinDistributionPolicy::KeyMaker::make(s1, a0)).value = 0.0F;
+  policy.at(CoinDistributionPolicy::KeyMaker::make(s1, a1)).value = 0.0F;
   policy_iteration(valueFunction, environ, policy, 1e-3F);
   auto p = policy.getProbability(
       environ, s0, CoinDistributionPolicy::KeyMaker::make(s0, a0));

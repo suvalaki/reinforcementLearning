@@ -42,10 +42,10 @@ TEST_CASE("Coin MPD can undergo policy value iteration") {
 
   SECTION("Full Value Iteration function works") {
     // force the q_table to have non-optimal values
-    policy.q_table.at(CoinDistributionPolicy::KeyMaker::make(s0, a0)) = 0.0F;
-    policy.q_table.at(CoinDistributionPolicy::KeyMaker::make(s0, a1)) = 0.0F;
-    policy.q_table.at(CoinDistributionPolicy::KeyMaker::make(s1, a0)) = 0.0F;
-    policy.q_table.at(CoinDistributionPolicy::KeyMaker::make(s1, a1)) = 0.0F;
+    policy.at(CoinDistributionPolicy::KeyMaker::make(s0, a0)).value = 0.0F;
+    policy.at(CoinDistributionPolicy::KeyMaker::make(s0, a1)).value = 0.0F;
+    policy.at(CoinDistributionPolicy::KeyMaker::make(s1, a0)).value = 0.0F;
+    policy.at(CoinDistributionPolicy::KeyMaker::make(s1, a1)).value = 0.0F;
     value_iteration::value_iteration(valueFunction, environ, policy, 1e-3F);
 
     // these are the optimals after 1 iteration
