@@ -55,15 +55,10 @@ struct DefaultActionKeymaker
                           std::pair<typename ENVIRON_T::StateType,
                                     typename ENVIRON_T::ActionSpace>> {
 
-  using baseType =
+  SETUP_KEYMAKER_TYPES(SINGLE_ARG(
       StateActionKeymaker<ENVIRON_T,
                           std::pair<typename ENVIRON_T::StateType,
-                                    typename ENVIRON_T::ActionSpace>>;
-
-  using EnvironmentType = typename baseType::EnvironmentType;
-  using StateType = typename baseType::StateType;
-  using ActionSpace = typename baseType::ActionSpace;
-  using KeyType = typename baseType::KeyType;
+                                    typename ENVIRON_T::ActionSpace>>))
 
   static KeyType make(const StateType &s, const ActionSpace &action) {
     return std::make_pair(s, action);
@@ -95,13 +90,8 @@ template <environment::EnvironmentType ENVIRON_T>
 struct ActionKeymaker
     : StateActionKeymaker<ENVIRON_T, typename ENVIRON_T::ActionSpace> {
 
-  using baseType =
-      StateActionKeymaker<ENVIRON_T, typename ENVIRON_T::ActionSpace>;
-
-  using EnvironmentType = typename baseType::EnvironmentType;
-  using StateType = typename baseType::StateType;
-  using ActionSpace = typename baseType::ActionSpace;
-  using KeyType = typename baseType::KeyType;
+  SETUP_KEYMAKER_TYPES(SINGLE_ARG(
+      StateActionKeymaker<ENVIRON_T, typename ENVIRON_T::ActionSpace>))
 
   static KeyType make(const StateType &s, const ActionSpace &action) {
     return action;
@@ -127,13 +117,8 @@ template <environment::EnvironmentType ENVIRON_T>
 struct StateKeymaker
     : StateActionKeymaker<ENVIRON_T, typename ENVIRON_T::StateType> {
 
-  using baseType =
-      StateActionKeymaker<ENVIRON_T, typename ENVIRON_T::StateType>;
-
-  using EnvironmentType = typename baseType::EnvironmentType;
-  using StateType = typename baseType::StateType;
-  using ActionSpace = typename baseType::ActionSpace;
-  using KeyType = typename baseType::KeyType;
+  SETUP_KEYMAKER_TYPES(
+      SINGLE_ARG(StateActionKeymaker<ENVIRON_T, typename ENVIRON_T::StateType>))
 
   static KeyType make(const StateType &s, const ActionSpace &action) {
     return s;
