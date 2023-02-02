@@ -21,46 +21,89 @@ exploring_start_sample(const ENVIRONMENT_T &e) {
   return std::make_pair(state, action);
 }
 
-template <environment::FiniteEnvironmentType ENVIRONMENT_T> void exploring_start_init(const ENVIRONMENT_T &e) {
+template <environment::FiniteEnvironmentType ENVIRONMENT_T>
+typename ENVIRONMENT_T::TransitionType exploring_start_init(ENVIRONMENT_T &e) {
   auto [state, action] = exploring_start_sample(e);
   e.reset();
   e.state = state;
-  e.step(action);
+  return e.step(action);
   // Now follow policy \pi
 }
 
 template <environment::EnvironmentType ENVIRONMENT_T, policy::PolicyType POLICY_T>
 Episode<ENVIRONMENT_T> generate_episode_with_exploring_starts(ENVIRONMENT_T &environment, POLICY_T &policy) {
-  exploring_start_init(environment);
-  auto episode = generate_episode(environment, policy, false);
+
+  std::size_t insertion = 0;
+  auto episode = Episode<ENVIRONMENT_T>{};
+  {
+    auto transition = exploring_start_init(environment);
+    episode.AddTransition(transition);
+    insertion++;
+    if (transition.isDone()) {
+      return episode;
+    }
+  }
+
+  auto state = environment.getState();
+  while (true) {
+    auto action = policy(environment, state);
+    auto transition = environment.step(action);
+    episode.AddTransition(transition);
+    if (transition.isDone()) {
+      break;
+    }
+    state = transition.nextState;
+    environment.update(transition);
+  }
   return episode;
 }
 
 template <std::size_t episode_max_length, environment::EnvironmentType ENVIRONMENT_T, policy::PolicyType POLICY_T>
-Episode<ENVIRONMENT_T> generate_episode_with_exploring_starts(ENVIRONMENT_T &environment, POLICY_T &policy) {
-  exploring_start_init(environment);
-  auto episode = generate_episode<episode_max_length>(environment, policy, false);
+requires NonZero<episode_max_length> Episode<ENVIRONMENT_T, episode_max_length>
+generate_episode_with_exploring_starts(ENVIRONMENT_T &environment, POLICY_T &policy) {
+
+  std::size_t insertion = 0;
+  auto episode = Episode<ENVIRONMENT_T, episode_max_length>{};
+  {
+    auto transition = exploring_start_init(environment);
+    episode.AddTransition(transition);
+    insertion++;
+    if (transition.isDone() || insertion >= episode_max_length) {
+      return episode;
+    }
+  }
+
+  auto state = environment.getState();
+  while (true) {
+    auto action = policy(environment, state);
+    auto transition = environment.step(action);
+    episode.AddTransition(transition);
+    insertion++;
+    if (transition.isDone() || insertion >= episode_max_length) {
+      break;
+    }
+    state = transition.nextState;
+    environment.update(transition);
+  }
   return episode;
 }
 
-template <std::size_t max_episode_length, environment::EnvironmentType ENVIRONMENT_T, policy::PolicyType POLICY_T>
-struct ExploringStartsEpisodeGenerator : EpisodeGenerator<max_episode_length, ENVIRONMENT_T, POLICY_T> {
+template <std::size_t max_episode_length_n, environment::EnvironmentType ENVIRONMENT_T, policy::PolicyType POLICY_T>
+struct ExploringStartsEpisodeGenerator : EpisodeGenerator<max_episode_length_n, ENVIRONMENT_T, POLICY_T> {
 
-  using EpisodeType = EpisodeGenerator<max_episode_length, ENVIRONMENT_T, POLICY_T>::EpisodeType;
+  using EpisodeType = EpisodeGenerator<max_episode_length_n, ENVIRONMENT_T, POLICY_T>::EpisodeType;
 
   EpisodeType operator()(ENVIRONMENT_T &environment, POLICY_T &policy) const override {
-    EpisodeType episode;
-    if constexpr (max_episode_length == 0) {
+    if constexpr (max_episode_length_n == 0) {
       // It is assumed that the terminal state will be generated in the normal
       // operation of the environments step funciton.
-      episode = generate_episode_with_exploring_starts(environment, policy);
-    } else if constexpr (max_episode_length != 0) {
+      return generate_episode_with_exploring_starts(environment, policy);
+    } else if constexpr (max_episode_length_n != 0) {
       // Either the step function will generate an episode termination or the
       // maximum episode length will be reached - and so the episode will stop
       // early.
-      episode = generate_episode_with_exploring_starts<max_episode_length>(environment, policy);
+      return generate_episode_with_exploring_starts<max_episode_length_n>(environment, policy);
     }
-    return episode;
   }
 };
 

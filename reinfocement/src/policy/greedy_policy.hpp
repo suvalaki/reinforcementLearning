@@ -34,6 +34,8 @@ struct GreedyPolicy : Policy<ENVIRON_T>,
 
   SETUP_POLICY_TYPES(SINGLE_ARG(Policy<ENVIRON_T>), SINGLE_ARG(KEYMAPPER_T), SINGLE_ARG(VALUE_T));
   using StepSizeTaker = STEPSIZE_TAKER_T;
+  using ValueFunctionType =
+      FiniteValueFunctionMixin<ValueFunctionPrototype<ENVIRON_T, KEYMAPPER_T, 0.0F, 0.0F>, VALUE_T>;
 
   typename ValueType::Factory valueFactory{};
 
@@ -56,6 +58,8 @@ struct GreedyPolicy : Policy<ENVIRON_T>,
 
     return action;
   }
+
+  ActionSpace operator()(const EnvironmentType &e, const StateType &s) { return (*this)(s); }
 
   // Update the Q-table with the new transition
   virtual void update(const TransitionType &s) {
@@ -107,5 +111,10 @@ struct GreedyPolicy : Policy<ENVIRON_T>,
   using KeyType = typename KeyMaker::KeyType;                                                                          \
   using ValueType = typename BaseType::ValueType;                                                                      \
   using StepSizeTaker = typename BaseType::StepSizeTaker;
+
+template <typename T>
+concept isGreedyPolicy = std::is_base_of_v<
+    GreedyPolicy<typename T::EnvironmentType, typename T::KeyMaker, typename T::ValueType, typename T::StepSizeTaker>,
+    T>;
 
 } // namespace policy
