@@ -134,6 +134,10 @@ template <environment::EnvironmentType ENVIRONMENT_T, auto INITIAL_VALUE = 0.0F,
 using StateActionValueFunction =
     ValueFunctionPrototype<ENVIRONMENT_T, DefaultActionKeymaker<ENVIRONMENT_T>, INITIAL_VALUE, DISCOUNT_RATE>;
 
+template <typename T>
+concept isStateActionValueFunction =
+    std::is_base_of_v<StateActionValueFunction<typename T::EnvironmentType, T::initial_value, T::discount_rate>, T>;
+
 /** @brief A mapping of states to values v(s). When the finite model is fully
  * known this is enough to calculcate future expected returns under a given
  * policy ( as is the case in MDP).
@@ -142,11 +146,23 @@ template <environment::EnvironmentType ENVIRONMENT_T, auto INITIAL_VALUE = 0.0F,
 using StateValueFunction =
     ValueFunctionPrototype<ENVIRONMENT_T, StateKeymaker<ENVIRONMENT_T>, INITIAL_VALUE, DISCOUNT_RATE>;
 
+template <typename T>
+concept isStateValueFunction =
+    std::is_base_of_v<StateValueFunction<typename T::EnvironmentType, T::initial_value, T::discount_rate>, T>;
+
 /** @brief A mapping of actions to valus : a -> q(a)
  */
 template <environment::EnvironmentType ENVIRONMENT_T, auto INITIAL_VALUE = 0.0F, auto DISCOUNT_RATE = 0.0F>
 using ActionValueFunction =
     ValueFunctionPrototype<ENVIRONMENT_T, ActionKeymaker<ENVIRONMENT_T>, INITIAL_VALUE, DISCOUNT_RATE>;
+
+template <typename T>
+concept isActionValueFunction =
+    std::is_base_of_v<ActionValueFunction<typename T::EnvironmentType, T::initial_value, T::discount_rate>, T>;
+
+template <typename T>
+concept isNotKnownValueFunction = !isFiniteStateValueFunction<T> && !isStateActionValueFunction<T> &&
+                                  !isStateValueFunction<T> && !isActionValueFunction<T>;
 
 template <environment::EnvironmentType ENVIRONMENT_T,
           isStateActionValue VALUE_T = StateActionValue<ENVIRONMENT_T>,

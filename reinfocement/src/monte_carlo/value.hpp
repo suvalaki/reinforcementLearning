@@ -11,11 +11,31 @@ namespace monte_carlo {
 
 /// Each occurance of a state within an episode is called a visit.
 template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T>
-using AverageReturnsMap = std::unordered_map<typename VALUE_FUNCTION_T::StateType,
+using AverageReturnsMap = std::unordered_map<typename VALUE_FUNCTION_T::KeyType,
                                              std::vector<typename VALUE_FUNCTION_T::PrecisionType>,
-                                             typename VALUE_FUNCTION_T::StateType::Hash>;
+                                             typename VALUE_FUNCTION_T::KeyMaker::Hash>;
 
-template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T>
+template <policy::isStateActionValueFunction VALUE_FUNCTION_T>
+AverageReturnsMap<VALUE_FUNCTION_T>
+n_visit_returns_initialisation(VALUE_FUNCTION_T &valueFunction,
+                               typename VALUE_FUNCTION_T::EnvironmentType &environment) {
+
+  // Initialisation step
+  // initialise the value function to the initial value
+  valueFunction.initialize(environment);
+  // initialise returns list for every state
+  AverageReturnsMap<VALUE_FUNCTION_T> returns = AverageReturnsMap<VALUE_FUNCTION_T>();
+
+  for (const auto &s : environment.getAllPossibleStates()) {
+    for (const auto &a : environment.getReachableActions(s)) {
+      returns[{s, a}] = std::vector<typename VALUE_FUNCTION_T::PrecisionType>();
+    }
+  }
+
+  return returns;
+}
+
+template <policy::isStateValueFunction VALUE_FUNCTION_T>
 AverageReturnsMap<VALUE_FUNCTION_T>
 n_visit_returns_initialisation(VALUE_FUNCTION_T &valueFunction,
                                typename VALUE_FUNCTION_T::EnvironmentType &environment) {
@@ -28,6 +48,45 @@ n_visit_returns_initialisation(VALUE_FUNCTION_T &valueFunction,
 
   for (const auto &s : environment.getAllPossibleStates()) {
     returns[s] = std::vector<typename VALUE_FUNCTION_T::PrecisionType>();
+  }
+
+  return returns;
+}
+
+template <policy::isActionValueFunction VALUE_FUNCTION_T>
+AverageReturnsMap<VALUE_FUNCTION_T>
+n_visit_returns_initialisation(VALUE_FUNCTION_T &valueFunction,
+                               typename VALUE_FUNCTION_T::EnvironmentType &environment) {
+
+  // Initialisation step
+  // initialise the value function to the initial value
+  valueFunction.initialize(environment);
+  // initialise returns list for every state
+  AverageReturnsMap<VALUE_FUNCTION_T> returns = AverageReturnsMap<VALUE_FUNCTION_T>();
+
+  for (const auto &a : environment.getAllPossibleActions()) {
+    returns[a] = std::vector<typename VALUE_FUNCTION_T::PrecisionType>();
+  }
+
+  return returns;
+}
+
+template <policy::isNotKnownValueFunction VALUE_FUNCTION_T>
+AverageReturnsMap<VALUE_FUNCTION_T>
+n_visit_returns_initialisation(VALUE_FUNCTION_T &valueFunction,
+                               typename VALUE_FUNCTION_T::EnvironmentType &environment) {
+
+  // Initialisation step
+  // initialise the value function to the initial value
+  valueFunction.initialize(environment);
+  // initialise returns list for every state
+  AverageReturnsMap<VALUE_FUNCTION_T> returns = AverageReturnsMap<VALUE_FUNCTION_T>();
+
+  for (const auto &s : environment.getAllPossibleStates()) {
+    for (const auto &a : environment.getReachableActions(s)) {
+      returns[typename VALUE_FUNCTION_T::KeyMaker::create(s, a)] =
+          std::vector<typename VALUE_FUNCTION_T::PrecisionType>();
+    }
   }
 
   return returns;

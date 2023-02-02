@@ -6,12 +6,45 @@
 #include "monte_carlo/value.hpp"
 
 TEST_CASE("monte_carlo::n_visit_retuns_initialisation") {
+
   auto data = CoinModelDataFixture{};
   auto &[s0, s1, a0, a1, transitionModel, environ, policy, valueFunction] = data;
   auto returns = monte_carlo::n_visit_returns_initialisation(valueFunction, environ);
   REQUIRE(returns.size() == 2);
   REQUIRE(returns[s0].size() == 0);
   REQUIRE(returns[s1].size() == 0);
+
+  SECTION("Check isStateActionValueFunction overload") {
+    auto data = CoinModelDataFixture{};
+    auto &[s0, s1, a0, a1, transitionModel, environ, policy, valueFunction] = data;
+    auto vFuncActoinStates = CoinFiniteStateActionValueFunction();
+    auto returns = monte_carlo::n_visit_returns_initialisation(vFuncActoinStates, environ);
+    REQUIRE(returns.size() == 4); // One for each state action pair
+    REQUIRE((returns[{s0, a0}].size() == 0));
+    REQUIRE((returns[{s0, a1}].size() == 0));
+    REQUIRE((returns[{s1, a0}].size() == 0));
+    REQUIRE((returns[{s1, a1}].size() == 0));
+  }
+  SECTION("Check isStateValueFunction overload") {
+    auto data = CoinModelDataFixture{};
+    auto &[s0, s1, a0, a1, transitionModel, environ, policy, valueFunction] = data;
+    auto vFuncStates = CoinFiniteStateValueFunction();
+    auto returns = monte_carlo::n_visit_returns_initialisation(vFuncStates, environ);
+    REQUIRE((returns.size() == 2)); // one for each state
+    REQUIRE((returns[s0].size() == 0));
+    REQUIRE((returns[s1].size() == 0));
+  }
+  SECTION("Check isActionValueFunction overload") {
+    auto data = CoinModelDataFixture{};
+    auto &[s0, s1, a0, a1, transitionModel, environ, policy, valueFunction] = data;
+    auto vFuncActions = CoinFiniteActionValueFunction();
+    auto returns = monte_carlo::n_visit_returns_initialisation(vFuncActions, environ);
+    REQUIRE((returns.size() == 2)); // one for each action
+    REQUIRE((returns[a0].size() == 0));
+    REQUIRE((returns[a1].size() == 0));
+  }
+  // TODO - add tests for the other overloads
+  SECTION("Check isNotKnownValueFunction overload") {}
 }
 
 TEST_CASE("monte_carlo::FirstVisitStopCondition") {}

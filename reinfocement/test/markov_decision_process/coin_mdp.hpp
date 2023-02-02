@@ -63,19 +63,12 @@ using CoinDistributionPolicy = policy::DistributionPolicy<CoinEnviron>;
 using CoinValueFunction = policy::FiniteStateValueFunction<CoinEnviron>;
 
 using CoinMapGetter = policy::FiniteValueFunctionMapGetter<policy::DefaultActionKeymaker<CoinEnviron>>;
-
 using CoinFiniteValueFunctionPrototype = policy::ValueFunctionPrototype<CoinEnviron>;
-
 using CoinFiniteValueFunctionMixin = policy::ValueFunctionPrototype<CoinEnviron>;
-
 using CoinStateValueFunction = policy::StateValueFunction<CoinEnviron>;
-
 using CoinStateActionValueFunction = policy::StateActionValueFunction<CoinEnviron>;
-
 using CoinFiniteStateActionValueFunction = policy::FiniteStateActionValueFunction<CoinEnviron>;
-
 using CoinFiniteStateValueFunction = policy::FiniteStateValueFunction<CoinEnviron>;
-
 using CoinFiniteActionValueFunction = policy::FiniteActionValueFunction<CoinEnviron>;
 
 struct CoinModelDataFixture {
