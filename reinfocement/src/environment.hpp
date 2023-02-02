@@ -135,18 +135,18 @@ struct FiniteEnvironment : Environment<STEP_T, REWARD_T, RETURN_T> {
     return getAllPossibleActions();
   }
 
-  StateType ramdomState() const {
+  StateType randomState() const {
     const auto probabilities = std::vector<double>(nStates, 1.0 / N_STATES);
     std::discrete_distribution<size_t> distribution(probabilities.begin(), probabilities.end());
     return stateFromIndex(distribution(gen));
   }
 
-  ActionSpace ramdomAction() const {
+  ActionSpace randomAction() const {
     const auto probabilities = std::vector<double>(nActions, 1.0 / N_ACTIONS);
     std::discrete_distribution<size_t> distribution(probabilities.begin(), probabilities.end());
     return actionFromIndex(distribution(gen));
   }
-  virtual ActionSpace ramdomAction(const StateType &s) const {
+  virtual ActionSpace randomAction(const StateType &s) const {
     const auto admissibleActions = getReachableActions(s);
     const auto probabilities = std::vector<double>(admissibleActions.size(), 1.0 / admissibleActions.size());
     std::discrete_distribution<size_t> distribution(probabilities.begin(), probabilities.end());
