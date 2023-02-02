@@ -109,24 +109,6 @@ template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T> struct StopCondit
 template <typename T>
 concept isStopCondition = std::is_base_of_v<StopCondition<typename T::ValueFunctionType>, T>;
 
-template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T>
-struct FirstVisitStopCondition : StopCondition<VALUE_FUNCTION_T> {
-
-  using KeyMaker = VALUE_FUNCTION_T::KeyMaker;
-
-  // Only update the average for the first visit in the episode
-  template <typename EPISODE_T>
-  bool operator()(typename EPISODE_T::DataContainer::const_iterator start,
-                  typename EPISODE_T::DataContainer::const_iterator end,
-                  const typename VALUE_FUNCTION_T::EnvironmentType::TransitionType &transition) const {
-    // if any of the earlier transitions have the key then they make
-    // a better first visit.
-    return not std::any_of(start, end, [&transition](const auto &t) {
-      return KeyMaker::make(t.state, t.action) == KeyMaker::make(transition.state, transition.action);
-    });
-  }
-};
-
 template <std::size_t max_episode_length,
           policy::isFiniteStateValueFunction VALUE_FUNCTION_T,
           policy::isDistributionPolicy POLICY_T,
@@ -168,6 +150,50 @@ void visit_valueEstimate_step(
   }
 }
 
+template <std::size_t max_episode_length,
+          policy::isFiniteStateValueFunction VALUE_FUNCTION_T,
+          policy::isDistributionPolicy POLICY_T,
+          isStopCondition STOP_CONDITION_T,
+          isEpisodeGenerator EPISODE_GENERATOR_T =
+              EpisodeGenerator<max_episode_length, typename VALUE_FUNCTION_T::EnvironmentType, POLICY_T>>
+void visit_valueEstimate(
+    VALUE_FUNCTION_T &valueFunction,
+    typename VALUE_FUNCTION_T::EnvironmentType &environment,
+    POLICY_T &policy,
+    std::size_t episodes,
+    const STOP_CONDITION_T &stopCondition,
+    const EPISODE_GENERATOR_T &episodeGenerator =
+        EpisodeGenerator<max_episode_length, typename VALUE_FUNCTION_T::EnvironmentType, POLICY_T>()) {
+
+  // initialise the value function and returns list for every state
+  auto returns = n_visit_returns_initialisation(valueFunction, environment);
+
+  // Loop forever over episodes - Here we actually only loop for the requested
+  // number of episodes
+  for (std::size_t i = 0; i < episodes; ++i) {
+    visit_valueEstimate_step<max_episode_length>(
+        valueFunction, environment, policy, returns, stopCondition, episodeGenerator);
+  }
+}
+
+template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T>
+struct FirstVisitStopCondition : StopCondition<VALUE_FUNCTION_T> {
+
+  using KeyMaker = VALUE_FUNCTION_T::KeyMaker;
+
+  // Only update the average for the first visit in the episode
+  template <typename EPISODE_T>
+  bool operator()(typename EPISODE_T::DataContainer::const_iterator start,
+                  typename EPISODE_T::DataContainer::const_iterator end,
+                  const typename VALUE_FUNCTION_T::EnvironmentType::TransitionType &transition) const {
+    // if any of the earlier transitions have the key then they make
+    // a better first visit.
+    return not std::any_of(start, end, [&transition](const auto &t) {
+      return KeyMaker::make(t.state, t.action) == KeyMaker::make(transition.state, transition.action);
+    });
+  }
+};
+
 /** @brief The value v_{pi}(s) is the average of all returns following the first
  * visit to s. */
 template <std::size_t max_episode_length,
@@ -183,15 +209,8 @@ void first_visit_valueEstimate(
     const EPISODE_GENERATOR_T &episodeGenerator =
         EpisodeGenerator<max_episode_length, typename VALUE_FUNCTION_T::EnvironmentType, POLICY_T>()) {
 
-  // initialise the value function and returns list for every state
-  auto returns = n_visit_returns_initialisation(valueFunction, environment);
-
-  // Loop forever over episodes - Here we actually only loop for the requested
-  // number of episodes
-  for (std::size_t i = 0; i < episodes; ++i) {
-    visit_valueEstimate_step<max_episode_length>(
-        valueFunction, environment, policy, returns, FirstVisitStopCondition<VALUE_FUNCTION_T>(), episodeGenerator);
-  }
+  visit_valueEstimate<max_episode_length>(
+      valueFunction, environment, policy, episodes, FirstVisitStopCondition<VALUE_FUNCTION_T>(), episodeGenerator);
 }
 
 template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T>
@@ -220,15 +239,8 @@ void every_visit_valueEstimate(
     const EPISODE_GENERATOR_T &episodeGenerator =
         EpisodeGenerator<max_episode_length, typename VALUE_FUNCTION_T::EnvironmentType, POLICY_T>()) {
 
-  // initialise the value function and returns list for every state
-  auto returns = n_visit_returns_initialisation(valueFunction, environment);
-
-  // Loop forever over episodes - Here we actually only loop for the requested
-  // number of episodes
-  for (std::size_t i = 0; i < episodes; ++i) {
-    visit_valueEstimate_step<max_episode_length>(
-        valueFunction, environment, policy, returns, EveryVisitStopCondition<VALUE_FUNCTION_T>(), episodeGenerator);
-  }
+  visit_valueEstimate<max_episode_length>(
+      valueFunction, environment, policy, episodes, EveryVisitStopCondition<VALUE_FUNCTION_T>(), episodeGenerator);
 }
 
 } // namespace monte_carlo
