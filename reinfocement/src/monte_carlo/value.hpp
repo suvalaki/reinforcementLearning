@@ -111,7 +111,7 @@ concept isStopCondition = std::is_base_of_v<StopCondition<typename T::ValueFunct
 
 template <std::size_t max_episode_length,
           policy::isFiniteStateValueFunction VALUE_FUNCTION_T,
-          policy::isDistributionPolicy POLICY_T,
+          policy::isGreedyPolicy POLICY_T,
           isStopCondition STOP_CONDITION_T,
           isEpisodeGenerator EPISODE_GENERATOR_T =
               EpisodeGenerator<max_episode_length, typename VALUE_FUNCTION_T::EnvironmentType, POLICY_T>>
@@ -144,15 +144,14 @@ void visit_valueEstimate_step(
       returns[key].push_back(G);
       // Update the value function to be the average of returns from that
       // state
-      valueFunction[it->state].value =
-          std::accumulate(returns[key].begin(), returns[key].end(), 0.0F) / returns[key].size();
+      valueFunction[key].value = std::accumulate(returns[key].begin(), returns[key].end(), 0.0F) / returns[key].size();
     }
   }
 }
 
 template <std::size_t max_episode_length,
           policy::isFiniteStateValueFunction VALUE_FUNCTION_T,
-          policy::isDistributionPolicy POLICY_T,
+          policy::isGreedyPolicy POLICY_T,
           isStopCondition STOP_CONDITION_T,
           isEpisodeGenerator EPISODE_GENERATOR_T =
               EpisodeGenerator<max_episode_length, typename VALUE_FUNCTION_T::EnvironmentType, POLICY_T>>
@@ -198,7 +197,7 @@ struct FirstVisitStopCondition : StopCondition<VALUE_FUNCTION_T> {
  * visit to s. */
 template <std::size_t max_episode_length,
           policy::isFiniteStateValueFunction VALUE_FUNCTION_T,
-          policy::isDistributionPolicy POLICY_T,
+          policy::isGreedyPolicy POLICY_T,
           isEpisodeGenerator EPISODE_GENERATOR_T =
               EpisodeGenerator<max_episode_length, typename VALUE_FUNCTION_T::EnvironmentType, POLICY_T>>
 void first_visit_valueEstimate(
@@ -228,7 +227,7 @@ struct EveryVisitStopCondition : StopCondition<VALUE_FUNCTION_T> {
  * visits to s. */
 template <std::size_t max_episode_length,
           policy::isFiniteStateValueFunction VALUE_FUNCTION_T,
-          policy::isDistributionPolicy POLICY_T,
+          policy::isGreedyPolicy POLICY_T,
           isEpisodeGenerator EPISODE_GENERATOR_T =
               EpisodeGenerator<max_episode_length, typename VALUE_FUNCTION_T::EnvironmentType, POLICY_T>>
 void every_visit_valueEstimate(
