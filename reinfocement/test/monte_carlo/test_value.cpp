@@ -56,7 +56,11 @@ TEST_CASE("monte_carlo::visit_valueEstimate_step") {
   auto &[s0, s1, a0, a1, transitionModel, environ, policy, valueFunction] = data;
   auto returns = monte_carlo::n_visit_returns_initialisation(valueFunction, environ);
   monte_carlo::visit_valueEstimate_step<10>(
-      valueFunction, environ, policy, returns, monte_carlo::FirstVisitStopCondition<CoinEnviron>());
+      valueFunction,
+      environ,
+      policy,
+      returns,
+      monte_carlo::FirstVisitStopCondition<std::decay_t<decltype(valueFunction)>>());
   REQUIRE(returns.size() == 2);
   REQUIRE(((returns[s0].size() == 1) or (returns[s1].size() == 1)));
 }

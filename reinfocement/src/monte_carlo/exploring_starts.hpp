@@ -11,11 +11,19 @@ namespace monte_carlo {
 /// @brief Generate an episode starting from a random state-action pair (admissible in thee environment)
 template <environment::FiniteEnvironmentType ENVIRONMENT_T>
 std::pair<typename ENVIRONMENT_T::StateType, typename ENVIRONMENT_T::ActionSpace>
-exploring_start_initialisation(const ENVIRONMENT_T &e) {
+exploring_start_sample(const ENVIRONMENT_T &e) {
 
   const auto state = e.randomState();
   const auto action = e.randomAction(state);
   return std::make_pair(state, action);
+}
+
+template <environment::FiniteEnvironmentType ENVIRONMENT_T> void exploring_start_init(const ENVIRONMENT_T &e) {
+  auto [state, action] = exploring_start_sample(e);
+  e.reset();
+  e.state = state;
+  e.step(action);
+  // Now follow policy \pi
 }
 
 } // namespace monte_carlo

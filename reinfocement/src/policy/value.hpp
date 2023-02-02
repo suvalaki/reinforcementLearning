@@ -36,6 +36,12 @@ struct ValueFunctionPrototype {
   virtual void initialize(EnvironmentType &environment) = 0;
 };
 
+#define SETUP_VALUE_FUNCTION_TYPES(VALUE_T)                                                                            \
+  SETUP_TYPES(SINGLE_ARG(VALUE_T));                                                                                    \
+  using EnvironmentType = typename BaseType::EnvironmentType;                                                          \
+  using KeyMaker = typename BaseType::KeyMaker;                                                                        \
+  using KeyType = typename KeyMaker::KeyType;
+
 template <typename T>
 concept isValueFunctionPrototype = std::is_base_of_v<
     ValueFunctionPrototype<typename T::EnvironmentType, typename T::KeyMaker, T::initial_value, T::discount_rate>,
@@ -121,6 +127,10 @@ struct FiniteValueFunctionMixin
     }
   }
 };
+
+#define SETUP_FINITE_VALUE_FUNCTION_TYPES(VALUE_FN_T, VALUE_T)                                                         \
+  SETUP_VALUE_FUNCTION_TYPES(SINGLE_ARG(VALUE_FN_T));                                                                  \
+  using ValueType = VALUE_T;
 
 template <typename T>
 concept isFiniteStateValueFunction =

@@ -9,6 +9,9 @@
 
 namespace monte_carlo {
 
+// The SIMPLEST monte carlo control takes a Key over the state types. But this may not be best when
+// we dont know the state dynamics.
+
 /// Each occurance of a state within an episode is called a visit.
 template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T>
 using AverageReturnsMap = std::unordered_map<typename VALUE_FUNCTION_T::KeyType,
@@ -84,7 +87,7 @@ n_visit_returns_initialisation(VALUE_FUNCTION_T &valueFunction,
 
   for (const auto &s : environment.getAllPossibleStates()) {
     for (const auto &a : environment.getReachableActions(s)) {
-      returns[typename VALUE_FUNCTION_T::KeyMaker::create(s, a)] =
+      returns[typename VALUE_FUNCTION_T::KeyMaker::make(s, a)] =
           std::vector<typename VALUE_FUNCTION_T::PrecisionType>();
     }
   }
@@ -92,8 +95,9 @@ n_visit_returns_initialisation(VALUE_FUNCTION_T &valueFunction,
   return returns;
 }
 
-template <environment::EnvironmentType ENVIRON_T> struct StopCondition {
-  using EnvironmentType = ENVIRON_T;
+template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T> struct StopCondition {
+  SETUP_TYPES_FROM_ENVIRON(SINGLE_ARG(VALUE_FUNCTION_T::EnvironmentType));
+  using ValueFunctionType = VALUE_FUNCTION_T;
 
   // template <typename EPISODE_T>
   // bool operator()(typename EPISODE_T::DataContainer::const_iterator start,
@@ -103,17 +107,23 @@ template <environment::EnvironmentType ENVIRON_T> struct StopCondition {
 };
 
 template <typename T>
-concept isStopCondition = std::is_base_of_v<StopCondition<typename T::EnvironmentType>, T>;
+concept isStopCondition = std::is_base_of_v<StopCondition<typename T::ValueFunctionType>, T>;
 
-template <environment::EnvironmentType ENVIRON_T> struct FirstVisitStopCondition : StopCondition<ENVIRON_T> {
+template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T>
+struct FirstVisitStopCondition : StopCondition<VALUE_FUNCTION_T> {
+
+  using KeyMaker = VALUE_FUNCTION_T::KeyMaker;
+
   // Only update the average for the first visit in the episode
   template <typename EPISODE_T>
   bool operator()(typename EPISODE_T::DataContainer::const_iterator start,
                   typename EPISODE_T::DataContainer::const_iterator end,
-                  const typename ENVIRON_T::EnvironmentType::TransitionType &transition) const {
-    // if any of the earlier transitions have the state then they make
+                  const typename VALUE_FUNCTION_T::EnvironmentType::TransitionType &transition) const {
+    // if any of the earlier transitions have the key then they make
     // a better first visit.
-    return not std::any_of(start, end, [&transition](const auto &t) { return t.state == transition.state; });
+    return not std::any_of(start, end, [&transition](const auto &t) {
+      return KeyMaker::make(t.state, t.action) == KeyMaker::make(transition.state, transition.action);
+    });
   }
 };
 
@@ -130,6 +140,7 @@ void visit_valueEstimate_step(VALUE_FUNCTION_T &valueFunction,
   using EnvironmentType = typename VALUE_FUNCTION_T::EnvironmentType;
   using EpisodeType = std::
       conditional_t<max_episode_length == 0, Episode<EnvironmentType>, Episode<EnvironmentType, max_episode_length>>;
+  using KeyMaker = typename VALUE_FUNCTION_T::KeyMaker;
 
   // Generate an episode following policy pi
   EpisodeType episode;
@@ -153,12 +164,13 @@ void visit_valueEstimate_step(VALUE_FUNCTION_T &valueFunction,
 
     // If the state does not appear in an earlier transition
     if (stop_condition.template operator()<EpisodeType>(episode.GetTransitions().begin(), (it + 1).base(), *it)) {
+      const auto key = KeyMaker::make(it->state, it->action);
       // Add the return to the list of returns
-      returns[it->state].push_back(G);
+      returns[key].push_back(G);
       // Update the value function to be the average of returns from that
       // state
       valueFunction[it->state].value =
-          std::accumulate(returns[it->state].begin(), returns[it->state].end(), 0.0F) / returns[it->state].size();
+          std::accumulate(returns[key].begin(), returns[key].end(), 0.0F) / returns[key].size();
     }
   }
 }
@@ -179,20 +191,18 @@ void first_visit_valueEstimate(VALUE_FUNCTION_T &valueFunction,
   // Loop forever over episodes - Here we actually only loop for the requested
   // number of episodes
   for (std::size_t i = 0; i < episodes; ++i) {
-    visit_valueEstimate_step<max_episode_length>(valueFunction,
-                                                 environment,
-                                                 policy,
-                                                 returns,
-                                                 FirstVisitStopCondition<typename VALUE_FUNCTION_T::EnvironmentType>());
+    visit_valueEstimate_step<max_episode_length>(
+        valueFunction, environment, policy, returns, FirstVisitStopCondition<VALUE_FUNCTION_T>());
   }
 }
 
-template <environment::EnvironmentType ENVIRON_T> struct EveryVisitStopCondition : StopCondition<ENVIRON_T> {
+template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T>
+struct EveryVisitStopCondition : StopCondition<VALUE_FUNCTION_T> {
   // We always update the average at every visit.
   template <typename EPISODE_T>
   bool operator()(typename EPISODE_T::DataContainer::const_iterator start,
                   typename EPISODE_T::DataContainer::const_iterator end,
-                  const typename ENVIRON_T::TransitionType &transition) const {
+                  const typename VALUE_FUNCTION_T::TransitionType &transition) const {
     return true;
   }
 };
@@ -213,11 +223,8 @@ void every_visit_valueEstimate(VALUE_FUNCTION_T &valueFunction,
   // Loop forever over episodes - Here we actually only loop for the requested
   // number of episodes
   for (std::size_t i = 0; i < episodes; ++i) {
-    visit_valueEstimate_step<max_episode_length>(valueFunction,
-                                                 environment,
-                                                 policy,
-                                                 returns,
-                                                 EveryVisitStopCondition<typename VALUE_FUNCTION_T::EnvironmentType>());
+    visit_valueEstimate_step<max_episode_length>(
+        valueFunction, environment, policy, returns, EveryVisitStopCondition<VALUE_FUNCTION_T>());
   }
 }
 
