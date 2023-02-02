@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+#include <type_traits>
 #include <vector>
 
 #include "environment.hpp"
@@ -71,9 +73,13 @@ generate_episode_base(ENVIRONMENT_T &environment,
 }
 
 template <environment::EnvironmentType ENVIRONMENT_T, policy::PolicyType POLICY_T>
-Episode<ENVIRONMENT_T> generate_episode(ENVIRONMENT_T &environment, POLICY_T &policy) {
+Episode<ENVIRONMENT_T> generate_episode(ENVIRONMENT_T &environment, POLICY_T &policy, const bool reset = true) {
+
   auto episode = Episode<ENVIRONMENT_T>{};
-  auto state = environment.reset();
+  if (reset)
+    environment.reset();
+  auto state = environment.getState();
+
   while (true) {
     auto action = policy(environment, state);
     auto transition = environment.step(action);
@@ -92,9 +98,12 @@ concept NonZero = (T > 0);
 
 template <std::size_t episode_max_length, environment::EnvironmentType ENVIRONMENT_T, policy::PolicyType POLICY_T>
 requires NonZero<episode_max_length> Episode<ENVIRONMENT_T, episode_max_length>
-generate_episode(ENVIRONMENT_T &environment, POLICY_T &policy) {
+generate_episode(ENVIRONMENT_T &environment, POLICY_T &policy, const bool reset = true) {
+
   auto episode = Episode<ENVIRONMENT_T, episode_max_length>{};
-  auto state = environment.reset();
+  if (reset)
+    environment.reset();
+  auto state = environment.getState();
 
   std::size_t insertion = 0;
   while (true) {
@@ -110,5 +119,36 @@ generate_episode(ENVIRONMENT_T &environment, POLICY_T &policy) {
   }
   return episode;
 }
+
+template <std::size_t max_episode_length_n, environment::EnvironmentType ENVIRONMENT_T, policy::PolicyType POLICY_T>
+struct EpisodeGenerator {
+
+  static std::size_t constexpr max_episode_length = max_episode_length_n;
+
+  using EnvironmentType = ENVIRONMENT_T;
+  using PolicyType = POLICY_T;
+  using EpisodeType = std::
+      conditional_t<max_episode_length == 0, Episode<EnvironmentType>, Episode<EnvironmentType, max_episode_length>>;
+
+  virtual EpisodeType operator()(ENVIRONMENT_T &environment, POLICY_T &policy) const {
+    EpisodeType episode;
+    if constexpr (max_episode_length == 0) {
+      // It is assumed that the terminal state will be generated in the normal
+      // operation of the environments step funciton.
+      episode = generate_episode(environment, policy);
+    } else if constexpr (max_episode_length != 0) {
+      // Either the step function will generate an episode termination or the
+      // maximum episode length will be reached - and so the episode will stop
+      // early.
+      episode = generate_episode<max_episode_length>(environment, policy);
+    }
+    return episode;
+  }
+};
+
+template <typename T>
+concept isEpisodeGenerator =
+    std::is_base_of<EpisodeGenerator<T::max_episode_length, typename T::EnvironmentType, typename T::PolicyType>,
+                    T>::value;
 
 } // namespace monte_carlo

@@ -55,6 +55,8 @@ template <StepType STEP_T, RewardType REWARD_T, ReturnType RETURN_T> struct Envi
   Environment() = default;
   Environment(const StateType &s) : state(s) {}
 
+  StateType getState() const { return state; }
+
   virtual StateType reset() = 0;
   virtual TransitionType step(const ActionSpace &action) {
     return TransitionType{state, action, StepType::step(state, action)};
