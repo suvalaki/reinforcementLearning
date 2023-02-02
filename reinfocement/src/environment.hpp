@@ -4,7 +4,9 @@
 #include <cmath>
 #include <iostream>
 #include <numeric>
+#include <random>
 #include <type_traits>
+#include <unordered_set>
 #include <utility>
 #include <variant>
 
@@ -34,7 +36,7 @@ using transition::Transition;
 using transition::TransitionKind;
 using transition::TransitionSequence;
 
-template <StepType STEP_T, RewardType REWARD_T, ReturnType RETURN_T, typename CRTP = void> struct Environment {
+template <StepType STEP_T, RewardType REWARD_T, ReturnType RETURN_T> struct Environment {
 
   using EnvironmentType = Environment<STEP_T, REWARD_T, RETURN_T>;
   using StateType = typename STEP_T::StateType;
@@ -106,5 +108,79 @@ concept EnvironmentType = std::is_base_of_v<
   using TransitionType = typename BASE_T::TransitionType;                                                              \
   using RewardType = typename BASE_T::RewardType;                                                                      \
   using ReturnType = typename BASE_T::ReturnType;
+
+template <StepType STEP_T, RewardType REWARD_T, ReturnType RETURN_T, std::size_t N_STATES, std::size_t N_ACTIONS>
+struct FiniteEnvironment : Environment<STEP_T, REWARD_T, RETURN_T> {
+
+  SETUP_TYPES(SINGLE_ARG(Environment<STEP_T, REWARD_T, RETURN_T>));
+  using EnvironmentType = FiniteEnvironment;
+  using BaseType::BaseType;
+
+  std::random_device rd;
+  mutable std::mt19937 gen{rd()};
+
+  constexpr static std::size_t nStates = N_STATES;
+  constexpr static std::size_t nActions = N_ACTIONS;
+
+  virtual StateType stateFromIndex(std::size_t) const = 0;
+  virtual ActionSpace actionFromIndex(std::size_t) const = 0;
+
+  virtual std::unordered_set<StateType, typename StateType::Hash> getAllPossibleStates() const = 0;
+  virtual std::unordered_set<ActionSpace, typename ActionSpace::Hash> getAllPossibleActions() const = 0;
+  virtual std::unordered_set<StateType, typename StateType::Hash> getReachableStates(const StateType &s,
+                                                                                     const ActionSpace &a) const {
+    return getAllPossibleStates();
+  }
+  virtual std::unordered_set<ActionSpace, typename ActionSpace::Hash> getReachableActions(const StateType &s) const {
+    return getAllPossibleActions();
+  }
+
+  StateType ramdomState() const {
+    const auto probabilities = std::vector<double>(nStates, 1.0 / N_STATES);
+    std::discrete_distribution<size_t> distribution(probabilities.begin(), probabilities.end());
+    return stateFromIndex(distribution(gen));
+  }
+
+  ActionSpace ramdomAction() const {
+    const auto probabilities = std::vector<double>(nActions, 1.0 / N_ACTIONS);
+    std::discrete_distribution<size_t> distribution(probabilities.begin(), probabilities.end());
+    return actionFromIndex(distribution(gen));
+  }
+  virtual ActionSpace ramdomAction(const StateType &s) const {
+    const auto admissibleActions = getReachableActions(s);
+    const auto probabilities = std::vector<double>(admissibleActions.size(), 1.0 / admissibleActions.size());
+    std::discrete_distribution<size_t> distribution(probabilities.begin(), probabilities.end());
+    return *std::next(admissibleActions.begin(), distribution(gen));
+  }
+};
+
+template <typename ENVIRON_T>
+concept FiniteEnvironmentType = std::is_base_of_v<FiniteEnvironment<typename ENVIRON_T::StepType,
+                                                                    typename ENVIRON_T::RewardType,
+                                                                    typename ENVIRON_T::ReturnType,
+                                                                    ENVIRON_T::nStates,
+                                                                    ENVIRON_T::nActions>,
+                                                  ENVIRON_T>;
+
+template <typename T>
+concept FullyKnownFiniteActionStateEnvironment = FiniteEnvironmentType<T> && requires(T t) {
+  { t.getAllPossibleStates() } -> std::same_as<std::unordered_set<typename T::StateType, typename T::StateType::Hash>>;
+  {
+    t.getAllPossibleActions()
+    } -> std::same_as<std::unordered_set<typename T::ActionSpace, typename T::ActionSpace::Hash>>;
+};
+
+template <typename T>
+concept FullyKnownFiniteStateEnvironment = FiniteEnvironmentType<T> && requires(T t) {
+  { t.getAllPossibleStates() } -> std::same_as<std::unordered_set<typename T::StateType, typename T::StateType::Hash>>;
+};
+
+template <typename T>
+concept FullyKnownConditionalStateActionEnvironment = FiniteEnvironmentType<T> && requires(T t) {
+  { t.getAllPossibleStates() } -> std::same_as<std::unordered_set<typename T::StateType, typename T::StateType::Hash>>;
+  {
+    t.getReachableActions(std::declval<const typename T::StateType &>())
+    } -> std::same_as<std::unordered_set<typename T::ActionSpace, typename T::ActionSpace::Hash>>;
+};
 
 } // namespace environment

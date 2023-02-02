@@ -45,11 +45,12 @@ using P = typename BaseEnviron::PrecisionType;
 static CoinState s0 = CoinState{0.0F, {}};
 static CoinState s1 = CoinState{1.0F, {}};
 
-struct CoinEnviron : environment::MarkovDecisionEnvironment<CoinStep, CoinReward, CoinReturn> {
+struct CoinEnviron : environment::MarkovDecisionEnvironment<CoinStep, CoinReward, CoinReturn, 2, 2> {
 
-  SETUP_TYPES(SINGLE_ARG(environment::MarkovDecisionEnvironment<CoinStep, CoinReward, CoinReturn>));
+  SETUP_TYPES(SINGLE_ARG(environment::MarkovDecisionEnvironment<CoinStep, CoinReward, CoinReturn, 2, 2>));
+  // using EnvironmentType = typename EnvironmentType::EnvironmentType;
+  using BaseType::BaseType;
 
-  using environment::MarkovDecisionEnvironment<CoinStep, CoinReward, CoinReturn>::MarkovDecisionEnvironment;
   StateType reset() override {
     this->state = CoinState{0.0F, {}};
     return this->state;
@@ -84,14 +85,19 @@ struct CoinModelDataFixture {
   CoinAction a0 = CoinAction{0};
   CoinAction a1 = CoinAction{1};
   CoinTransitionModel transitionModel = CoinTransitionModel{
-      {T{s0, a0, s0}, 0.8F}, //
-      {T{s0, a0, s1}, 0.2F}, //
-      {T{s0, a1, s0}, 0.3F}, //
-      {T{s0, a1, s1}, 0.7F}, //
-      {T{s1, a0, s0}, 0.1F}, //
-      {T{s1, a0, s1}, 0.9F}, //
-      {T{s1, a1, s0}, 0.5F}, //
-      {T{s1, a1, s1}, 0.5F}  //
+      .transitions =
+          typename CoinTransitionModel::TransitionModelMap{
+              {T{s0, a0, s0}, 0.8F}, //
+              {T{s0, a0, s1}, 0.2F}, //
+              {T{s0, a1, s0}, 0.3F}, //
+              {T{s0, a1, s1}, 0.7F}, //
+              {T{s1, a0, s0}, 0.1F}, //
+              {T{s1, a0, s1}, 0.9F}, //
+              {T{s1, a1, s0}, 0.5F}, //
+              {T{s1, a1, s1}, 0.5F}  //
+          },
+      .states = {s0, s1}, //
+      .actions = {a0, a1} //
   };
   CoinEnviron environ = CoinEnviron{transitionModel, s0};
   CoinDistributionPolicy policy = CoinDistributionPolicy{};
@@ -138,8 +144,8 @@ private:
   }
 };
 
-static_assert(policy::FullyKnownFiniteStateEnvironment<CoinEnviron>);
-static_assert(policy::FullyKnownConditionalStateActionEnvironment<CoinEnviron>);
+static_assert(environment::FullyKnownFiniteStateEnvironment<CoinEnviron>);
+static_assert(environment::FullyKnownConditionalStateActionEnvironment<CoinEnviron>);
 
 namespace std {
 template <> struct tuple_size<::CoinModelDataFixture> : integral_constant<size_t, 8> {};

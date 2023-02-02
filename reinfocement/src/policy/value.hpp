@@ -54,27 +54,6 @@ struct FiniteValueFunctionMapGetter {
   using type = std::unordered_map<KeyType, QTableValueType, Hash>;
 };
 
-template <typename T>
-concept FullyKnownFiniteActionStateEnvironment = requires(T t) {
-  { t.getAllPossibleStates() } -> std::same_as<std::unordered_set<typename T::StateType, typename T::StateType::Hash>>;
-  {
-    t.getAllPossibleActions()
-    } -> std::same_as<std::unordered_set<typename T::ActionSpace, typename T::ActionSpace::Hash>>;
-};
-
-template <typename T>
-concept FullyKnownFiniteStateEnvironment = requires(T t) {
-  { t.getAllPossibleStates() } -> std::same_as<std::unordered_set<typename T::StateType, typename T::StateType::Hash>>;
-};
-
-template <typename T>
-concept FullyKnownConditionalStateActionEnvironment = requires(T t) {
-  { t.getAllPossibleStates() } -> std::same_as<std::unordered_set<typename T::StateType, typename T::StateType::Hash>>;
-  {
-    t.getReachableActions(std::declval<const typename T::StateType &>())
-    } -> std::same_as<std::vector<typename T::ActionSpace>>;
-};
-
 template <isValueFunctionPrototype VALUE_FUNCTION_T, isStateActionValue VALUE_T>
 struct FiniteValueFunctionMixin
     : public FiniteValueFunctionMapGetter<typename VALUE_FUNCTION_T::KeyMaker, VALUE_T>::type,
@@ -102,7 +81,7 @@ struct FiniteValueFunctionMixin
 
   void initialize(EnvironmentType &environment) {
 
-    if constexpr (FullyKnownConditionalStateActionEnvironment<EnvironmentType>) {
+    if constexpr (environment::FullyKnownConditionalStateActionEnvironment<EnvironmentType>) {
       /// Since we know the model well enough to ask the environment to generate
       /// all possible states we do so.
       for (const auto &state : environment.getAllPossibleStates()) {
@@ -111,7 +90,7 @@ struct FiniteValueFunctionMixin
         }
       }
 
-    } else if constexpr (FullyKnownFiniteStateEnvironment<EnvironmentType>) {
+    } else if constexpr (environment::FullyKnownFiniteStateEnvironment<EnvironmentType>) {
 
       // For every state which we know lets try some random acitons
       for (const auto &state : environment.getAllPossibleStates()) {

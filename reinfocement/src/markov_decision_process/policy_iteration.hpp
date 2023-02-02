@@ -59,10 +59,10 @@ value_from_state_action(VALUE_FUNCTION_T &valueFunction,
       reachableStates.begin(), reachableStates.end(), 0.0F, [&](const auto &value, const auto &nextState) {
         auto transition = TransitionType{state, action, nextState};
 
-        if (transitionModel.find(transition) == transitionModel.end())
+        if (transitionModel.transitions.find(transition) == transitionModel.transitions.end())
           return value;
 
-        return value + transitionModel.at(transition) *
+        return value + transitionModel.transitions.at(transition) *
                            (RewardType::reward(transition) +
                             valueFunction.discount_rate *
                                 valueFunction.emplace(nextState, valueFunction.initial_value).first->second.value);
