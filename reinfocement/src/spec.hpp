@@ -10,15 +10,19 @@ namespace spec {
 template <typename T>
 concept Float = std::is_floating_point<T>::value;
 
+template <typename T>
+concept Number = std::is_arithmetic<T>::value;
+
 template <typename T, float MIN, float MAX, std::size_t... DIMS> struct BoundedAarraySpec {
   using ValueType = T;
   using Shape = xt::xshape<DIMS...>;
-  using DataType = xt::xtensor_fixed<double, Shape>;
+  using DataType = xt::xtensor_fixed<T, Shape>;
   constexpr static Shape shape = Shape{};
   constexpr static T min = MIN;
   constexpr static T max = MAX;
   constexpr static std::array<std::size_t, sizeof...(DIMS)> dims = {DIMS...};
   constexpr static std::size_t nDim = sizeof...(DIMS);
+  constexpr static bool isFinite = std::is_integral_v<T>; // When realvalued then infinite possible values
 };
 
 template <typename T>
@@ -30,8 +34,9 @@ concept BoundedArraySpecType = requires {
   T::max;
   T::dims;
   T::nDim;
+  T::isFinite;
 }
-&&(std::is_integral_v<typename T::ValueType> || std::is_floating_point_v<typename T::ValueType>);
+&&(Number<typename T::ValueType>);
 
 template <typename T>
 concept BoundedArraySpecProtocol = requires(T t) {
@@ -39,7 +44,7 @@ concept BoundedArraySpecProtocol = requires(T t) {
   {t.max};
   {t.dims};
 }
-&&(std::is_integral_v<typename T::ValueType> || std::is_floating_point_v<typename T::ValueType>);
+&&(Number<typename T::ValueType>);
 
 template <typename T>
 concept isBoundedArraySpec = BoundedArraySpecType<T> && BoundedArraySpecProtocol<T>;
@@ -56,6 +61,7 @@ template <EnumType CHOICES, std::size_t NCHOICE, std::size_t... DIMS> struct Cat
   constexpr static std::size_t max = NCHOICE;
   constexpr static std::array<std::size_t, sizeof...(DIMS)> dims = {DIMS...};
   constexpr static std::size_t nDim = sizeof...(DIMS);
+  constexpr static bool isFinite = true;
 };
 
 template <typename T>
@@ -68,6 +74,7 @@ concept CategoricalArraySpecType = requires {
   T::max;
   T::dims;
   T::nDim;
+  T::isFinite;
 }
 &&EnumType<typename T::ChoicesType>;
 
@@ -130,11 +137,14 @@ template <AllElementsAnyArraySpecType... T> struct CompositeArray : std::tuple<t
 template <AllElementsAnyArraySpecType... T> struct CompositeArraySpec : std::tuple<T...> {
   using tupleType = std::tuple<T...>;
   using DataType = CompositeArray<T...>;
+  // If any of the subspecs isnt finite then the whole thing isnt finite
+  constexpr static bool isFinite = (true && ... && T::isFinite);
 };
 
 template <typename T>
 concept hasTupleType = requires {
   typename T::tupleType;
+  T::isFinite;
 };
 
 // isinstance of CompositeArraySpec only if check all tuple elements are
@@ -148,9 +158,13 @@ concept CompositeArraySpecType = hasTupleType<T> &&[]<std::size_t... N>(std::ind
 // methods to return a default data type given the spec
 // For now we are using the min as the default
 
-template <isCategoricalArraySpec T> decltype(auto) default_spec_gen() { return xt::ones<double>(T::shape); }
+template <isBoundedArraySpec T>
+requires isBoundedArraySpec<T>
+typename T::DataType default_spec_gen() { return T::min * xt::ones<typename T::ValueType>(T::shape); }
 
-template <isBoundedArraySpec T> decltype(auto) default_spec_gen() { return xt::ones<typename T::ValueType>(T::shape); }
+template <isCategoricalArraySpec T>
+requires isCategoricalArraySpec<T>
+typename T::DataType default_spec_gen() { return T::min * xt::ones<double>(T::shape); }
 
 template <CompositeArraySpecType T> typename T::DataType default_spec_gen() {
 
@@ -165,12 +179,22 @@ template <CompositeArraySpecType T> typename T::DataType default_spec_gen() {
 
 template <isBoundedArraySpec T>
 std::enable_if_t<isBoundedArraySpec<T>, typename T::DataType> constant_spec_gen(const typename T::ValueType &value) {
+  if (value < T::min || value > T::max) {
+    throw std::runtime_error((std::ostringstream() << "Value " << value << "is outside of the bounds of the spec ["
+                                                   << T::min << ", " << T::max << "]")
+                                 .str());
+  }
   return value * xt::ones<typename T::ValueType>(T::shape);
 }
 
-template <isBoundedArraySpec T>
+template <isCategoricalArraySpec T>
 std::enable_if_t<isCategoricalArraySpec<T>, typename T::DataType>
 constant_spec_gen(const typename T::ValueType &value) {
+  if (value < T::min || value > T::max) {
+    throw std::runtime_error((std::ostringstream() << "Value " << value << "is outside of the bounds of the spec ["
+                                                   << T::min << ", " << T::max << "]")
+                                 .str());
+  }
   return value * xt::ones<double>(T::shape);
 }
 
