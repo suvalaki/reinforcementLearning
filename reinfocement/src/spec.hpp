@@ -58,7 +58,7 @@ concept EnumType = std::is_enum_v<T>;
 template <EnumType CHOICES, std::size_t NCHOICE, std::size_t... DIMS> struct CategoricalArraySpec {
   using ChoicesType = CHOICES;
   using Shape = xt::xshape<DIMS...>;
-  using DataType = xt::xtensor_fixed<double, Shape>;
+  using DataType = xt::xtensor_fixed<int, Shape>;
   constexpr static Shape shape = Shape{};
   constexpr static std::size_t min = 0;
   constexpr static std::size_t max = NCHOICE;
