@@ -13,7 +13,10 @@ concept Float = std::is_floating_point<T>::value;
 template <typename T>
 concept Number = std::is_arithmetic<T>::value;
 
-template <typename T, float MIN, float MAX, std::size_t... DIMS> struct BoundedAarraySpec {
+template <typename T, T MIN, T MAX, std::size_t... DIMS> struct BoundedAarraySpec {
+
+  static_assert(std::is_arithmetic_v<T>, "T must be an arithmetic type");
+
   using ValueType = T;
   using Shape = xt::xshape<DIMS...>;
   using DataType = xt::xtensor_fixed<T, Shape>;

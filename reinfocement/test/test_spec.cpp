@@ -10,8 +10,9 @@ using namespace spec;
 
 TEST_CASE("BoundedAarraySpec instantiation", "[spec][BoundedAarraySpec]") {
 
-  using IntegerSpec = spec::BoundedAarraySpec<int, -5.0F, 10.0F, 1>;
-  using IntegerSpec1 = spec::BoundedAarraySpec<int, -5.0F, 10.0F, 5, 6>;
+  using IntegerSpec = spec::BoundedAarraySpec<int, -5, 1, 1>;
+  using IntegerSpec1 = spec::BoundedAarraySpec<int, -5, 1, 5, 6>;
+  using IntegerSpec2 = spec::BoundedAarraySpec<int, -5, 1, 5, 6>;
 
   SECTION("Integer type") {
 
