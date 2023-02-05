@@ -182,7 +182,7 @@ struct BlackjackEnvironment : environment::FiniteEnvironment<BlackjackStep, REWA
 
   StateType reset() override {
 
-    auto observable = ::policy::random_spec_gen<BlackjackStateSpec>();
+    auto observable = ::policy::random_spec_gen<BlackjackStateSpec>(rd);
 
     // Enforce the dealer strategy of Required to hit on 16 or less
 
@@ -191,7 +191,7 @@ struct BlackjackEnvironment : environment::FiniteEnvironment<BlackjackStep, REWA
   };
 
   bool gameContinues(const TransitionType &t) {
-    return (std::get<0>(t.nextState.observable).at(0)) and (t.action.playerAction() == BlackjackChoices::HIT);
+    return (std::get<0>(t.nextState.observable).at(0) < 21) and (t.action.playerAction() == BlackjackChoices::HIT);
   }
 
   void applyDealerStrategy(TransitionType &t) {
