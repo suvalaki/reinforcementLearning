@@ -20,9 +20,7 @@ namespace examples::blackjack {
 // 1/52. The point addition of each card is associated with the number
 // of the card in the enum
 enum class Cards {
-  HIDDEN = 0,
-  // HEARTS
-  ONE,
+  ACE = 1,
   TWO,
   THREE,
   FOUR,
@@ -37,6 +35,38 @@ enum class Cards {
   KING,
 };
 
+int cardToVal(const Cards &c) {
+  switch (c) {
+  case Cards::ACE:
+    return 1;
+  case Cards::TWO:
+    return 2;
+  case Cards::THREE:
+    return 3;
+  case Cards::FOUR:
+    return 4;
+  case Cards::FIVE:
+    return 5;
+  case Cards::SIX:
+    return 6;
+  case Cards::SEVEN:
+    return 7;
+  case Cards::EIGHT:
+    return 8;
+  case Cards::NINE:
+    return 9;
+  case Cards::TEN:
+    return 10;
+  case Cards::JACK:
+    return 10;
+  case Cards::QUEEN:
+    return 10;
+  case Cards::KING:
+    return 10;
+  }
+  return 0;
+}
+
 // Each player is limited to drawing 10 cards. - Let us also assume a single player
 // looking to get as close to 21 as possible
 constexpr std::size_t max_cards = 11;
@@ -44,11 +74,13 @@ constexpr std::size_t players = 1;
 constexpr std::size_t n_cards = 14; // need one extra
 
 // We need to mark the visible cards available to each player.
+// In actual blackjack the dealer has one face up card and one face down card. This is a simplification with 2 faceup
+// cards
 using BlackjackPlayerStateSpec = spec::BoundedAarraySpec<int, 2, 22, 1>;
 using BlackjackHasAceSpec = spec::BoundedAarraySpec<int, 0, 2, 1>;
 using BlackjackDealerStateSpec = spec::BoundedAarraySpec<int, 2, 22, 1>;
-using BlackjackStateSpec =
-    spec::CompositeArraySpec<BlackjackPlayerStateSpec, BlackjackHasAceSpec, BlackjackDealerStateSpec>;
+using BlackjackStateSpec = spec::
+    CompositeArraySpec<BlackjackPlayerStateSpec, BlackjackHasAceSpec, BlackjackDealerStateSpec, BlackjackHasAceSpec>;
 using BlackjackState = environment::State<float, BlackjackStateSpec>;
 
 // using SinglePlayerCardSpec
@@ -67,31 +99,46 @@ using BlackjackStep = environment::Step<BlackjackAction>;
 
 struct BlackjackReward : reward::Reward<BlackjackAction> {
 
-  static PrecisionType reward(const TransitionType &t) {
-
-    // If the player has an ace
-    auto handVal = std::get<0>(t.nextState.observable).at(0);
-    auto dealerVal = std::get<2>(t.nextState.observable).at(0);
-    if (handVal > 21 and dealerVal <= 21) {
-      return 0.0F;
-    }
-    if (std::get<1>(t.nextState.observable).at(0) == 1) {
+  static int bestPossibleScore(const typename BlackjackPlayerStateSpec::DataType &handState,
+                               const typename BlackjackHasAceSpec::DataType &hasAce) {
+    auto handVal = handState.at(0);
+    if (hasAce.at(0) == 1) {
       if (handVal + 10 <= 21) {
-        if (handVal + 10 >= dealerVal)
-          return 1.0F;
-        return 0.0F;
+        return handVal + 10;
       }
     }
-    if (handVal >= dealerVal)
+    return handVal;
+  }
+
+  static PrecisionType reward(const TransitionType &t) {
+
+    const auto playerScore =
+        bestPossibleScore(std::get<0>(t.nextState.observable), std::get<1>(t.nextState.observable));
+    const auto dealerScore =
+        bestPossibleScore(std::get<2>(t.nextState.observable), std::get<3>(t.nextState.observable));
+
+    if (dealerScore > 21)
+      return 0.5;
+
+    if (playerScore > 21 && dealerScore <= 21)
+      return 0.0F;
+
+    if (playerScore > dealerScore && playerScore <= 21 && dealerScore <= 21)
       return 1.0F;
+
     return 0.0F;
   }
 };
 
 using BlackjackReturn = returns::Return<BlackjackReward>;
 
+constexpr auto maxVal = 21; // cant go above this value
+constexpr auto nHasAce = 2;
+constexpr auto nStates = maxVal * nHasAce * maxVal * nHasAce;
+constexpr auto nActions = 2;
+
 template <environment::RewardType REWARD_T, environment::ReturnType RETURN_T>
-struct BlackjackEnvironment : environment::Environment<BlackjackStep, REWARD_T, RETURN_T> {
+struct BlackjackEnvironment : environment::FiniteEnvironment<BlackjackStep, REWARD_T, RETURN_T, nStates, nActions> {
 
   SETUP_TYPES_W_ENVIRON(SINGLE_ARG(environment::Environment<BlackjackStep, REWARD_T, RETURN_T>),
                         SINGLE_ARG(BlackjackEnvironment));
@@ -100,10 +147,38 @@ struct BlackjackEnvironment : environment::Environment<BlackjackStep, REWARD_T, 
   std::random_device rd;
   std::mt19937 gen{rd()};
 
-  int dealerDraw() {
+  Cards dealerDraw() {
     std::uniform_int_distribution<> dis(1, 13);
-    return dis(gen);
+    return Cards{dis(gen)};
   }
+
+  StateType stateFromIndex(std::size_t index) const override {
+    auto i = index / (nHasAce * maxVal * nHasAce);
+    auto j = (index - i * nHasAce * maxVal * nHasAce) / (maxVal * nHasAce);
+    auto k = (index - i * nHasAce * maxVal * nHasAce - j * maxVal * nHasAce) / nHasAce;
+    auto l = index - i * nHasAce * maxVal * nHasAce - j * maxVal * nHasAce - k * nHasAce;
+    return StateType({{static_cast<int>(i)}, {static_cast<int>(j)}, {static_cast<int>(k)}, {static_cast<int>(l)}}, {});
+  };
+
+  ActionSpace actionFromIndex(std::size_t index) const override { return ActionSpace(static_cast<int>(index)); };
+
+  std::unordered_set<StateType, typename StateType::Hash> getAllPossibleStates() const override {
+    auto states = std::unordered_set<StateType, typename StateType::Hash>{};
+    for (auto i = 0; i < maxVal; ++i)
+      for (auto j = 0; j < nHasAce; ++j)
+        for (auto k = 0; k < maxVal; ++k)
+          for (auto l = 0; l < nHasAce; ++l)
+            states.emplace(StateType(
+                {{static_cast<int>(i)}, {static_cast<int>(j)}, {static_cast<int>(k)}, {static_cast<int>(l)}}, {}));
+    return states;
+  };
+
+  std::unordered_set<ActionSpace, typename ActionSpace::Hash> getAllPossibleActions() const {
+    auto actions = std::unordered_set<ActionSpace, typename ActionSpace::Hash>{};
+    for (auto i = 0; i < nActions; ++i)
+      actions.emplace(ActionSpace(i));
+    return actions;
+  };
 
   StateType reset() override {
 
@@ -119,21 +194,42 @@ struct BlackjackEnvironment : environment::Environment<BlackjackStep, REWARD_T, 
     return (std::get<0>(t.nextState.observable).at(0)) and (t.action.playerAction() == BlackjackChoices::HIT);
   }
 
+  void applyDealerStrategy(TransitionType &t) {
+    while (true) {
+      auto &dealerVal = std::get<2>(t.nextState.observable).at(0);
+      auto &dealerAce = std::get<3>(t.nextState.observable).at(0);
+      auto dealerScore = RewardType::bestPossibleScore(dealerVal, dealerAce);
+
+      // Have the dealer hit until he has 17 or more
+      if (dealerScore >= 17)
+        break;
+
+      auto dealerCard = dealerDraw();
+
+      if (dealerCard == Cards::ACE) {
+        std::get<3>(t.nextState.observable).at(0) = 1;
+      }
+      std::get<2>(t.nextState.observable).at(0) += cardToVal(dealerCard);
+    }
+  }
+
   TransitionType step(const ActionSpace &action) override {
 
     auto nextState = this->state;
     if (action.playerAction() == BlackjackChoices::HIT) {
       // Draw a card from the deck and add it to the players hand
       auto card = dealerDraw();
-      if (card == 1) {
-        std::get<0>(nextState.observable).at(0) += 1;
+      if (card == Cards::ACE) {
         std::get<1>(nextState.observable) = 1;
       }
+      std::get<0>(nextState.observable).at(0) += cardToVal(card);
     }
 
     auto t = TransitionType{this->state, action, nextState};
-    if (not gameContinues(t))
+    if (not gameContinues(t)) {
       t.kind = environment::TransitionKind::TERMINAL;
+      applyDealerStrategy(t);
+    }
     return t;
   }
 

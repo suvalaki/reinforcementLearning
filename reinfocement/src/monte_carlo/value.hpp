@@ -145,6 +145,9 @@ void visit_valueEstimate_step(
       // Update the value function to be the average of returns from that
       // state
       valueFunction[key].value = std::accumulate(returns[key].begin(), returns[key].end(), 0.0F) / returns[key].size();
+      // Add the number of rewards being counted (for the average - step is available in our default Value
+      // implementation)
+      valueFunction[key].step = returns[key].size();
     }
   }
 }

@@ -43,6 +43,7 @@ struct EpsilonGreedyPolicy : EXPLOIT_POLICY {
       return exploit(s);
     }
   }
+  ActionSpace operator()(const EnvironmentType &e, const StateType &s) { return (*this)(s); }
 };
 
 } // namespace policy
