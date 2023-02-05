@@ -36,7 +36,7 @@ TEST_CASE("blackjack") {
   }
 
   // Validate works with monte carlo control now that it is a finite process
-  monte_carlo::monte_carlo_control_with_exploring_starts<10>(epsilonGreedy, environment, 15);
+  monte_carlo::monte_carlo_on_policy_first_visit_control_with_exploring_starts<10>(epsilonGreedy, environment, 15);
 
   // epsilonGreedy.printQTable();
 }

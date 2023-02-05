@@ -7,9 +7,9 @@ namespace monte_carlo {
 
 // Monte carlo constrol is about maximusing average(Return(s,a)) over all states and actions under pi.
 template <std::size_t episode_size, policy::isGreedyPolicy POLICY_T>
-void monte_carlo_control_with_exploring_starts(POLICY_T &policy,
-                                               typename POLICY_T::EnvironmentType &environment,
-                                               std::size_t episodes) {
+void monte_carlo_on_policy_first_visit_control_with_exploring_starts(POLICY_T &policy,
+                                                                     typename POLICY_T::EnvironmentType &environment,
+                                                                     std::size_t episodes) {
 
   using PolicyType = POLICY_T;
   using EnvironmentType = typename POLICY_T::EnvironmentType;

@@ -17,7 +17,7 @@ TEST_CASE("monte_carlo::monte_carlo_control_with_exploring_starts") {
   auto greedyPolicy = GreedyCoinPolicy();
 
   // Prior to running the policy the estimates are all zero.
-  monte_carlo::monte_carlo_control_with_exploring_starts<10>(greedyPolicy, environ, 150);
+  monte_carlo::monte_carlo_on_policy_first_visit_control_with_exploring_starts<10>(greedyPolicy, environ, 150);
 
   CHECK((greedyPolicy[{s0, a0}].value) != Approx(0.0));
   CHECK((greedyPolicy[{s1, a0}].value) != Approx(0.0));
@@ -28,7 +28,7 @@ TEST_CASE("monte_carlo::monte_carlo_control_with_exploring_starts") {
   auto epsGreedyPolicy = GreedyCoinPolicy();
 
   // Prior to running the policy the estimates are all zero.
-  monte_carlo::monte_carlo_control_with_exploring_starts<10>(epsGreedyPolicy, environ, 150);
+  monte_carlo::monte_carlo_on_policy_first_visit_control_with_exploring_starts<10>(epsGreedyPolicy, environ, 150);
 
   CHECK((epsGreedyPolicy[{s0, a0}].value) != Approx(0.0));
   CHECK((epsGreedyPolicy[{s1, a0}].value) != Approx(0.0));
