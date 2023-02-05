@@ -133,12 +133,17 @@ void visit_valueEstimate_step(
   typename VALUE_FUNCTION_T::PrecisionType G = 0;
   // Loop over the transitions in the episode in reverse order
   for (auto it = episode.GetTransitions().rbegin(); it != episode.GetTransitions().rend(); ++it) {
+
+    if (it->isDone())
+      continue; // SKIP this is a terminal state. The agent and values have no meaning here.
+
     // Update the return
     G = EnvironmentType::RewardType::reward(*it) + valueFunction.discount_rate * G;
 
     // If the state does not appear in an earlier transition
     if (stop_condition.template operator()<typename EPISODE_GENERATOR_T::EpisodeType>(
             episode.GetTransitions().begin(), (it + 1).base(), *it)) {
+
       const auto key = KeyMaker::make(it->state, it->action);
       // Add the return to the list of returns
       returns[key].push_back(G);
