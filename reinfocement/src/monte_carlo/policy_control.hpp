@@ -5,6 +5,10 @@
 
 namespace monte_carlo {
 
+// Policy control for epsilon greedy methods is implictly defined by use of an epsilon greedy policy.
+// The value update method (and the implicy ditribution followed for the policy) defined by this mechanism
+// adheres to the correct update method (5.6 sutton and barto) for the epsilon greedy policy.
+
 // Monte carlo constrol is about maximusing average(Return(s,a)) over all states and actions under pi.
 template <std::size_t episode_size, policy::isGreedyPolicy POLICY_T>
 void monte_carlo_on_policy_first_visit_control_with_exploring_starts(POLICY_T &policy,
@@ -24,14 +28,18 @@ void monte_carlo_on_policy_first_visit_control_with_exploring_starts(POLICY_T &p
   // Over the episode update the value estimates
   // Update the policy to be greedy with respect to the value function - automatic for the policy as it
   // also holds the value function.
-  first_visit_valueEstimate<episode_size>(
-      // dynamic_cast<typename PolicyType::ValueFunctionType &>(policy), environment, policy, episodes,
-      // episodeGenerator);
-      policy,
-      environment,
-      policy,
-      episodes,
-      episodeGenerator);
+  first_visit_valueEstimate<episode_size>(policy, environment, policy, policy, episodes, episodeGenerator);
+}
+
+template <std::size_t episode_size, policy::isGreedyPolicy POLICY_T>
+void monte_carlo_on_policy_every_visit_control_with_exploring_starts(POLICY_T &policy,
+                                                                     typename POLICY_T::EnvironmentType &environment,
+                                                                     std::size_t episodes) {
+
+  using PolicyType = POLICY_T;
+  using EnvironmentType = typename POLICY_T::EnvironmentType;
+  auto episodeGenerator = ExploringStartsEpisodeGenerator<episode_size, EnvironmentType, PolicyType>{};
+  every_visit_valueEstimate<episode_size>(policy, environment, policy, policy, episodes, episodeGenerator);
 }
 
 } // namespace monte_carlo

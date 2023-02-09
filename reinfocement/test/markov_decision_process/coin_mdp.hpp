@@ -59,7 +59,7 @@ struct CoinEnviron : environment::MarkovDecisionEnvironment<CoinStep, CoinReward
 };
 
 using CoinTransitionModel = typename CoinEnviron::TransitionModel;
-using CoinDistributionPolicy = policy::DistributionPolicy<CoinEnviron>;
+using CoinDistributionPolicy = policy::DistributionPolicy<CoinEnviron, policy::StateKeymaker<CoinEnviron>>;
 using CoinValueFunction = policy::FiniteStateValueFunction<CoinEnviron>;
 
 using CoinMapGetter = policy::FiniteValueFunctionMapGetter<policy::DefaultActionKeymaker<CoinEnviron>>;

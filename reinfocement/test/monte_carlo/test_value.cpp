@@ -59,6 +59,7 @@ TEST_CASE("monte_carlo::visit_valueEstimate_step") {
       valueFunction,
       environ,
       policy,
+      policy, // Without importance sampling
       returns,
       monte_carlo::FirstVisitStopCondition<std::decay_t<decltype(valueFunction)>>());
   REQUIRE(returns.size() == 2);
@@ -68,7 +69,7 @@ TEST_CASE("monte_carlo::visit_valueEstimate_step") {
 TEST_CASE("monte_carlo::first_visit_valueEstimate") {
   auto data = CoinModelDataFixture{};
   auto &[s0, s1, a0, a1, transitionModel, environ, policy, valueFunction] = data;
-  monte_carlo::first_visit_valueEstimate<10>(valueFunction, environ, policy, 10);
+  monte_carlo::first_visit_valueEstimate<10>(valueFunction, environ, policy, policy, 10);
   // Updates were made - because the rewards are always positive the values
   // will also be positive and non zero.
   // Because of randomness it can be the case that one of the states is never
@@ -81,7 +82,7 @@ TEST_CASE("monte_carlo::first_visit_valueEstimate") {
 TEST_CASE("monte_carlo::every_visit_valueEstimate") {
   auto data = CoinModelDataFixture{};
   auto &[s0, s1, a0, a1, transitionModel, environ, policy, valueFunction] = data;
-  monte_carlo::every_visit_valueEstimate<10>(valueFunction, environ, policy, 10);
+  monte_carlo::every_visit_valueEstimate<10>(valueFunction, environ, policy, policy, 10);
   // Updates were made - because the rewards are always positive the values
   // will also be positive and non zero.
   REQUIRE(((valueFunction[s0] > 0.0F) or (valueFunction[s1] > 0.0F)));

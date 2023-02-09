@@ -112,6 +112,7 @@ policy_evaluation_step(VALUE_FUNCTION_T &valueFunction,
   using RewardType = typename EnvironmentType::RewardType;
   using StateType = typename EnvironmentType::StateType;
   using TransitionType = typename EnvironmentType::TransitionType;
+  using KeyMaker = typename VALUE_FUNCTION_T::KeyMaker;
 
   const auto &transitionModel = environment.transitionModel;
   auto currentValueEstimate = valueFunction.valueAt(state);
@@ -122,7 +123,7 @@ policy_evaluation_step(VALUE_FUNCTION_T &valueFunction,
   auto nextValueEstimate = std::accumulate(
       reachableActions.begin(), reachableActions.end(), 0.0F, [&](const auto &value, const auto &action) {
         const auto reachableStates = environment.getReachableStates(state, action);
-        return value + policy.getProbability(environment, state, {state, action}) *
+        return value + policy.getProbability(environment, state, KeyMaker::make(state, action)) *
                            value_from_state_action(valueFunction, environment, state, action);
       });
 
@@ -212,8 +213,9 @@ bool policy_improvement_step(VALUE_FUNCTION_T &valueFunction,
   using RewardType = typename EnvironmentType::RewardType;
   using StateType = typename EnvironmentType::StateType;
   using TransitionType = typename EnvironmentType::TransitionType;
+  using KeyMaker = typename VALUE_FUNCTION_T::KeyMaker;
 
-  using KeyMaker = typename POLICY_T::KeyMaker;
+  // using KeyMaker = typename POLICY_T::KeyMaker;
 
   const auto oldActions = policy.getProbabilities(environment, state);
   const auto oldActionIdx = std::max_element(
@@ -238,7 +240,7 @@ bool policy_improvement_step(VALUE_FUNCTION_T &valueFunction,
   // update the policy - by setting the policy to be deterministic on the
   // new argmax
   // warn: under this current approach we always pick a single action
-  policy.setDeterministicPolicy(environment, state, {state, nextAction});
+  policy.setDeterministicPolicy(environment, state, KeyMaker::make(state, nextAction));
 
   return policyStable;
 }

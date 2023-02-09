@@ -102,6 +102,15 @@ struct GreedyPolicy : Policy<ENVIRON_T>,
       std::cout << k << "\t" << v.value << "\t" << v.step << "\n";
     }
   }
+
+  PrecisionType getProbability(const EnvironmentType &e, const StateType &s, const KeyType &key) const {
+    // The distribution under this policy is epsilon / |A(s)| , where A(s) are actions available at s
+    auto exploitAction = const_cast<GreedyPolicy *>(this)->operator()(e, s);
+    auto action = KeyMaker::get_action_from_key(key);
+    if (exploitAction == action)
+      return 1.0F;
+    return 0.0F;
+  }
 };
 
 #define SETUP_KEYPOLICY_TYPES(POLICY_T)                                                                                \
