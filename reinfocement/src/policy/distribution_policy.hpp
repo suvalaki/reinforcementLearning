@@ -141,6 +141,9 @@ struct DistributionPolicy : GreedyPolicy<ENVIRON_T, KEYMAPPER_T, VALUE_T, STEPSI
   std::vector<std::pair<KeyType, PrecisionType>> getProbabilities(const EnvironmentType &e, const StateType &s) const {
     std::vector<std::pair<KeyType, PrecisionType>> probs;
     for (const auto &[k, v] : *this) {
+      if (KeyMaker::get_state_from_key(e, k) != s) {
+        continue;
+      }
       probs.emplace_back(k, getProbability(e, s, k));
     }
     return probs;

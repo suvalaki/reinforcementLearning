@@ -13,7 +13,7 @@ using namespace environment;
 TEST_CASE("Test Value Function", "[policy][value]") {
 
   auto data = CoinModelDataFixture{};
-  auto &[s0, s1, a0, a1, transitionModel, environ, policy, valueFunction] = data;
+  auto &[s0, s1, a0, a1, transitionModel, environ, policy, policyState, policyAction, _v0, valueFunction, _v2] = data;
 
   auto stateValueFunction = CoinFiniteStateValueFunction{};
   auto stateActionValueFunction = CoinFiniteStateActionValueFunction{};

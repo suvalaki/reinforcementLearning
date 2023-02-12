@@ -59,7 +59,9 @@ struct CoinEnviron : environment::MarkovDecisionEnvironment<CoinStep, CoinReward
 };
 
 using CoinTransitionModel = typename CoinEnviron::TransitionModel;
-using CoinDistributionPolicy = policy::DistributionPolicy<CoinEnviron, policy::StateKeymaker<CoinEnviron>>;
+using CoinDistributionPolicy = policy::DistributionPolicy<CoinEnviron, policy::DefaultActionKeymaker<CoinEnviron>>;
+using CoinDistributionPolicyState = policy::DistributionPolicy<CoinEnviron, policy::StateKeymaker<CoinEnviron>>;
+using CoinDistributionPolicyAction = policy::DistributionPolicy<CoinEnviron, policy::ActionKeymaker<CoinEnviron>>;
 using CoinValueFunction = policy::FiniteStateValueFunction<CoinEnviron>;
 
 using CoinMapGetter = policy::FiniteValueFunctionMapGetter<policy::DefaultActionKeymaker<CoinEnviron>>;
@@ -94,7 +96,11 @@ struct CoinModelDataFixture {
   };
   CoinEnviron environ = CoinEnviron{transitionModel, s0};
   CoinDistributionPolicy policy = CoinDistributionPolicy{};
-  CoinValueFunction valueFunction = CoinValueFunction{};
+  CoinDistributionPolicyState policyState;
+  CoinDistributionPolicyAction policyAction;
+  CoinFiniteStateActionValueFunction valueFunctionStateAction = CoinFiniteStateActionValueFunction{};
+  CoinFiniteStateValueFunction valueFunctionState = CoinFiniteStateValueFunction{};
+  CoinFiniteActionValueFunction valueFunctionAction = CoinFiniteActionValueFunction{};
 
   CoinModelDataFixture() { policy.initialise(environ, 100); }
 
@@ -105,7 +111,13 @@ struct CoinModelDataFixture {
                               CoinTransitionModel,
                               CoinEnviron,
                               CoinDistributionPolicy,
-                              CoinValueFunction>;
+                              CoinDistributionPolicyState,
+                              CoinDistributionPolicyAction,
+                              CoinFiniteStateActionValueFunction,
+                              CoinFiniteStateValueFunction,
+                              CoinFiniteActionValueFunction>;
+
+  constexpr static std::size_t typeListSize = std::tuple_size_v<typename CoinModelDataFixture::TypeList>;
 
   template <std::size_t Index> auto &&get() & { return get_helper<Index>(*this); }
 
@@ -117,7 +129,7 @@ struct CoinModelDataFixture {
 
 private:
   template <std::size_t Index, typename T> auto &&get_helper(T &&t) {
-    static_assert(Index < 8, "Index out of bounds for CoinModelDataFixture");
+    static_assert(Index < typeListSize, "Index out of bounds for CoinModelDataFixture");
     if constexpr (Index == 0)
       return std::forward<T>(t).s0;
     if constexpr (Index == 1)
@@ -133,7 +145,15 @@ private:
     if constexpr (Index == 6)
       return std::forward<T>(t).policy;
     if constexpr (Index == 7)
-      return std::forward<T>(t).valueFunction;
+      return std::forward<T>(t).policyState;
+    if constexpr (Index == 8)
+      return std::forward<T>(t).policyAction;
+    if constexpr (Index == 9)
+      return std::forward<T>(t).valueFunctionStateAction;
+    if constexpr (Index == 10)
+      return std::forward<T>(t).valueFunctionState;
+    if constexpr (Index == 11)
+      return std::forward<T>(t).valueFunctionAction;
   }
 };
 
@@ -141,7 +161,8 @@ static_assert(environment::FullyKnownFiniteStateEnvironment<CoinEnviron>);
 static_assert(environment::FullyKnownConditionalStateActionEnvironment<CoinEnviron>);
 
 namespace std {
-template <> struct tuple_size<::CoinModelDataFixture> : integral_constant<size_t, 8> {};
+template <>
+struct tuple_size<::CoinModelDataFixture> : integral_constant<size_t, CoinModelDataFixture::typeListSize> {};
 
 template <std::size_t N> struct tuple_element<N, CoinModelDataFixture> {
   using type = decltype(std::declval<CoinModelDataFixture>().get<N>());

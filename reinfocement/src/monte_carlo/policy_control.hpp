@@ -42,4 +42,33 @@ void monte_carlo_on_policy_every_visit_control_with_exploring_starts(POLICY_T &p
   every_visit_valueEstimate<episode_size>(policy, environment, policy, policy, episodes, episodeGenerator);
 }
 
+template <std::size_t episode_size, policy::isGreedyPolicy POLICY_T0, policy::isGreedyPolicy POLICY_T1>
+void monte_carlo_off_policy_importance_sampling_first_visit_control_with_exploring_starts(
+    POLICY_T0 &control_policy,
+    POLICY_T1 &target_policy,
+    typename POLICY_T0::EnvironmentType &environment,
+    std::size_t episodes) {
+
+  using EpisodePolicyType = POLICY_T0;
+  using EnvironmentType = typename POLICY_T0::EnvironmentType;
+  auto episodeGenerator = ExploringStartsEpisodeGenerator<episode_size, EnvironmentType, EpisodePolicyType>{};
+
+  first_visit_valueEstimate<episode_size>(
+      target_policy, environment, control_policy, target_policy, episodes, episodeGenerator);
+}
+
+template <std::size_t episode_size, policy::isGreedyPolicy POLICY_T0, policy::isGreedyPolicy POLICY_T1>
+void monte_carlo_off_policy_importance_sampling_every_visit_control_with_exploring_starts(
+    POLICY_T0 &control_policy,
+    POLICY_T1 &target_policy,
+    typename POLICY_T0::EnvironmentType &environment,
+    std::size_t episodes) {
+
+  using EpisodePolicyType = POLICY_T0;
+  using EnvironmentType = typename POLICY_T0::EnvironmentType;
+  auto episodeGenerator = ExploringStartsEpisodeGenerator<episode_size, EnvironmentType, EpisodePolicyType>{};
+  every_visit_valueEstimate<episode_size>(
+      target_policy, environment, control_policy, target_policy, episodes, episodeGenerator);
+}
+
 } // namespace monte_carlo

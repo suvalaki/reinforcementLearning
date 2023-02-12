@@ -15,7 +15,7 @@ using namespace markov_decision_process::value_iteration;
 TEST_CASE("Coin MPD can undergo policy value iteration") {
 
   auto data = CoinModelDataFixture{};
-  auto &[s0, s1, a0, a1, transitionModel, environ, policy, valueFunction] = data;
+  auto &[s0, s1, a0, a1, transitionModel, environ, policy, policyState, policyAction, _v0, valueFunction, _v1] = data;
 
   SECTION("value iteration estimation step succesfully update the value") {
     // Validate that the value iteration has indeed updated the value

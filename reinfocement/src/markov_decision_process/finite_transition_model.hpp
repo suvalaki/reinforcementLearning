@@ -58,11 +58,12 @@ struct MarkovDecisionEnvironment : FiniteEnvironment<STEP_T, REWARD_T, RETURN_T,
     return TransitionType{this->state, action, nextState};
   }
 
-  std::vector<TransitionType> getTransitions(const StateType &s, const ActionSpace &a) const {
-    std::vector<TransitionType> transitions;
+  std::unordered_set<TransitionType, typename TransitionType::Hash> getTransitions(const StateType &s,
+                                                                                   const ActionSpace &a) const {
+    std::unordered_set<TransitionType, typename TransitionType::Hash> transitions;
     for (const auto &t : transitionModel.transitions) {
       if (t.first.state == s and t.first.action == a) {
-        transitions.push_back(t.first);
+        transitions.emplace(t.first);
       }
     }
     return transitions;

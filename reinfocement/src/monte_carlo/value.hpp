@@ -116,18 +116,22 @@ template <std::size_t max_episode_length,
           isStopCondition STOP_CONDITION_T,
           isEpisodeGenerator EPISODE_GENERATOR_T =
               EpisodeGenerator<max_episode_length, typename VALUE_FUNCTION_T::EnvironmentType, POLICY_T0>>
-void visit_valueEstimate_step(
-    VALUE_FUNCTION_T &valueFunction,
-    typename VALUE_FUNCTION_T::EnvironmentType &environment,
-    POLICY_T0 &policy,
-    POLICY_T1 &target_policy,
-    AverageReturnsMap<VALUE_FUNCTION_T> &returns,
-    const STOP_CONDITION_T &stop_condition,
-    const EPISODE_GENERATOR_T &episodeGenerator =
-        EpisodeGenerator<max_episode_length, typename VALUE_FUNCTION_T::EnvironmentType, POLICY_T0>()) {
+requires(std::is_same_v<typename VALUE_FUNCTION_T::KeyMaker, typename POLICY_T0::KeyMaker>
+             &&std::is_same_v<typename POLICY_T0::KeyMaker,
+                              typename POLICY_T1::KeyMaker>) //
+    void visit_valueEstimate_step(
+        VALUE_FUNCTION_T &valueFunction,
+        typename VALUE_FUNCTION_T::EnvironmentType &environment,
+        POLICY_T0 &policy,
+        POLICY_T1 &target_policy,
+        AverageReturnsMap<VALUE_FUNCTION_T> &returns,
+        const STOP_CONDITION_T &stop_condition,
+        const EPISODE_GENERATOR_T &episodeGenerator =
+            EpisodeGenerator<max_episode_length, typename VALUE_FUNCTION_T::EnvironmentType, POLICY_T0>()) {
 
   using EnvironmentType = typename VALUE_FUNCTION_T::EnvironmentType;
-  using KeyMaker = typename VALUE_FUNCTION_T::KeyMaker;
+  using ValueFunctionKeyMaker = typename VALUE_FUNCTION_T::KeyMaker;
+  using PolicyKeyMaker = typename POLICY_T0::KeyMaker;
 
   auto episode = episodeGenerator(environment, policy);
 
@@ -146,20 +150,22 @@ void visit_valueEstimate_step(
     if (stop_condition.template operator()<typename EPISODE_GENERATOR_T::EpisodeType>(
             episode.GetTransitions().begin(), (it + 1).base(), *it)) {
 
-      const auto key = KeyMaker::make(it->state, it->action);
+      const auto valueKey = ValueFunctionKeyMaker::make(it->state, it->action);
+      const auto policyKey = PolicyKeyMaker::make(it->state, it->action);
       // Add the return to the list of returns
       // weight them by the potential off policy method. (5.3) and (5.4)
       auto importance_sampling_weight = &policy == &target_policy
                                             ? 1.0F
-                                            : target_policy.getProbability(environment, it->state, key) /
-                                                  policy.getProbability(environment, it->state, key);
-      returns[key].push_back(importance_sampling_weight * G);
+                                            : target_policy.getProbability(environment, it->state, policyKey) /
+                                                  policy.getProbability(environment, it->state, policyKey);
+      returns[valueKey].push_back(importance_sampling_weight * G);
       // Update the value function to be the average of returns from that
       // state
-      valueFunction[key].value = std::accumulate(returns[key].begin(), returns[key].end(), 0.0F) / returns[key].size();
+      valueFunction[valueKey].value =
+          std::accumulate(returns[valueKey].begin(), returns[valueKey].end(), 0.0F) / returns[valueKey].size();
       // Add the number of rewards being counted (for the average - step is available in our default Value
       // implementation)
-      valueFunction[key].step = returns[key].size();
+      valueFunction[valueKey].step = returns[valueKey].size();
     }
   }
 }
