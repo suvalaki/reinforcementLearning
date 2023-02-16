@@ -35,6 +35,9 @@ target_include_directories(MultiArmedBandit PUBLIC src )
 set(GCC_COVERAGE_COMPILE_FLAGS "-fconcepts-diagnostics-depth=2")
 
 
+# Add examples 
+add_executable(Blackjack "examples/run_blackjack.cpp")
+target_include_directories(Blackjack PUBLIC src )
 
 # Add testcase executable
 enable_testing()
