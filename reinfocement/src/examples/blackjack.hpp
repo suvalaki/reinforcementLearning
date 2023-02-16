@@ -138,7 +138,7 @@ constexpr auto nStates = maxVal * nHasAce * maxVal * nHasAce;
 constexpr auto nActions = 2;
 
 template <environment::RewardType REWARD_T, environment::ReturnType RETURN_T>
-struct BlackjackEnvironment : environment::FiniteEnvironment<BlackjackStep, REWARD_T, RETURN_T, nStates, nActions> {
+struct BlackjackEnvironment : environment::FiniteEnvironment<BlackjackStep, REWARD_T, RETURN_T> {
 
   SETUP_TYPES_W_ENVIRON(SINGLE_ARG(environment::Environment<BlackjackStep, REWARD_T, RETURN_T>),
                         SINGLE_ARG(BlackjackEnvironment));

@@ -45,9 +45,9 @@ using P = typename BaseEnviron::PrecisionType;
 static CoinState s0 = CoinState{0.0F, {}};
 static CoinState s1 = CoinState{1.0F, {}};
 
-struct CoinEnviron : environment::MarkovDecisionEnvironment<CoinStep, CoinReward, CoinReturn, 2, 2> {
+struct CoinEnviron : environment::MarkovDecisionEnvironment<CoinStep, CoinReward, CoinReturn> {
 
-  SETUP_TYPES(SINGLE_ARG(environment::MarkovDecisionEnvironment<CoinStep, CoinReward, CoinReturn, 2, 2>));
+  SETUP_TYPES(SINGLE_ARG(environment::MarkovDecisionEnvironment<CoinStep, CoinReward, CoinReturn>));
   // using EnvironmentType = typename EnvironmentType::EnvironmentType;
   using BaseType::BaseType;
 

@@ -111,7 +111,7 @@ concept EnvironmentType = std::is_base_of_v<
   using RewardType = typename BASE_T::RewardType;                                                                      \
   using ReturnType = typename BASE_T::ReturnType;
 
-template <StepType STEP_T, RewardType REWARD_T, ReturnType RETURN_T, std::size_t N_STATES, std::size_t N_ACTIONS>
+template <StepType STEP_T, RewardType REWARD_T, ReturnType RETURN_T>
 struct FiniteEnvironment : Environment<STEP_T, REWARD_T, RETURN_T> {
 
   SETUP_TYPES(SINGLE_ARG(Environment<STEP_T, REWARD_T, RETURN_T>));
@@ -121,8 +121,9 @@ struct FiniteEnvironment : Environment<STEP_T, REWARD_T, RETURN_T> {
   std::random_device rd;
   mutable std::mt19937 gen{rd()};
 
-  constexpr static std::size_t nStates = N_STATES;
-  constexpr static std::size_t nActions = N_ACTIONS;
+  constexpr static std::size_t nStates = StateType::nStates;
+  constexpr static std::size_t nActions = ActionSpecType::nPossibleValues();
+  constexpr static std::size_t mStateAction = nStates * nActions;
 
   virtual StateType stateFromIndex(std::size_t) const = 0;
   virtual ActionSpace actionFromIndex(std::size_t) const = 0;
@@ -138,13 +139,13 @@ struct FiniteEnvironment : Environment<STEP_T, REWARD_T, RETURN_T> {
   }
 
   StateType randomState() const {
-    const auto probabilities = std::vector<double>(nStates, 1.0 / N_STATES);
+    const auto probabilities = std::vector<double>(nStates, 1.0 / nStates);
     std::discrete_distribution<size_t> distribution(probabilities.begin(), probabilities.end());
     return stateFromIndex(distribution(gen));
   }
 
   ActionSpace randomAction() const {
-    const auto probabilities = std::vector<double>(nActions, 1.0 / N_ACTIONS);
+    const auto probabilities = std::vector<double>(nActions, 1.0 / nActions);
     std::discrete_distribution<size_t> distribution(probabilities.begin(), probabilities.end());
     return actionFromIndex(distribution(gen));
   }
@@ -157,12 +158,9 @@ struct FiniteEnvironment : Environment<STEP_T, REWARD_T, RETURN_T> {
 };
 
 template <typename ENVIRON_T>
-concept FiniteEnvironmentType = std::is_base_of_v<FiniteEnvironment<typename ENVIRON_T::StepType,
-                                                                    typename ENVIRON_T::RewardType,
-                                                                    typename ENVIRON_T::ReturnType,
-                                                                    ENVIRON_T::nStates,
-                                                                    ENVIRON_T::nActions>,
-                                                  ENVIRON_T>;
+concept FiniteEnvironmentType = std::is_base_of_v<
+    FiniteEnvironment<typename ENVIRON_T::StepType, typename ENVIRON_T::RewardType, typename ENVIRON_T::ReturnType>,
+    ENVIRON_T>;
 
 template <typename T>
 concept FullyKnownFiniteActionStateEnvironment = FiniteEnvironmentType<T> && requires(T t) {

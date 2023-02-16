@@ -13,10 +13,10 @@ namespace environment {
 // from state,action -> next state
 // As such the model has limited usefulness
 
-template <StepType STEP_T, RewardType REWARD_T, ReturnType RETURN_T, std::size_t N_STATES, std::size_t N_ACTIONS>
-struct MarkovDecisionEnvironment : FiniteEnvironment<STEP_T, REWARD_T, RETURN_T, N_STATES, N_ACTIONS> {
+template <StepType STEP_T, RewardType REWARD_T, ReturnType RETURN_T>
+struct MarkovDecisionEnvironment : FiniteEnvironment<STEP_T, REWARD_T, RETURN_T> {
 
-  SETUP_TYPES(SINGLE_ARG(FiniteEnvironment<STEP_T, REWARD_T, RETURN_T, N_STATES, N_ACTIONS>));
+  SETUP_TYPES(SINGLE_ARG(FiniteEnvironment<STEP_T, REWARD_T, RETURN_T>));
   using EnvironmentType = MarkovDecisionEnvironment;
 
   using BaseType::nActions;
@@ -26,8 +26,8 @@ struct MarkovDecisionEnvironment : FiniteEnvironment<STEP_T, REWARD_T, RETURN_T,
   struct TransitionModel {
     using TransitionModelMap = std::unordered_map<TransitionType, PrecisionType, typename TransitionType::Hash>;
     TransitionModelMap transitions;
-    std::array<StateType, N_STATES> states;
-    std::array<ActionSpace, N_ACTIONS> actions;
+    std::array<StateType, nStates> states;
+    std::array<ActionSpace, nActions> actions;
   };
 
   /// @brief  The mapping from (state, action, nextState) to probabiliies
@@ -125,9 +125,7 @@ struct MarkovDecisionEnvironment : FiniteEnvironment<STEP_T, REWARD_T, RETURN_T,
 template <typename ENVIRON_T>
 concept MarkovDecisionEnvironmentType = std::is_base_of_v<MarkovDecisionEnvironment<typename ENVIRON_T::StepType,
                                                                                     typename ENVIRON_T::RewardType,
-                                                                                    typename ENVIRON_T::ReturnType,
-                                                                                    ENVIRON_T::nStates,
-                                                                                    ENVIRON_T::nActions>,
+                                                                                    typename ENVIRON_T::ReturnType>,
                                                           ENVIRON_T>;
 
 } // namespace environment

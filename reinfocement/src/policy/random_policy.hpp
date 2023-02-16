@@ -57,4 +57,18 @@ template <environment::EnvironmentType ENVIRON_T> struct RandomPolicy : Policy<E
   virtual void update(const TransitionType &s){};
 };
 
+template <environment::FiniteEnvironmentType ENVIRON_T,
+          isStateActionKeymaker KEYMAPPER_T = DefaultActionKeymaker<ENVIRON_T>>
+struct FiniteRandomPolicy : FiniteStatePolicy<ENVIRON_T, KEYMAPPER_T> {
+
+  SETUP_TYPES(SINGLE_ARG(FiniteStatePolicy<ENVIRON_T, KEYMAPPER_T>));
+
+  // Get a random event over the bounded specification
+  ActionSpace operator()(const StateType &s) override {
+    return ActionSpace{random_spec_gen<typename ActionSpace::SpecType>()};
+  }
+
+  virtual void update(const TransitionType &s){};
+};
+
 } // namespace policy

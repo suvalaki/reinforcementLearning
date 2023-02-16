@@ -142,6 +142,24 @@ template <AllElementsAnyArraySpecType... T> struct CompositeArraySpec : std::tup
   using DataType = CompositeArray<T...>;
   // If any of the subspecs isnt finite then the whole thing isnt finite
   constexpr static bool isFinite = (true && ... && T::isFinite);
+
+  constexpr static std::size_t nPossibleValues() {
+
+    if constexpr (sizeof...(T) == 0) {
+      return 1;
+    }
+
+    else if constexpr (isFinite) {
+      return [&]<std::size_t... N>(std::index_sequence<N...>) {
+        return ((std::tuple_element_t<N, tupleType>::max - std::tuple_element_t<N, tupleType>::min + 1) * ...);
+      }
+      (std::make_index_sequence<sizeof...(T)>());
+    }
+
+    else {
+      return 0;
+    }
+  }
 };
 
 template <typename T>

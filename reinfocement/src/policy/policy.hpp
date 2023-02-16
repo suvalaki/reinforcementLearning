@@ -30,7 +30,8 @@ template <environment::EnvironmentType ENVIRON_T> struct Policy {
 template <typename T>
 concept PolicyType = std::is_base_of_v<Policy<typename T::EnvironmentType>, T>;
 
-template <environment::EnvironmentType ENVIRON_T, isStateActionKeymaker KEYMAPPER_T = DefaultActionKeymaker<ENVIRON_T>>
+template <environment::FiniteEnvironmentType ENVIRON_T,
+          isStateActionKeymaker KEYMAPPER_T = DefaultActionKeymaker<ENVIRON_T>>
 struct FiniteStatePolicy {
 
   SETUP_TYPES_FROM_ENVIRON(SINGLE_ARG(ENVIRON_T));
