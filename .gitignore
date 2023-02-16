@@ -4,4 +4,24 @@
 /multi_armed_bandit/build
 /multi_armed_bandit/html
 /multi_armed_bandit/latex
+/reinforcement/CMakeFiles
+/reinforcement/cmake_install.cmake
+/reinforcement/CMakeCache.txt
+/reinforcement/Makefile
+/reinforcement/compile_commands.json
+/reinforcement/coverage.info
+/reinforcement/coverage.xml
+/reinforcement/tests
 
+reinfocement/CTestTestfile.cmake
+reinfocement/libReinforcementLearning.so.0
+reinfocement/libReinforcementLearning.so.0.1
+reinfocement/log.log
+reinfocement/Makefile
+reinfocement/MultiArmedBandit
+reinfocement/Testing/Temporary/CTestCostData.txt
+reinfocement/Testing/Temporary/LastTest.log
+reinfocement/cmake_install.cmake
+reinfocement/CMakeCache.txt
+reinfocement/tests
+multi_armed_bandit/lib/Catch2
