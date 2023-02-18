@@ -5,11 +5,15 @@
 #include <xtensor/xrandom.hpp>
 
 #include "action.hpp"
+#include "dummy_environment.hpp"
 #include "environment.hpp"
+#include "policy/objectives/finite_value.hpp"
 #include "spec.hpp"
-#include "state_action_value.hpp"
 
-namespace policy {
+namespace policy::objectives {
+
+// Step size defines how the monte carlo updates proceed.
+// https://goodboychan.github.io/reinforcement_learning/2020/06/16/03-Monte-Carlo-Policy-Evaluation.html
 
 /**
  * @brief A concept that checks if a type is a step size taker. A step size
@@ -37,6 +41,13 @@ template <auto X> inline constexpr bool admissible_is_between() { return 0.0F < 
 template <auto STEP_S>
 concept allowed_step_size = admissible_is_between<STEP_S>() && std::is_floating_point<decltype(STEP_S)>::value;
 
+template <typename T>
+concept isStepSizeTaker = requires(T t) {
+  typename T::StateValueType;
+  typename T::PrecisionType;
+  { T::getStepSize(std::declval<typename T::StateValueType>()) } -> std::same_as<typename T::PrecisionType>;
+};
+
 /**
  * @brief A step size taker that always moves with a constant step size. It is
  * the weighted average of the current value and the difference between the new
@@ -46,7 +57,7 @@ concept allowed_step_size = admissible_is_between<STEP_S>() && std::is_floating_
  * @tparam VALUE_T
  * @tparam STEP_S
  */
-template <isStateActionValue VALUE_T, auto STEP_S>
+template <isFiniteValue VALUE_T, auto STEP_S = 0.5>
 requires allowed_step_size<STEP_S>
 struct constant_step_size_taker {
   using StateValueType = VALUE_T;
@@ -54,7 +65,12 @@ struct constant_step_size_taker {
   static typename StateValueType::PrecisionType getStepSize(const StateValueType &value) { return STEP_S; }
 };
 
-template <isStateActionValue VALUE_T> struct weighted_average_step_size_taker {
+template <template <typename> typename T>
+concept isConstantStepSizeTemplate =
+    std::is_same_v<T<FiniteValue<environment::dummy::DummyFiniteEnvironment>>,
+                   constant_step_size_taker<FiniteValue<environment::dummy::DummyFiniteEnvironment>>>;
+
+template <isFiniteValue VALUE_T> struct weighted_average_step_size_taker {
   // sample average step size
   using StateValueType = VALUE_T;
   using PrecisionType = typename StateValueType::PrecisionType;
@@ -63,4 +79,12 @@ template <isStateActionValue VALUE_T> struct weighted_average_step_size_taker {
   }
 };
 
-} // namespace policy
+template <template <typename> typename T>
+concept isWeightedAverageStepSizeTemplate =
+    std::is_same_v<T<FiniteValue<environment::dummy::DummyFiniteEnvironment>>,
+                   weighted_average_step_size_taker<FiniteValue<environment::dummy::DummyFiniteEnvironment>>>;
+
+template <template <typename> typename T>
+concept isStepSizeTemplate = isConstantStepSizeTemplate<T> || isWeightedAverageStepSizeTemplate<T>;
+
+} // namespace policy::objectives

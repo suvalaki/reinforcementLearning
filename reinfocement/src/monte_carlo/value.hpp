@@ -5,6 +5,8 @@
 
 #include "monte_carlo/episode.hpp"
 #include "policy/distribution_policy.hpp"
+#include "policy/finite/value_policy.hpp"
+#include "policy/objectives/finite_value_function.hpp"
 #include "policy/value.hpp"
 
 namespace monte_carlo {
@@ -13,81 +15,25 @@ namespace monte_carlo {
 // we dont know the state dynamics.
 
 /// Each occurance of a state within an episode is called a visit.
-template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T>
+template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T>
 using AverageReturnsMap = std::unordered_map<typename VALUE_FUNCTION_T::KeyType,
                                              std::vector<typename VALUE_FUNCTION_T::PrecisionType>,
                                              typename VALUE_FUNCTION_T::KeyMaker::Hash>;
 
-template <policy::isStateActionValueFunction VALUE_FUNCTION_T>
+template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T>
 AverageReturnsMap<VALUE_FUNCTION_T>
 n_visit_returns_initialisation(VALUE_FUNCTION_T &valueFunction,
                                typename VALUE_FUNCTION_T::EnvironmentType &environment) {
 
   // Initialisation step
-  // initialise the value function to the initial value
+  // initialize the value function to the initial value
   valueFunction.initialize(environment);
-  // initialise returns list for every state
+  // initialize returns list for every state
   AverageReturnsMap<VALUE_FUNCTION_T> returns = AverageReturnsMap<VALUE_FUNCTION_T>();
 
   for (const auto &s : environment.getAllPossibleStates()) {
     for (const auto &a : environment.getReachableActions(s)) {
-      returns[{s, a}] = std::vector<typename VALUE_FUNCTION_T::PrecisionType>();
-    }
-  }
-
-  return returns;
-}
-
-template <policy::isStateValueFunction VALUE_FUNCTION_T>
-AverageReturnsMap<VALUE_FUNCTION_T>
-n_visit_returns_initialisation(VALUE_FUNCTION_T &valueFunction,
-                               typename VALUE_FUNCTION_T::EnvironmentType &environment) {
-
-  // Initialisation step
-  // initialise the value function to the initial value
-  valueFunction.initialize(environment);
-  // initialise returns list for every state
-  AverageReturnsMap<VALUE_FUNCTION_T> returns = AverageReturnsMap<VALUE_FUNCTION_T>();
-
-  for (const auto &s : environment.getAllPossibleStates()) {
-    returns[s] = std::vector<typename VALUE_FUNCTION_T::PrecisionType>();
-  }
-
-  return returns;
-}
-
-template <policy::isActionValueFunction VALUE_FUNCTION_T>
-AverageReturnsMap<VALUE_FUNCTION_T>
-n_visit_returns_initialisation(VALUE_FUNCTION_T &valueFunction,
-                               typename VALUE_FUNCTION_T::EnvironmentType &environment) {
-
-  // Initialisation step
-  // initialise the value function to the initial value
-  valueFunction.initialize(environment);
-  // initialise returns list for every state
-  AverageReturnsMap<VALUE_FUNCTION_T> returns = AverageReturnsMap<VALUE_FUNCTION_T>();
-
-  for (const auto &a : environment.getAllPossibleActions()) {
-    returns[a] = std::vector<typename VALUE_FUNCTION_T::PrecisionType>();
-  }
-
-  return returns;
-}
-
-template <policy::isNotKnownValueFunction VALUE_FUNCTION_T>
-AverageReturnsMap<VALUE_FUNCTION_T>
-n_visit_returns_initialisation(VALUE_FUNCTION_T &valueFunction,
-                               typename VALUE_FUNCTION_T::EnvironmentType &environment) {
-
-  // Initialisation step
-  // initialise the value function to the initial value
-  valueFunction.initialize(environment);
-  // initialise returns list for every state
-  AverageReturnsMap<VALUE_FUNCTION_T> returns = AverageReturnsMap<VALUE_FUNCTION_T>();
-
-  for (const auto &s : environment.getAllPossibleStates()) {
-    for (const auto &a : environment.getReachableActions(s)) {
-      returns[typename VALUE_FUNCTION_T::KeyMaker::make(s, a)] =
+      returns[VALUE_FUNCTION_T::KeyMaker::make(environment, s, a)] =
           std::vector<typename VALUE_FUNCTION_T::PrecisionType>();
     }
   }
@@ -95,7 +41,7 @@ n_visit_returns_initialisation(VALUE_FUNCTION_T &valueFunction,
   return returns;
 }
 
-template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T> struct StopCondition {
+template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T> struct StopCondition {
   SETUP_TYPES_FROM_ENVIRON(SINGLE_ARG(VALUE_FUNCTION_T::EnvironmentType));
   using ValueFunctionType = VALUE_FUNCTION_T;
 
@@ -110,9 +56,9 @@ template <typename T>
 concept isStopCondition = std::is_base_of_v<StopCondition<typename T::ValueFunctionType>, T>;
 
 template <std::size_t max_episode_length,
-          policy::isFiniteStateValueFunction VALUE_FUNCTION_T,
-          policy::isGreedyPolicy POLICY_T0,
-          policy::isGreedyPolicy POLICY_T1,
+          policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T,
+          policy::isFinitePolicyValueFunctionMixin POLICY_T0,
+          policy::isFinitePolicyValueFunctionMixin POLICY_T1,
           isStopCondition STOP_CONDITION_T,
           isEpisodeGenerator EPISODE_GENERATOR_T =
               EpisodeGenerator<max_episode_length, typename VALUE_FUNCTION_T::EnvironmentType, POLICY_T0>>
@@ -135,7 +81,7 @@ requires(std::is_same_v<typename VALUE_FUNCTION_T::KeyMaker, typename POLICY_T0:
 
   auto episode = episodeGenerator(environment, policy);
 
-  // Initialise the return to 0
+  // initialize the return to 0
   typename VALUE_FUNCTION_T::PrecisionType G = 0;
   // Loop over the transitions in the episode in reverse order
   for (auto it = episode.GetTransitions().rbegin(); it != episode.GetTransitions().rend(); ++it) {
@@ -148,16 +94,15 @@ requires(std::is_same_v<typename VALUE_FUNCTION_T::KeyMaker, typename POLICY_T0:
 
     // If the state does not appear in an earlier transition
     if (stop_condition.template operator()<typename EPISODE_GENERATOR_T::EpisodeType>(
-            episode.GetTransitions().begin(), (it + 1).base(), *it)) {
+            environment, episode.GetTransitions().begin(), (it + 1).base(), *it)) {
 
-      const auto valueKey = ValueFunctionKeyMaker::make(it->state, it->action);
-      const auto policyKey = PolicyKeyMaker::make(it->state, it->action);
+      const auto valueKey = ValueFunctionKeyMaker::make(environment, it->state, it->action);
       // Add the return to the list of returns
       // weight them by the potential off policy method. (5.3) and (5.4)
       auto importance_sampling_weight = &policy == &target_policy
                                             ? 1.0F
-                                            : target_policy.getProbability(environment, it->state, policyKey) /
-                                                  policy.getProbability(environment, it->state, policyKey);
+                                            : target_policy.getProbability(environment, it->state, it->action) /
+                                                  policy.getProbability(environment, it->state, it->action);
       returns[valueKey].push_back(importance_sampling_weight * G);
       // Update the value function to be the average of returns from that
       // state
@@ -171,9 +116,9 @@ requires(std::is_same_v<typename VALUE_FUNCTION_T::KeyMaker, typename POLICY_T0:
 }
 
 template <std::size_t max_episode_length,
-          policy::isFiniteStateValueFunction VALUE_FUNCTION_T,
-          policy::isGreedyPolicy POLICY_T0,
-          policy::isGreedyPolicy POLICY_T1,
+          policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T,
+          policy::isFinitePolicyValueFunctionMixin POLICY_T0,
+          policy::isFinitePolicyValueFunctionMixin POLICY_T1,
           isStopCondition STOP_CONDITION_T,
           isEpisodeGenerator EPISODE_GENERATOR_T =
               EpisodeGenerator<max_episode_length, typename VALUE_FUNCTION_T::EnvironmentType, POLICY_T0>>
@@ -187,7 +132,7 @@ void visit_valueEstimate(
     const EPISODE_GENERATOR_T &episodeGenerator =
         EpisodeGenerator<max_episode_length, typename VALUE_FUNCTION_T::EnvironmentType, POLICY_T0>()) {
 
-  // initialise the value function and returns list for every state
+  // initialize the value function and returns list for every state
   auto returns = n_visit_returns_initialisation(valueFunction, environment);
 
   // Loop forever over episodes - Here we actually only loop for the requested
@@ -198,20 +143,22 @@ void visit_valueEstimate(
   }
 }
 
-template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T>
+template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T>
 struct FirstVisitStopCondition : StopCondition<VALUE_FUNCTION_T> {
 
   using KeyMaker = VALUE_FUNCTION_T::KeyMaker;
 
   // Only update the average for the first visit in the episode
   template <typename EPISODE_T>
-  bool operator()(typename EPISODE_T::DataContainer::const_iterator start,
+  bool operator()(typename EPISODE_T::EnvironmentType &environment,
+                  typename EPISODE_T::DataContainer::const_iterator start,
                   typename EPISODE_T::DataContainer::const_iterator end,
                   const typename VALUE_FUNCTION_T::EnvironmentType::TransitionType &transition) const {
     // if any of the earlier transitions have the key then they make
     // a better first visit.
-    return not std::any_of(start, end, [&transition](const auto &t) {
-      return KeyMaker::make(t.state, t.action) == KeyMaker::make(transition.state, transition.action);
+    return not std::any_of(start, end, [&environment, &transition](const auto &t) {
+      return KeyMaker::make(environment, t.state, t.action) ==
+             KeyMaker::make(environment, transition.state, transition.action);
     });
   }
 };
@@ -219,9 +166,9 @@ struct FirstVisitStopCondition : StopCondition<VALUE_FUNCTION_T> {
 /** @brief The value v_{pi}(s) is the average of all returns following the first
  * visit to s. */
 template <std::size_t max_episode_length,
-          policy::isFiniteStateValueFunction VALUE_FUNCTION_T,
-          policy::isGreedyPolicy POLICY_T0,
-          policy::isGreedyPolicy POLICY_T1,
+          policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T,
+          policy::isFinitePolicyValueFunctionMixin POLICY_T0,
+          policy::isFinitePolicyValueFunctionMixin POLICY_T1,
           isEpisodeGenerator EPISODE_GENERATOR_T =
               EpisodeGenerator<max_episode_length, typename VALUE_FUNCTION_T::EnvironmentType, POLICY_T0>>
 void first_visit_valueEstimate(
@@ -242,11 +189,12 @@ void first_visit_valueEstimate(
                                           episodeGenerator);
 }
 
-template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T>
+template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T>
 struct EveryVisitStopCondition : StopCondition<VALUE_FUNCTION_T> {
   // We always update the average at every visit.
   template <typename EPISODE_T>
-  bool operator()(typename EPISODE_T::DataContainer::const_iterator start,
+  bool operator()(typename EPISODE_T::EnvironmentType &environment,
+                  typename EPISODE_T::DataContainer::const_iterator start,
                   typename EPISODE_T::DataContainer::const_iterator end,
                   const typename VALUE_FUNCTION_T::TransitionType &transition) const {
     return true;
@@ -256,9 +204,9 @@ struct EveryVisitStopCondition : StopCondition<VALUE_FUNCTION_T> {
 /** @brief The value v_{pi}(s) is the average of all returns following all
  * visits to s. */
 template <std::size_t max_episode_length,
-          policy::isFiniteStateValueFunction VALUE_FUNCTION_T,
-          policy::isGreedyPolicy POLICY_T0,
-          policy::isGreedyPolicy POLICY_T1,
+          policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T,
+          policy::isFinitePolicyValueFunctionMixin POLICY_T0,
+          policy::isFinitePolicyValueFunctionMixin POLICY_T1,
           isEpisodeGenerator EPISODE_GENERATOR_T =
               EpisodeGenerator<max_episode_length, typename VALUE_FUNCTION_T::EnvironmentType, POLICY_T0>>
 void every_visit_valueEstimate(

@@ -9,46 +9,9 @@
 #include "environment.hpp"
 #include "spec.hpp"
 
+#if false
+
 namespace policy {
-
-template <typename T>
-concept isStateActionValueFactory = requires(T t) {
-  { t.create() } -> std::same_as<typename T::ValueType>;
-  { t.update() } -> std::same_as<void>;
-};
-
-template <environment::EnvironmentType ENVIRON_T> struct StateActionValue {
-  SETUP_TYPES_FROM_ENVIRON(SINGLE_ARG(ENVIRON_T))
-  // Current state-action-value estimatae
-  PrecisionType value = 0;
-  // number of steps taken for this state-action estimate
-  std::size_t step = 0;
-
-  StateActionValue(const PrecisionType &value = 0, const std::size_t &step = 0) : value(value), step(step) {}
-
-  bool operator<(const StateActionValue &other) const { return value < other.value; }
-
-  bool operator<(const PrecisionType &other) const { return value < other; }
-  bool operator>(const PrecisionType &other) const { return value > other; }
-  bool operator==(const PrecisionType &other) const { return value == other; }
-
-  bool operator==(const StateActionValue &other) const { return value == other.value && step == other.step; }
-
-  virtual void noFocusUpdate() {}
-
-  struct Factory {
-    using ValueType = StateActionValue;
-    StateActionValue create(const PrecisionType &value = 0, const std::size_t &step = 0) {
-      return StateActionValue{value, step};
-    }
-
-    void update() {}
-  };
-};
-
-template <typename T>
-concept isStateActionValue = std::is_base_of_v<StateActionValue<typename T::EnvironmentType>, T> &&
-    isStateActionValueFactory<typename T::Factory>;
 
 template <environment::EnvironmentType ENVIRON_T, auto DEGREE_OF_EXPLORATION>
 struct UpperConfidenceBoundStateActionValue : public StateActionValue<ENVIRON_T> {
@@ -97,3 +60,5 @@ struct UpperConfidenceBoundStateActionValue : public StateActionValue<ENVIRON_T>
 };
 
 } // namespace policy
+
+#endif

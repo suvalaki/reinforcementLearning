@@ -7,6 +7,7 @@
 
 //#include "markov_decision_process/finite_state_value_function.hpp"
 #include "markov_decision_process/finite_transition_model.hpp"
+#include "policy/objectives/finite_value_function.hpp"
 #include "policy/value.hpp"
 
 // The key concept for MDPs is that the best policy can always be determined
@@ -39,7 +40,7 @@ namespace markov_decision_process {
  * the transition model this defines the reachable states
  * @return VALUE_FUNCTION_T::PrecisionType The expected value
  */
-template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T>
+template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T>
 typename VALUE_FUNCTION_T::PrecisionType
 value_from_state_action(VALUE_FUNCTION_T &valueFunction,
                         const typename VALUE_FUNCTION_T::EnvironmentType &environment,
@@ -100,7 +101,7 @@ value_from_state_action(VALUE_FUNCTION_T &valueFunction,
  * @param state The state to evaluate the value for
  * @return VALUE_FUNCTION_T::PrecisionType The estimated value of the state
  */
-template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T, policy::isDistributionPolicy POLICY_T>
+template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T, policy::isDistributionPolicy POLICY_T>
 typename VALUE_FUNCTION_T::PrecisionType
 policy_evaluation_step(VALUE_FUNCTION_T &valueFunction,
                        const typename VALUE_FUNCTION_T::EnvironmentType &environment,
@@ -125,7 +126,7 @@ policy_evaluation_step(VALUE_FUNCTION_T &valueFunction,
   auto nextValueEstimate = std::accumulate(
       reachableActions.begin(), reachableActions.end(), 0.0F, [&](const auto &value, const auto &action) {
         const auto reachableStates = environment.getReachableStates(state, action);
-        return value + policy.getProbability(environment, state, PolicyKeyMaker::make(state, action)) *
+        return value + policy.getProbability(environment, state, action) *
                            value_from_state_action(valueFunction, environment, state, action);
       });
 
@@ -150,7 +151,7 @@ policy_evaluation_step(VALUE_FUNCTION_T &valueFunction,
  * @param epsilon The convergence threshold. When the value function at any
  * state changes by less than epsilon we have converged.
  */
-template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T, policy::isDistributionPolicy POLICY_T>
+template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T, policy::isDistributionPolicy POLICY_T>
 void policy_evaluation(VALUE_FUNCTION_T &valueFunction,
                        const typename POLICY_T::EnvironmentType &environment,
                        POLICY_T &policy,
@@ -206,7 +207,7 @@ void policy_evaluation(VALUE_FUNCTION_T &valueFunction,
  * @return true If the policy was improved
  * @return false If the policy was not improved
  */
-template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T, policy::isDistributionPolicy POLICY_T>
+template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T, policy::isDistributionPolicy POLICY_T>
 bool policy_improvement_step(VALUE_FUNCTION_T &valueFunction,
                              const typename VALUE_FUNCTION_T::EnvironmentType &environment,
                              POLICY_T &policy,
@@ -226,7 +227,7 @@ bool policy_improvement_step(VALUE_FUNCTION_T &valueFunction,
   const auto oldActions = policy.getProbabilities(environment, state);
   const auto oldActionIdx = std::max_element(
       oldActions.begin(), oldActions.end(), [&](const auto &lhs, const auto &rhs) { return lhs.second < rhs.second; });
-  const auto oldAction = PolicyKeyMaker::get_action_from_key(oldActionIdx->first);
+  const auto oldAction = PolicyKeyMaker::get_action_from_key(environment, oldActionIdx->first);
 
   // For each state action pair find the new distribution of actions
   // under the value function. Take all actions with the argmax and set them
@@ -246,7 +247,7 @@ bool policy_improvement_step(VALUE_FUNCTION_T &valueFunction,
   // update the policy - by setting the policy to be deterministic on the
   // new argmax
   // warn: under this current approach we always pick a single action
-  policy.setDeterministicPolicy(environment, state, PolicyKeyMaker::make(state, nextAction));
+  policy.setDeterministicPolicy(environment, state, nextAction);
 
   return policyStable;
 }
@@ -268,7 +269,7 @@ bool policy_improvement_step(VALUE_FUNCTION_T &valueFunction,
  * @return false If the policy is not stable (at least one action update was
  * made)
  */
-template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T, policy::isDistributionPolicy POLICY_T>
+template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T, policy::isDistributionPolicy POLICY_T>
 bool policy_improvement(VALUE_FUNCTION_T &valueFunction,
                         const typename VALUE_FUNCTION_T::EnvironmentType &environment,
                         POLICY_T &policy) {
@@ -296,7 +297,7 @@ bool policy_improvement(VALUE_FUNCTION_T &valueFunction,
  * @param policy The policy to use for the action selection
  * @param epsilon The precision to use for the policy evaluation
  */
-template <policy::isFiniteStateValueFunction VALUE_FUNCTION_T, policy::isDistributionPolicy POLICY_T>
+template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T, policy::isDistributionPolicy POLICY_T>
 void policy_iteration(VALUE_FUNCTION_T &valueFunction,
                       const typename VALUE_FUNCTION_T::EnvironmentType &environment,
                       POLICY_T &policy,

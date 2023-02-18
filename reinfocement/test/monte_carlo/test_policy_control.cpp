@@ -6,7 +6,16 @@
 #include "monte_carlo/policy_control.hpp"
 #include "monte_carlo/value.hpp"
 #include "policy/epsilon_greedy_policy.hpp"
+#include "policy/finite/epsilon_greedy_policy.hpp"
+#include "policy/finite/greedy_policy.hpp"
+#include "policy/finite/random_policy.hpp"
 #include "policy/greedy_policy.hpp"
+#include "policy/objectives/value_function_keymaker.hpp"
+
+using KeyMaker = policy::objectives::StateActionKeymaker<CoinEnviron>;
+using GreedyCoinPolicy = policy::FiniteGreedyPolicy<KeyMaker>;
+using RandomCoinPolicy = policy::FiniteRandomPolicy<CoinEnviron>;
+using EpsGreedyCoinPolicy = policy::FiniteEpsilonGreedyPolicy<RandomCoinPolicy, GreedyCoinPolicy>;
 
 TEST_CASE("monte_carlo::monte_carlo_on_policy_first_visit_control_with_exploring_starts") {
 
@@ -15,7 +24,6 @@ TEST_CASE("monte_carlo::monte_carlo_on_policy_first_visit_control_with_exploring
     auto data = CoinModelDataFixture{};
     auto &[s0, s1, a0, a1, transitionModel, environ, policy, policyState, policyAction, valueFunction, _v1, _v2] = data;
 
-    using GreedyCoinPolicy = policy::GreedyPolicy<CoinEnviron>;
     auto greedyPolicy = GreedyCoinPolicy();
 
     // Prior to running the policy the estimates are all zero.
@@ -28,8 +36,17 @@ TEST_CASE("monte_carlo::monte_carlo_on_policy_first_visit_control_with_exploring
                                      greedyPolicy[{s1, a1}].value};
     CHECK(std::any_of(values.begin(), values.end(), [](auto v) { return v != Approx(0.0); }));
 
-    using EpsGreedyCoinPolicy = policy::EpsilonGreedyPolicy<CoinEnviron, GreedyCoinPolicy>;
-    auto epsGreedyPolicy = GreedyCoinPolicy();
+    auto randomPolicy = RandomCoinPolicy();
+    auto epsGreedyPolicy = EpsGreedyCoinPolicy{randomPolicy, 0.2F};
+    std::cout << greedyPolicy.getProbability(environ, s0, a0) << "\n";
+    epsGreedyPolicy.getProbability(environ, s0, a0);
+
+    for (int i = 0; i < 10; ++i) {
+      // std::cout << epsGreedyPolicy(environ, s0) << "\n";
+      // std::cout << static_cast<typename EpsGreedyCoinPolicy::ExploitType &>(epsGreedyPolicy)(environ, s0) << "\n";
+    }
+
+    // epsGreedyPolicy.getProbability(environ, s0, a0);
 
     // Prior to running the policy the estimates are all zero.
     monte_carlo::monte_carlo_on_policy_first_visit_control_with_exploring_starts<10>(epsGreedyPolicy, environ, 50);
@@ -47,10 +64,9 @@ TEST_CASE("monte_carlo::monte_carlo_on_policy_first_visit_control_with_exploring
     auto &[s0, s1, a0, a1, transitionModel, environ, policy, policyState, policyAction, valueFunction, _v1, _v2] = data;
 
     {
-      using GreedyCoinPolicy = policy::GreedyPolicy<CoinEnviron>;
-      using EpsGreedyCoinPolicy = policy::EpsilonGreedyPolicy<CoinEnviron, GreedyCoinPolicy>;
       auto greedyPolicy = GreedyCoinPolicy();
-      auto epsGreedyPolicy = EpsGreedyCoinPolicy();
+      auto randomPolicy = RandomCoinPolicy();
+      auto epsGreedyPolicy = EpsGreedyCoinPolicy(randomPolicy);
 
       // We are attempting to learn the greedy policy using the epsilon greedy policy.
 
@@ -70,14 +86,12 @@ TEST_CASE("monte_carlo::monte_carlo_on_policy_first_visit_control_with_exploring
                                        greedyPolicy[{s0, a1}].value,
                                        greedyPolicy[{s1, a1}].value};
       CHECK(std::any_of(values.begin(), values.end(), [](auto v) { return v != Approx(0.0); }));
-      greedyPolicy.printQTable();
     }
 
     {
-      using GreedyCoinPolicy = policy::GreedyPolicy<CoinEnviron>;
-      using EpsGreedyCoinPolicy = policy::EpsilonGreedyPolicy<CoinEnviron, GreedyCoinPolicy>;
       auto greedyPolicy = GreedyCoinPolicy();
-      auto epsGreedyPolicy = EpsGreedyCoinPolicy();
+      auto randomPolicy = RandomCoinPolicy();
+      auto epsGreedyPolicy = EpsGreedyCoinPolicy(randomPolicy);
 
       // Prior to running the policy the estimates are all zero.
       monte_carlo::monte_carlo_off_policy_importance_sampling_every_visit_control_with_exploring_starts<10>(
@@ -97,7 +111,6 @@ TEST_CASE("monte_carlo::monte_carlo_on_policy_every_visit_control_with_exploring
   auto data = CoinModelDataFixture{};
   auto &[s0, s1, a0, a1, transitionModel, environ, policy, policyState, policyAction, valueFunction, _v1, _v2] = data;
 
-  using GreedyCoinPolicy = policy::GreedyPolicy<CoinEnviron>;
   auto greedyPolicy = GreedyCoinPolicy();
 
   // // Prior to running the policy the estimates are all zero.

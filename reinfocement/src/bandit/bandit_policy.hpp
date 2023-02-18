@@ -12,6 +12,7 @@
 
 using namespace bandit;
 
+#if false
 namespace bandit {
 
 template <typename ENVIRON_T>
@@ -68,3 +69,5 @@ using BanditDistributionPolicy = ::policy::DistributionPolicy< //
     >;
 
 } // namespace bandit
+
+#endif

@@ -5,7 +5,7 @@
 #include "environment.hpp"
 #include "markov_decision_process/coin_mdp.hpp"
 #include "monte_carlo/value.hpp"
-#include "policy/state_action_keymaker.hpp"
+#include "policy/objectives/value_function_keymaker.hpp"
 #include "policy/value.hpp"
 
 using namespace environment;

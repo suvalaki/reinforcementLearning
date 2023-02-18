@@ -40,23 +40,25 @@ TEST_CASE("Coin MPD can undergo policy value iteration") {
 
   SECTION("Full Value Iteration function works") {
     // force the q_table to have non-optimal values
-    policy.at(CoinDistributionPolicy::KeyMaker::make(s0, a0)).value = 0.0F;
-    policy.at(CoinDistributionPolicy::KeyMaker::make(s0, a1)).value = 0.0F;
-    policy.at(CoinDistributionPolicy::KeyMaker::make(s1, a0)).value = 0.0F;
-    policy.at(CoinDistributionPolicy::KeyMaker::make(s1, a1)).value = 0.0F;
+    policy.at(CoinDistributionPolicy::KeyMaker::make(environ, s0, a0)).value = 0.0F;
+    policy.at(CoinDistributionPolicy::KeyMaker::make(environ, s0, a1)).value = 0.0F;
+    policy.at(CoinDistributionPolicy::KeyMaker::make(environ, s1, a0)).value = 0.0F;
+    policy.at(CoinDistributionPolicy::KeyMaker::make(environ, s1, a1)).value = 0.0F;
     value_iteration::value_iteration(valueFunction, environ, policy, 1e-3F);
 
+    policy.prettyPrint();
+
     // these are the optimals after 1 iteration
-    auto p00 = policy.getProbability(environ, s0, CoinDistributionPolicy::KeyMaker::make(s0, a0));
+    auto p00 = policy.getProbability(environ, s0, a0);
     CHECK(p00 == Approx(0.0F));
 
-    auto p01 = policy.getProbability(environ, s0, CoinDistributionPolicy::KeyMaker::make(s0, a1));
+    auto p01 = policy.getProbability(environ, s0, a1);
     CHECK(p01 == Approx(1.0F));
 
-    auto p10 = policy.getProbability(environ, s0, CoinDistributionPolicy::KeyMaker::make(s1, a0));
+    auto p10 = policy.getProbability(environ, s1, a0);
     CHECK(p10 == Approx(1.0F));
 
-    auto p11 = policy.getProbability(environ, s0, CoinDistributionPolicy::KeyMaker::make(s1, a1));
+    auto p11 = policy.getProbability(environ, s1, a1);
     CHECK(p11 == Approx(0.0F));
   }
 }

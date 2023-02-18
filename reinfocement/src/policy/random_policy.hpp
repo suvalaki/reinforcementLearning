@@ -1,14 +1,21 @@
 #pragma once
-#include "environment.hpp"
+#include <cmath>
+#include <exception>
 #include <random>
 #include <xtensor/xfixed.hpp>
 #include <xtensor/xrandom.hpp>
 
 #include "action.hpp"
+#include "environment.hpp"
 #include "policy.hpp"
 #include "spec.hpp"
 
 namespace policy {
+
+// A RandomPolicy is a policy that samples from the action space - It doesnt have any internal state, nor
+// an objective to maximise. As such it can be considered a DistributionPolicy (in the sense that it is
+// sampling from a uniform distribution over the action space) or a ValuePolicy (in the sense that it is
+// returning a value of 1 for all actions) .. ALTERNATIVE: ITS NOT AN VALUE POLICY.
 
 using spec::CompositeArraySpecType;
 using spec::isBoundedArraySpec;
@@ -45,30 +52,23 @@ typename T::DataType > random_spec_gen(E &engine = xt::random::get_default_rando
   (std::make_index_sequence<std::tuple_size_v<typename T::tupleType>>());
 }
 
-template <environment::EnvironmentType ENVIRON_T> struct RandomPolicy : Policy<ENVIRON_T> {
+template <environment::EnvironmentType E> struct RandomPolicy : virtual Policy<E>, PolicyDistributionMixin<E> {
 
-  SETUP_TYPES(SINGLE_ARG(Policy<ENVIRON_T>));
-
-  // Get a random event over the bounded specification
-  ActionSpace operator()(const StateType &s) override {
-    return ActionSpace{random_spec_gen<typename ActionSpace::SpecType>()};
-  }
-
-  virtual void update(const TransitionType &s){};
-};
-
-template <environment::FiniteEnvironmentType ENVIRON_T,
-          isStateActionKeymaker KEYMAPPER_T = DefaultActionKeymaker<ENVIRON_T>>
-struct FiniteRandomPolicy : FiniteStatePolicy<ENVIRON_T, KEYMAPPER_T> {
-
-  SETUP_TYPES(SINGLE_ARG(FiniteStatePolicy<ENVIRON_T, KEYMAPPER_T>));
+  SETUP_TYPES_FROM_ENVIRON(SINGLE_ARG(E));
 
   // Get a random event over the bounded specification
-  ActionSpace operator()(const StateType &s) override {
-    return ActionSpace{random_spec_gen<typename ActionSpace::SpecType>()};
+  ActionSpace operator()(const EnvironmentType &e, const StateType &s) const override {
+    return this->sampleAction(e, s);
   }
-
-  virtual void update(const TransitionType &s){};
+  virtual void update(const EnvironmentType &e, const TransitionType &s){};
+  ActionSpace sampleAction(const EnvironmentType &e, const StateType &s) const override;
 };
+
+// impl PolicyDistributionMixin - the other methods should be implemented by the user for their specific policy
+template <environment::EnvironmentType E>
+typename RandomPolicy<E>::ActionSpace RandomPolicy<E>::sampleAction(const EnvironmentType &e,
+                                                                    const StateType &s) const {
+  return ActionSpace{random_spec_gen<typename ActionSpace::SpecType>()};
+}
 
 } // namespace policy

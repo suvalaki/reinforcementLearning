@@ -4,6 +4,7 @@
 #include <string>
 #include <type_traits>
 #include <xtensor/xfixed.hpp>
+#include <xtensor/xio.hpp>
 
 namespace spec {
 
@@ -151,7 +152,7 @@ template <AllElementsAnyArraySpecType... T> struct CompositeArraySpec : std::tup
 
     else if constexpr (isFinite) {
       return [&]<std::size_t... N>(std::index_sequence<N...>) {
-        return ((std::tuple_element_t<N, tupleType>::max - std::tuple_element_t<N, tupleType>::min + 1) * ...);
+        return ((std::tuple_element_t<N, tupleType>::max - std::tuple_element_t<N, tupleType>::min) * ...);
       }
       (std::make_index_sequence<sizeof...(T)>());
     }

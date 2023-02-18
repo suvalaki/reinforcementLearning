@@ -7,8 +7,8 @@
 #include "xtensor/xview.hpp"
 
 #include "markov_decision_process/finite_transition_model.hpp"
+#include "policy/objectives/value_function_keymaker.hpp"
 #include "policy/random_policy.hpp"
-#include "policy/state_action_keymaker.hpp"
 
 #include "coin_mdp.hpp"
 

@@ -11,8 +11,8 @@
 
 #include "markov_decision_process/finite_transition_model.hpp"
 #include "policy/distribution_policy.hpp"
+#include "policy/finite/distribution_policy.hpp"
 #include "policy/random_policy.hpp"
-#include "policy/state_action_keymaker.hpp"
 #include "policy/state_action_value.hpp"
 #include "policy/value.hpp"
 
@@ -37,7 +37,7 @@ struct CoinReward : reward::Reward<CoinAction> {
 
 using CoinReturn = returns::Return<CoinReward>;
 
-using BaseEnviron = environment::Environment<CoinStep, CoinReward, CoinReturn>;
+using BaseEnviron = environment::FiniteEnvironment<CoinStep, CoinReward, CoinReturn>;
 
 using T = typename BaseEnviron::TransitionType;
 using P = typename BaseEnviron::PrecisionType;
@@ -58,20 +58,16 @@ struct CoinEnviron : environment::MarkovDecisionEnvironment<CoinStep, CoinReward
   StateType getNullState() const override { return CoinState{0.0F, {}}; }
 };
 
-using CoinTransitionModel = typename CoinEnviron::TransitionModel;
-using CoinDistributionPolicy = policy::DistributionPolicy<CoinEnviron, policy::DefaultActionKeymaker<CoinEnviron>>;
-using CoinDistributionPolicyState = policy::DistributionPolicy<CoinEnviron, policy::StateKeymaker<CoinEnviron>>;
-using CoinDistributionPolicyAction = policy::DistributionPolicy<CoinEnviron, policy::ActionKeymaker<CoinEnviron>>;
-using CoinValueFunction = policy::FiniteStateValueFunction<CoinEnviron>;
+static_assert(environment::FiniteEnvironmentType<CoinEnviron>, "ENVIRON FAILED");
 
-using CoinMapGetter = policy::FiniteValueFunctionMapGetter<policy::DefaultActionKeymaker<CoinEnviron>>;
-using CoinFiniteValueFunctionPrototype = policy::ValueFunctionPrototype<CoinEnviron>;
-using CoinFiniteValueFunctionMixin = policy::ValueFunctionPrototype<CoinEnviron>;
-using CoinStateValueFunction = policy::StateValueFunction<CoinEnviron>;
-using CoinStateActionValueFunction = policy::StateActionValueFunction<CoinEnviron>;
-using CoinFiniteStateActionValueFunction = policy::FiniteStateActionValueFunction<CoinEnviron>;
-using CoinFiniteStateValueFunction = policy::FiniteStateValueFunction<CoinEnviron>;
-using CoinFiniteActionValueFunction = policy::FiniteActionValueFunction<CoinEnviron>;
+using CoinTransitionModel = typename CoinEnviron::TransitionModel;
+using CoinDistributionPolicy = policy::FiniteDistributionPolicy<policy::objectives::StateActionKeymaker<CoinEnviron>>;
+using CoinDistributionPolicyState = policy::FiniteDistributionPolicy<policy::objectives::StateKeymaker<CoinEnviron>>;
+using CoinDistributionPolicyAction = policy::FiniteDistributionPolicy<policy::objectives::ActionKeymaker<CoinEnviron>>;
+
+using CoinFiniteStateActionValueFunction = policy::objectives::FiniteStateActionValueFunction<CoinEnviron>;
+using CoinFiniteStateValueFunction = policy::objectives::FiniteStateValueFunction<CoinEnviron>;
+using CoinFiniteActionValueFunction = policy::objectives::FiniteActionValueFunction<CoinEnviron>;
 
 struct CoinModelDataFixture {
 
@@ -102,7 +98,7 @@ struct CoinModelDataFixture {
   CoinFiniteStateValueFunction valueFunctionState = CoinFiniteStateValueFunction{};
   CoinFiniteActionValueFunction valueFunctionAction = CoinFiniteActionValueFunction{};
 
-  CoinModelDataFixture() { policy.initialise(environ, 100); }
+  CoinModelDataFixture() { policy.initialize(environ); }
 
   using TypeList = std::tuple<CoinState,
                               CoinState,

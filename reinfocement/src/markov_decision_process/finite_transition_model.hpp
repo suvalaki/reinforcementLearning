@@ -69,16 +69,17 @@ struct MarkovDecisionEnvironment : FiniteEnvironment<STEP_T, REWARD_T, RETURN_T>
     return transitions;
   }
 
-  std::unordered_set<ActionSpace, typename ActionSpace::Hash> getReachableActions(const StateType &s) const {
+  std::unordered_set<ActionSpace, typename ActionSpace::Hash> getReachableActions(const StateType &s) const override {
     std::unordered_set<ActionSpace, typename ActionSpace::Hash> actions;
     for (const auto &t : transitionModel.transitions) {
-      actions.emplace(t.first.action);
+      if (t.first.state == s)
+        actions.emplace(t.first.action);
     }
     return actions;
   }
 
   std::unordered_set<StateType, typename StateType::Hash> getReachableStates(const StateType &s,
-                                                                             const ActionSpace &a) const {
+                                                                             const ActionSpace &a) const override {
     std::unordered_set<StateType, typename StateType::Hash> states;
     for (const auto &t : transitionModel.transitions) {
       if (t.first.state == s and t.first.action == a) {
@@ -105,7 +106,7 @@ struct MarkovDecisionEnvironment : FiniteEnvironment<STEP_T, REWARD_T, RETURN_T>
   }
 
   /// @brief Get all possible states under the finite transation model
-  std::unordered_set<StateType, typename StateType::Hash> getAllPossibleStates() const {
+  std::unordered_set<StateType, typename StateType::Hash> getAllPossibleStates() const override {
     std::unordered_set<StateType, typename StateType::Hash> states;
     for (const auto &t : transitionModel.transitions) {
       states.emplace(t.first.state);
@@ -113,7 +114,7 @@ struct MarkovDecisionEnvironment : FiniteEnvironment<STEP_T, REWARD_T, RETURN_T>
     return states;
   }
 
-  std::unordered_set<ActionSpace, typename ActionSpace::Hash> getAllPossibleActions() const {
+  std::unordered_set<ActionSpace, typename ActionSpace::Hash> getAllPossibleActions() const override {
     std::unordered_set<ActionSpace, typename ActionSpace::Hash> actions;
     for (const auto &t : transitionModel.transitions) {
       actions.emplace(t.first.action);

@@ -30,7 +30,7 @@ typename ENVIRONMENT_T::TransitionType exploring_start_init(ENVIRONMENT_T &e) {
   // Now follow policy \pi
 }
 
-template <environment::EnvironmentType ENVIRONMENT_T, policy::PolicyType POLICY_T>
+template <environment::EnvironmentType ENVIRONMENT_T, policy::isFinitePolicyValueFunctionMixin POLICY_T>
 Episode<ENVIRONMENT_T> generate_episode_with_exploring_starts(ENVIRONMENT_T &environment, POLICY_T &policy) {
 
   std::size_t insertion = 0;
@@ -58,7 +58,9 @@ Episode<ENVIRONMENT_T> generate_episode_with_exploring_starts(ENVIRONMENT_T &env
   return episode;
 }
 
-template <std::size_t episode_max_length, environment::EnvironmentType ENVIRONMENT_T, policy::PolicyType POLICY_T>
+template <std::size_t episode_max_length,
+          environment::EnvironmentType ENVIRONMENT_T,
+          policy::isFinitePolicyValueFunctionMixin POLICY_T>
 requires NonZero<episode_max_length> Episode<ENVIRONMENT_T, episode_max_length>
 generate_episode_with_exploring_starts(ENVIRONMENT_T &environment, POLICY_T &policy) {
 
@@ -88,7 +90,9 @@ generate_episode_with_exploring_starts(ENVIRONMENT_T &environment, POLICY_T &pol
   return episode;
 }
 
-template <std::size_t max_episode_length_n, environment::EnvironmentType ENVIRONMENT_T, policy::PolicyType POLICY_T>
+template <std::size_t max_episode_length_n,
+          environment::EnvironmentType ENVIRONMENT_T,
+          policy::isFinitePolicyValueFunctionMixin POLICY_T>
 struct ExploringStartsEpisodeGenerator : EpisodeGenerator<max_episode_length_n, ENVIRONMENT_T, POLICY_T> {
 
   using EpisodeType = EpisodeGenerator<max_episode_length_n, ENVIRONMENT_T, POLICY_T>::EpisodeType;

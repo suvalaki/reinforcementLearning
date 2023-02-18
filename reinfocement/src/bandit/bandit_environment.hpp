@@ -116,9 +116,9 @@ template <std::size_t N_BANDITS> struct BanditStep : environment::Step<BanditAct
 };
 
 template <std::size_t N_BANDITS, environment::RewardType REWARD_T, environment::ReturnType RETURN_T>
-struct BanditEnvironment : environment::Environment<BanditStep<N_BANDITS>, REWARD_T, RETURN_T> {
+struct BanditEnvironment : environment::FiniteEnvironment<BanditStep<N_BANDITS>, REWARD_T, RETURN_T> {
 
-  SETUP_TYPES_W_ENVIRON(SINGLE_ARG(environment::Environment<BanditStep<N_BANDITS>, REWARD_T, RETURN_T>),
+  SETUP_TYPES_W_ENVIRON(SINGLE_ARG(environment::FiniteEnvironment<BanditStep<N_BANDITS>, REWARD_T, RETURN_T>),
                         SINGLE_ARG(BanditEnvironment<N_BANDITS, REWARD_T, RETURN_T>));
 
   constexpr static std::size_t N = N_BANDITS;
@@ -169,11 +169,16 @@ struct BanditEnvironment : environment::Environment<BanditStep<N_BANDITS>, REWAR
   }
 
   StateType getNullState() const { return StateType(engine, means, stddevs, {0}); }
+  StateType stateFromIndex(std::size_t i) const { return getNullState(); }
+  ActionSpace actionFromIndex(std::size_t i) const { return ActionSpace(typename ActionSpace::BaseType::DataType{i}); }
 
-  std::vector<ActionSpace> getReachableActions(const StateType &s) const {
-    std::vector<ActionSpace> actions;
+  std::unordered_set<StateType, typename StateType::Hash> getAllPossibleStates() const {
+    return std::unordered_set<StateType, typename StateType::Hash>{getNullState()};
+  }
+  std::unordered_set<ActionSpace, typename ActionSpace::Hash> getAllPossibleActions() const {
+    std::unordered_set<ActionSpace, typename ActionSpace::Hash> actions;
     for (int i = 0; i < N_BANDITS; i++) {
-      actions.push_back(ActionSpace(typename ActionSpace::BaseType::DataType{i}));
+      actions.emplace(actionFromIndex(i));
     }
     return actions;
   }

@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "environment.hpp"
+#include "policy/policy.hpp"
 #include "transition.hpp"
 
 namespace monte_carlo {
@@ -52,7 +53,7 @@ concept isEpisode = requires(T t) {
   { t.GetTransitions() } -> std::convertible_to<typename T::DataContainer>;
 };
 
-template <environment::EnvironmentType ENVIRONMENT_T, policy::PolicyType POLICY_T>
+template <environment::EnvironmentType ENVIRONMENT_T, policy::implementsPolicy POLICY_T>
 Episode<ENVIRONMENT_T>
 generate_episode_base(ENVIRONMENT_T &environment,
                       POLICY_T &policy,
@@ -72,7 +73,7 @@ generate_episode_base(ENVIRONMENT_T &environment,
   return episode;
 }
 
-template <environment::EnvironmentType ENVIRONMENT_T, policy::PolicyType POLICY_T>
+template <environment::EnvironmentType ENVIRONMENT_T, policy::implementsPolicy POLICY_T>
 Episode<ENVIRONMENT_T> generate_episode(ENVIRONMENT_T &environment, POLICY_T &policy, const bool reset = true) {
 
   auto episode = Episode<ENVIRONMENT_T>{};
@@ -96,7 +97,7 @@ Episode<ENVIRONMENT_T> generate_episode(ENVIRONMENT_T &environment, POLICY_T &po
 template <std::size_t T>
 concept NonZero = (T > 0);
 
-template <std::size_t episode_max_length, environment::EnvironmentType ENVIRONMENT_T, policy::PolicyType POLICY_T>
+template <std::size_t episode_max_length, environment::EnvironmentType ENVIRONMENT_T, policy::implementsPolicy POLICY_T>
 requires NonZero<episode_max_length> Episode<ENVIRONMENT_T, episode_max_length>
 generate_episode(ENVIRONMENT_T &environment, POLICY_T &policy, const bool reset = true) {
 
@@ -120,7 +121,9 @@ generate_episode(ENVIRONMENT_T &environment, POLICY_T &policy, const bool reset 
   return episode;
 }
 
-template <std::size_t max_episode_length_n, environment::EnvironmentType ENVIRONMENT_T, policy::PolicyType POLICY_T>
+template <std::size_t max_episode_length_n,
+          environment::EnvironmentType ENVIRONMENT_T,
+          policy::implementsPolicy POLICY_T>
 struct EpisodeGenerator {
 
   static std::size_t constexpr max_episode_length = max_episode_length_n;

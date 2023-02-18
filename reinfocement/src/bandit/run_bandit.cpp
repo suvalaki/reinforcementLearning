@@ -13,9 +13,15 @@
 #include "spec.hpp"
 
 #include "policy/epsilon_greedy_policy.hpp"
-#include "policy/greedy_policy.hpp"
+//#include "policy/greedy_policy.hpp"
 #include "policy/policy.hpp"
 #include "policy/random_policy.hpp"
+
+#include "policy/finite/greedy_policy.hpp"
+#include "policy/finite/random_policy.hpp"
+#include "policy/finite/value_policy.hpp"
+#include "policy/objectives/finite_value.hpp"
+#include "policy/objectives/value_function_keymaker.hpp"
 
 using namespace environment;
 using namespace policy;
@@ -60,15 +66,64 @@ using constatntRet = environment::Return<bandit::rewards::ConstantReward<2>>;
 using NBanditEnvironment = bandit::
     BanditEnvironment<3, bandit::rewards::ConstantReward<3>, environment::Return<bandit::rewards::ConstantReward<3>>>;
 
-using NBanditPolicy = RandomPolicy<NBanditEnvironment>;
-using KeyHashMappings = bandit::BanditStateActionKeymapper<NBanditEnvironment>;
-// using BanditGreedy = policy::GreedyPolicy<NBanditEnvironment,
-// KeyHashMappings>;
-using BanditGreedy = bandit::GreedyBanditPolicy<NBanditEnvironment>;
-using CIBanditGreedy = bandit::UpperConfidenceBoundGreedyBanditPolicy<NBanditEnvironment, 0.5F>;
+//  Tesing objects
+using BanditRandomFinitePolicy = policy::FiniteRandomPolicy<NBanditEnvironment>;
+using BanditKeyMaker = policy::objectives::ActionKeymaker<NBanditEnvironment>;
+using BanditValue = policy::objectives::FiniteValue<NBanditEnvironment>;
+using BanditValueFunction = policy::objectives::ValueFunction<BanditKeyMaker, BanditValue>;
+using BanditFiniteValueFunction = policy::objectives::FiniteValueFunction<BanditValueFunction>;
+// using BanditFinitePolicyValueFunctionMixin = policy::FinitePolicyValueFunctionMixin<BanditKeyMaker, BanditValue>;
+using BanditGreedy = policy::FiniteGreedyPolicy<BanditKeyMaker>;
+using BanditGreedyC = policy::FiniteGreedyPolicyC<NBanditEnvironment, policy::objectives::ActionKeymaker>;
+
+// using NBanditPolicy = RandomPolicy<NBanditEnvironment>;
+// using KeyHashMappings = bandit::BanditStateActionKeymapper<NBanditEnvironment>;
+// // using BanditGreedy = policy::FiniteGreedyPolicy<NBanditEnvironment,
+// // KeyHashMappings>;
+// using BanditGreedy = bandit::GreedyBanditPolicy<NBanditEnvironment>;
+// using CIBanditGreedy = bandit::UpperConfidenceBoundGreedyBanditPolicy<NBanditEnvironment, 0.5F>;
 
 int main() {
 
+  std::minstd_rand generator = {};
+  auto banditEnv = NBanditEnvironment{generator};
+  banditEnv.printDistributions();
+
+  std::cout << "nStates: " << banditEnv.nStates << " "
+            << "nActions: " << banditEnv.nActions << "\n";
+  auto randomPolicy = BanditRandomFinitePolicy();
+  // auto map = typename BanditGreedy::ValueTableType();
+  // std::cout << map.size() << "\n";
+
+  auto banditValue = BanditValue{};
+  auto banditFiniteValueFunction = BanditFiniteValueFunction{};
+
+  banditFiniteValueFunction.initialize(banditEnv);
+
+  std::cout << banditFiniteValueFunction.size() << "\n";
+  banditFiniteValueFunction.prettyPrint();
+
+  auto banditGreedy = BanditGreedyC{};
+
+  auto action = randomPolicy(banditEnv, banditEnv.state);
+  std::cout << action << "\n";
+
+  auto key = BanditKeyMaker::make(banditEnv, banditEnv.state, action);
+  std::cout << key << "\n";
+
+  std::cout << "RANDOM ACTIONS\n";
+  for (int i = 0; i < 100; i++) {
+    auto recommendedAction = randomPolicy(banditEnv, banditEnv.state);
+    auto transition = banditEnv.step(recommendedAction);
+    banditGreedy.update(banditEnv, transition);
+    banditEnv.update(transition);
+  }
+
+  banditGreedy.prettyPrint();
+
+  // auto m = keymaker.make(env, {}, {});
+
+  /*
   auto state = ExampleState{};
   auto action = ExampleAction{policy::random_spec_gen<typename ExampleAction::SpecType>()};
   auto nextState = ExampleStep::step(state, action);
@@ -227,5 +282,6 @@ int main() {
   distributionPolicy.printQTable(banditEnv);
   banditEnv.printDistributions();
 
+  */
   return 0;
 }

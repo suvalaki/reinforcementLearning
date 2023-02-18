@@ -10,7 +10,7 @@ namespace monte_carlo {
 // adheres to the correct update method (5.6 sutton and barto) for the epsilon greedy policy.
 
 // Monte carlo constrol is about maximusing average(Return(s,a)) over all states and actions under pi.
-template <std::size_t episode_size, policy::isGreedyPolicy POLICY_T>
+template <std::size_t episode_size, policy::implementsFiniteValuePolicy POLICY_T>
 void monte_carlo_on_policy_first_visit_control_with_exploring_starts(POLICY_T &policy,
                                                                      typename POLICY_T::EnvironmentType &environment,
                                                                      std::size_t episodes) {
@@ -22,8 +22,8 @@ void monte_carlo_on_policy_first_visit_control_with_exploring_starts(POLICY_T &p
   // NOTE - The greedy policy is ALSO a value function. and so can be provided to this function. The choice
   // of greedy outcome will AUTOMATICALLY update.
 
-  // Initialise valueFunction with Q(key) forall keys (estimate q(s,a) or q(key)))
-  // Initialise the value function (and policy) to the initial value
+  // initialize valueFunction with Q(key) forall keys (estimate q(s,a) or q(key)))
+  // initialize the value function (and policy) to the initial value
 
   // Over the episode update the value estimates
   // Update the policy to be greedy with respect to the value function - automatic for the policy as it
@@ -31,7 +31,7 @@ void monte_carlo_on_policy_first_visit_control_with_exploring_starts(POLICY_T &p
   first_visit_valueEstimate<episode_size>(policy, environment, policy, policy, episodes, episodeGenerator);
 }
 
-template <std::size_t episode_size, policy::isGreedyPolicy POLICY_T>
+template <std::size_t episode_size, policy::implementsFiniteValuePolicy POLICY_T>
 void monte_carlo_on_policy_every_visit_control_with_exploring_starts(POLICY_T &policy,
                                                                      typename POLICY_T::EnvironmentType &environment,
                                                                      std::size_t episodes) {
@@ -42,7 +42,9 @@ void monte_carlo_on_policy_every_visit_control_with_exploring_starts(POLICY_T &p
   every_visit_valueEstimate<episode_size>(policy, environment, policy, policy, episodes, episodeGenerator);
 }
 
-template <std::size_t episode_size, policy::isGreedyPolicy POLICY_T0, policy::isGreedyPolicy POLICY_T1>
+template <std::size_t episode_size,
+          policy::isFinitePolicyValueFunctionMixin POLICY_T0,
+          policy::isFinitePolicyValueFunctionMixin POLICY_T1>
 void monte_carlo_off_policy_importance_sampling_first_visit_control_with_exploring_starts(
     POLICY_T0 &control_policy,
     POLICY_T1 &target_policy,
@@ -57,7 +59,9 @@ void monte_carlo_off_policy_importance_sampling_first_visit_control_with_explori
       target_policy, environment, control_policy, target_policy, episodes, episodeGenerator);
 }
 
-template <std::size_t episode_size, policy::isGreedyPolicy POLICY_T0, policy::isGreedyPolicy POLICY_T1>
+template <std::size_t episode_size,
+          policy::implementsFiniteValuePolicy POLICY_T0,
+          policy::implementsFiniteValuePolicy POLICY_T1>
 void monte_carlo_off_policy_importance_sampling_every_visit_control_with_exploring_starts(
     POLICY_T0 &control_policy,
     POLICY_T1 &target_policy,

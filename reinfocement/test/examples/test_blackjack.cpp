@@ -10,6 +10,10 @@
 
 #include "monte_carlo/policy_control.hpp"
 #include "policy/epsilon_greedy_policy.hpp"
+#include "policy/finite/epsilon_greedy_policy.hpp"
+#include "policy/finite/greedy_policy.hpp"
+#include "policy/finite/random_policy.hpp"
+#include "policy/objectives/value_function_keymaker.hpp"
 #include "policy/random_policy.hpp"
 
 using namespace examples::blackjack;
@@ -17,6 +21,7 @@ using namespace examples::blackjack;
 TEST_CASE("blackjack") {
 
   auto state = BlackjackState();
+  using EnvT = BlackjackEnvironment<BlackjackReward, BlackjackReturn>;
   auto environment = BlackjackEnvironment<BlackjackReward, BlackjackReturn>();
   environment.reset();
 
@@ -24,12 +29,16 @@ TEST_CASE("blackjack") {
   auto s2 = action.step(environment.state);
 
   // Create an epsilon  greedy policy and run the bandit over them.
-  auto epsilonGreedy = policy::EpsilonGreedyPolicy<BlackjackEnvironment<BlackjackReward, BlackjackReturn>>{0.2F};
+  using BlackjackKeyMaker = policy::objectives::StateActionKeymaker<EnvT>;
+  using BlackjackRandom = policy::FiniteRandomPolicy<EnvT>;
+  using BlackjackGreedy = policy::FiniteGreedyPolicy<BlackjackKeyMaker>;
+  auto explorPolicy = BlackjackRandom();
+  auto epsilonGreedy = policy::FiniteEpsilonGreedyPolicy<BlackjackRandom, BlackjackGreedy>{explorPolicy, 0.2F};
   std::cout << "EPSILON GREEDY ACTIONS\n";
   for (int i = 0; i < 10; i++) {
-    auto recommendedAction = epsilonGreedy(environment.state);
+    auto recommendedAction = epsilonGreedy(environment, environment.state);
     auto transition = environment.step(recommendedAction);
-    epsilonGreedy.update(transition);
+    epsilonGreedy.update(environment, transition);
     environment.update(transition);
 
     // std::cout << transition.nextState << "\n";

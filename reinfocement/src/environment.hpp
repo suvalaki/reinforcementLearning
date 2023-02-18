@@ -69,6 +69,7 @@ template <StepType STEP_T, RewardType REWARD_T, ReturnType RETURN_T> struct Envi
     }
   }
   virtual StateType getNullState() const = 0;
+  virtual ActionSpace getNullAction() const { return ActionSpace(typename ActionSpace::DataType{}); }
 };
 
 template <typename ENVIRON_T>
@@ -90,6 +91,17 @@ concept EnvironmentType = std::is_base_of_v<
 
 #define SETUP_TYPES_FROM_ENVIRON(ENVIRON_T)                                                                            \
   using EnvironmentType = ENVIRON_T;                                                                                   \
+  using StateType = typename ENVIRON_T::StateType;                                                                     \
+  using ActionSpace = typename ENVIRON_T::ActionSpace;                                                                 \
+  using ActionSpecType = typename ENVIRON_T::ActionSpecType;                                                           \
+  using PrecisionType = typename ENVIRON_T::PrecisionType;                                                             \
+  using StepType = typename ENVIRON_T::StepType;                                                                       \
+  using TransitionType = typename ENVIRON_T::TransitionType;                                                           \
+  using RewardType = typename ENVIRON_T::RewardType;                                                                   \
+  using ReturnType = typename ENVIRON_T::ReturnType;
+
+#define SETUP_TYPES_FROM_NESTED_ENVIRON(ENVIRON_T)                                                                     \
+  using EnvironmentType = typename ENVIRON_T;                                                                          \
   using StateType = typename ENVIRON_T::StateType;                                                                     \
   using ActionSpace = typename ENVIRON_T::ActionSpace;                                                                 \
   using ActionSpecType = typename ENVIRON_T::ActionSpecType;                                                           \
