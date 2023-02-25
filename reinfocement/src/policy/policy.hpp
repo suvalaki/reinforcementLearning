@@ -47,6 +47,17 @@ template <environment::EnvironmentType ENVIRON_T> struct PolicyDistributionMixin
   // Sample an action from the policy distribution.
   virtual ActionSpace sampleAction(const EnvironmentType &e, const StateType &s) const = 0;
   virtual ActionSpace getArgmaxAction(const EnvironmentType &e, const StateType &s) const = 0;
+
+  // Assuming this is the target policy what is the importance ratio against the observed policy
+  template <typename DISTRIBUTION_POLICY_T>
+  PrecisionType importanceSamplingRatio(const EnvironmentType &e,
+                                        const StateType &s,
+                                        const ActionSpace &a,
+                                        const DISTRIBUTION_POLICY_T &other) const {
+    if (this == &other)
+      return 1.0;
+    return getProbability(e, s, a) / other.getProbability(e, s, a);
+  }
 };
 
 template <typename T>

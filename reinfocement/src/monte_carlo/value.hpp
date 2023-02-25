@@ -4,6 +4,8 @@
 #include <vector>
 
 #include "monte_carlo/episode.hpp"
+#include "monte_carlo/value_update/average_return.hpp"
+#include "monte_carlo/value_update/value_update.hpp"
 #include "policy/distribution_policy.hpp"
 #include "policy/finite/value_policy.hpp"
 #include "policy/objectives/finite_value_function.hpp"
@@ -15,31 +17,6 @@ namespace monte_carlo {
 // we dont know the state dynamics.
 
 /// Each occurance of a state within an episode is called a visit.
-template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T>
-using AverageReturnsMap = std::unordered_map<typename VALUE_FUNCTION_T::KeyType,
-                                             std::vector<typename VALUE_FUNCTION_T::PrecisionType>,
-                                             typename VALUE_FUNCTION_T::KeyMaker::Hash>;
-
-template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T>
-AverageReturnsMap<VALUE_FUNCTION_T>
-n_visit_returns_initialisation(VALUE_FUNCTION_T &valueFunction,
-                               typename VALUE_FUNCTION_T::EnvironmentType &environment) {
-
-  // Initialisation step
-  // initialize the value function to the initial value
-  valueFunction.initialize(environment);
-  // initialize returns list for every state
-  AverageReturnsMap<VALUE_FUNCTION_T> returns = AverageReturnsMap<VALUE_FUNCTION_T>();
-
-  for (const auto &s : environment.getAllPossibleStates()) {
-    for (const auto &a : environment.getReachableActions(s)) {
-      returns[VALUE_FUNCTION_T::KeyMaker::make(environment, s, a)] =
-          std::vector<typename VALUE_FUNCTION_T::PrecisionType>();
-    }
-  }
-
-  return returns;
-}
 
 template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T> struct StopCondition {
   SETUP_TYPES_FROM_ENVIRON(SINGLE_ARG(VALUE_FUNCTION_T::EnvironmentType));
@@ -60,6 +37,7 @@ template <std::size_t max_episode_length,
           policy::isFinitePolicyValueFunctionMixin POLICY_T0,
           policy::isFinitePolicyValueFunctionMixin POLICY_T1,
           isStopCondition STOP_CONDITION_T,
+          isValueUpdater VALUE_UPDATER_T = NiaveAverageReturnsUpdate<VALUE_FUNCTION_T>,
           isEpisodeGenerator EPISODE_GENERATOR_T =
               EpisodeGenerator<max_episode_length, typename VALUE_FUNCTION_T::EnvironmentType, POLICY_T0>>
 requires(std::is_same_v<typename VALUE_FUNCTION_T::KeyMaker, typename POLICY_T0::KeyMaker>
@@ -70,7 +48,7 @@ requires(std::is_same_v<typename VALUE_FUNCTION_T::KeyMaker, typename POLICY_T0:
         typename VALUE_FUNCTION_T::EnvironmentType &environment,
         POLICY_T0 &policy,
         POLICY_T1 &target_policy,
-        AverageReturnsMap<VALUE_FUNCTION_T> &returns,
+        VALUE_UPDATER_T &valueUpdater,
         const STOP_CONDITION_T &stop_condition,
         const EPISODE_GENERATOR_T &episodeGenerator =
             EpisodeGenerator<max_episode_length, typename VALUE_FUNCTION_T::EnvironmentType, POLICY_T0>()) {
@@ -95,22 +73,7 @@ requires(std::is_same_v<typename VALUE_FUNCTION_T::KeyMaker, typename POLICY_T0:
     // If the state does not appear in an earlier transition
     if (stop_condition.template operator()<typename EPISODE_GENERATOR_T::EpisodeType>(
             environment, episode.GetTransitions().begin(), (it + 1).base(), *it)) {
-
-      const auto valueKey = ValueFunctionKeyMaker::make(environment, it->state, it->action);
-      // Add the return to the list of returns
-      // weight them by the potential off policy method. (5.3) and (5.4)
-      auto importance_sampling_weight = &policy == &target_policy
-                                            ? 1.0F
-                                            : target_policy.getProbability(environment, it->state, it->action) /
-                                                  policy.getProbability(environment, it->state, it->action);
-      returns[valueKey].push_back(importance_sampling_weight * G);
-      // Update the value function to be the average of returns from that
-      // state
-      valueFunction[valueKey].value =
-          std::accumulate(returns[valueKey].begin(), returns[valueKey].end(), 0.0F) / returns[valueKey].size();
-      // Add the number of rewards being counted (for the average - step is available in our default Value
-      // implementation)
-      valueFunction[valueKey].step = returns[valueKey].size();
+      valueUpdater.update(valueFunction, policy, target_policy, environment, it->state, it->action, G);
     }
   }
 }
@@ -120,6 +83,7 @@ template <std::size_t max_episode_length,
           policy::isFinitePolicyValueFunctionMixin POLICY_T0,
           policy::isFinitePolicyValueFunctionMixin POLICY_T1,
           isStopCondition STOP_CONDITION_T,
+          typename VALUE_UPDATER_T = NiaveAverageReturnsUpdate<VALUE_FUNCTION_T>,
           isEpisodeGenerator EPISODE_GENERATOR_T =
               EpisodeGenerator<max_episode_length, typename VALUE_FUNCTION_T::EnvironmentType, POLICY_T0>>
 void visit_valueEstimate(
@@ -133,13 +97,14 @@ void visit_valueEstimate(
         EpisodeGenerator<max_episode_length, typename VALUE_FUNCTION_T::EnvironmentType, POLICY_T0>()) {
 
   // initialize the value function and returns list for every state
-  auto returns = n_visit_returns_initialisation(valueFunction, environment);
+  // auto returns = n_visit_returns_initialisation(valueFunction, environment);
+  auto valueUpdater = VALUE_UPDATER_T();
 
   // Loop forever over episodes - Here we actually only loop for the requested
   // number of episodes
   for (std::size_t i = 0; i < episodes; ++i) {
     visit_valueEstimate_step<max_episode_length>(
-        valueFunction, environment, policy, target_policy, returns, stopCondition, episodeGenerator);
+        valueFunction, environment, policy, target_policy, valueUpdater, stopCondition, episodeGenerator);
   }
 }
 
