@@ -72,6 +72,9 @@ struct StateActionKeymaker
   };
 };
 
+template <typename T>
+concept isStateActionKeymaker = std::is_base_of_v<StateActionKeymaker<typename T::EnvironmentType>, T>;
+
 template <environment::EnvironmentType ENVIRON_T>
 struct ActionKeymaker : ValueFunctionKeymaker<ENVIRON_T, typename ENVIRON_T::ActionSpace> {
 
@@ -87,6 +90,9 @@ struct ActionKeymaker : ValueFunctionKeymaker<ENVIRON_T, typename ENVIRON_T::Act
     std::size_t operator()(const KeyType &key) const { return ActionKeymaker::hash(key); }
   };
 };
+
+template <typename T>
+concept isActionKeymaker = std::is_base_of_v<ActionKeymaker<typename T::EnvironmentType>, T>;
 
 template <environment::EnvironmentType ENVIRON_T>
 struct StateKeymaker : ValueFunctionKeymaker<ENVIRON_T, typename ENVIRON_T::StateType> {
@@ -105,4 +111,8 @@ template <typename T0, typename T1> std::ostream &operator<<(std::ostream &os, c
   os << "(" << p.first << ", " << p.second << ")";
   return os;
 }
+
+template <typename T>
+concept isStateKeymaker = std::is_base_of_v<StateKeymaker<typename T::EnvironmentType>, T>;
+
 } // namespace policy::objectives

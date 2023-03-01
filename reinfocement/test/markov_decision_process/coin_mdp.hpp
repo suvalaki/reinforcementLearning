@@ -31,7 +31,7 @@ using CoinStep = step::Step<CoinAction>;
 struct CoinReward : reward::Reward<CoinAction> {
   static PrecisionType reward(const TransitionType &t) {
     // return t.nextState.value == 1 ? 1.0F : 0.0F;
-    return std::get<0>(t.nextState.observable)[0] == 1 ? 1.0 : 0.0;
+    return std::get<0>(t.nextState.observable)[0] == 1 ? 1.0 : -1.0;
   }
 };
 
