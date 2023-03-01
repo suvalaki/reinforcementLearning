@@ -26,7 +26,7 @@ concept isValueUpdater = requires(T t) {
   typename T::PrecisionType;
   typename T::StateType;
   typename T::ActionSpace;
-  typename T::ReturnsContainer;
+  // typename T::ReturnsContainer;
 
   // Initialise both the environment and the value function. It may be uneccessary to initialise the value
   // function because it will be automatically initialised on the first update.

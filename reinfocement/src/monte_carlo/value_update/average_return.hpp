@@ -28,10 +28,9 @@ struct NiaveAverageReturnsUpdate : ValueUpdaterBase<NiaveAverageReturnsUpdate<VA
 
   ReturnsMap returns;
 
-  template <policy::isFinitePolicyValueFunctionMixin POLICY_T0, policy::isFinitePolicyValueFunctionMixin POLICY_T1>
   void updateReturns(VALUE_FUNCTION_T &valueFunction,
-                     POLICY_T0 &policy,
-                     POLICY_T1 &target_policy,
+                     policy::isFinitePolicyValueFunctionMixin auto &policy,
+                     policy::isFinitePolicyValueFunctionMixin auto &target_policy,
                      typename VALUE_FUNCTION_T::EnvironmentType &environment,
                      const StateType &state,
                      const ActionSpace &action,
@@ -49,10 +48,9 @@ struct NiaveAverageReturnsUpdate : ValueUpdaterBase<NiaveAverageReturnsUpdate<VA
     return sum / ret.size();
   }
 
-  template <policy::isFinitePolicyValueFunctionMixin POLICY_T0, policy::isFinitePolicyValueFunctionMixin POLICY_T1>
   void updateValue(VALUE_FUNCTION_T &valueFunction,
-                   POLICY_T0 &policy,
-                   POLICY_T1 &target_policy,
+                   policy::isFinitePolicyValueFunctionMixin auto &policy,
+                   policy::isFinitePolicyValueFunctionMixin auto &target_policy,
                    typename VALUE_FUNCTION_T::EnvironmentType &environment,
                    const StateType &state,
                    const ActionSpace &action) {
@@ -80,10 +78,9 @@ struct NiaveAverageReturnsIncrementalUpdate
 
   ReturnsMap returns;
 
-  template <policy::isFinitePolicyValueFunctionMixin POLICY_T0, policy::isFinitePolicyValueFunctionMixin POLICY_T1>
   void updateReturns(VALUE_FUNCTION_T &valueFunction,
-                     POLICY_T0 &policy,
-                     POLICY_T1 &target_policy,
+                     policy::isFinitePolicyValueFunctionMixin auto &policy,
+                     policy::isFinitePolicyValueFunctionMixin auto &target_policy,
                      typename VALUE_FUNCTION_T::EnvironmentType &environment,
                      const StateType &state,
                      const ActionSpace &action,
@@ -94,10 +91,9 @@ struct NiaveAverageReturnsIncrementalUpdate
     returns[key].n++;
   }
 
-  template <policy::isFinitePolicyValueFunctionMixin POLICY_T0, policy::isFinitePolicyValueFunctionMixin POLICY_T1>
   void updateValue(VALUE_FUNCTION_T &valueFunction,
-                   POLICY_T0 &policy,
-                   POLICY_T1 &target_policy,
+                   policy::isFinitePolicyValueFunctionMixin auto &policy,
+                   policy::isFinitePolicyValueFunctionMixin auto &target_policy,
                    typename VALUE_FUNCTION_T::EnvironmentType &environment,
                    const StateType &state,
                    const ActionSpace &action) {
