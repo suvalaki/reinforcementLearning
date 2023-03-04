@@ -110,6 +110,20 @@ public:
       std::cout << key << " : " << value.value << std::endl;
     }
   }
+
+  KeyType getArgmaxKey(const EnvironmentType &e, const StateType &s) const override {
+    auto availableActions = e.getReachableActions(s);
+    auto maxIdx = std::max_element(this->begin(), this->end(), [&e, &availableActions](const auto &p1, const auto &p2) {
+      if (availableActions.find(KeyMaker::get_action_from_key(e, p2.first)) == availableActions.end())
+        return p1.second < p2.second;
+      return false;
+    });
+
+    if (maxIdx == this->end())
+      return KeyMaker::make(e, s, *availableActions.begin()); // or throw a runtime error here...
+
+    return maxIdx->first;
+  }
 };
 
 #define SETUP_FINITE_VALUE_FUNCTION_TYPES(VALUE_FN_T, VALUE_T)                                                         \

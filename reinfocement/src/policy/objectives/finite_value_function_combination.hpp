@@ -36,7 +36,9 @@ requires is_finite_value_function_check<VALUE_FUNCTION_T...>::value struct Addit
   using AdditiveValueFunctionCombination<VALUE_FUNCTION_T...>::AdditiveValueFunctionCombination;
   using fValueFunctionType = get_first_finite_value_function_type_generic<VALUE_FUNCTION_T...>::type;
   using ValueType = typename fValueFunctionType::ValueType;
+  using KeyMaker = typename fValueFunctionType::KeyMaker;
   using KeyType = typename fValueFunctionType::KeyType;
+  using ValueTableType = typename fValueFunctionType::ValueTableType;
 
   SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(BaseType::EnvironmentType));
 
@@ -44,6 +46,28 @@ requires is_finite_value_function_check<VALUE_FUNCTION_T...>::value struct Addit
   using BaseType::initialize;
 
   // We intercept the call to the value function and return the sum of the values returned by each value function.
+
+  KeyType getArgmaxKey(const EnvironmentType &e, const StateType &s) const override {
+
+    // Construct an in memory additive value function by incrementally adding each value function
+    // to the previous one.
+    // Fill up the possible keys as a combination of the keys of each value function
+    auto tmpValueFunction = ValueTableType();
+    const auto inserter = [&tmpValueFunction](const auto &k) -> void { tmpValueFunction[k.first] += k.second; };
+    std::apply([&tmpValueFunction, &inserter](
+                   const auto &...vFuncts) { (..., (std::for_each(vFuncts.begin(), vFuncts.end(), inserter))); },
+               this->valueFunctions);
+
+    auto availableActions = e.getReachableActions(s);
+    auto maxIdx = std::max_element(
+        tmpValueFunction.begin(), tmpValueFunction.end(), [&e, &availableActions](const auto &p1, const auto &p2) {
+          if (availableActions.find(KeyMaker::get_action_from_key(e, p2.first)) == availableActions.end())
+            return p1.second < p2.second;
+          return false;
+        });
+
+    return maxIdx->first;
+  }
 };
 
 } // namespace policy::objectives

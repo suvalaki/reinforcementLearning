@@ -45,6 +45,7 @@ struct ValueFunction {
 
   static KeyType makeKey(const EnvironmentType &environment, const StateType &s, const ActionSpace &a);
   PrecisionType valueAt(const KeyType &s) const;
+  virtual KeyType getArgmaxKey(const EnvironmentType &e, const StateType &s) const = 0;
 };
 
 template <typename T>

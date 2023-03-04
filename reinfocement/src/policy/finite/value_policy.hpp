@@ -42,19 +42,7 @@ struct FinitePolicyValueFunctionMixin
 
 template <isPolicyValueFunctionMixin BASE_VALUEFUNCTION_POLICY_T, objectives::isStepSizeTaker INCREMENTAL_STEPSIZE_T>
 typename FVT::ActionSpace FVT::getArgmaxAction(const EnvironmentType &e, const StateType &s) const {
-
-  auto action = ActionSpace{}; // start with a random action so we at least have one that is permissible
-  auto availableActions = e.getReachableActions(s);
-  auto maxIdx = std::max_element(this->begin(), this->end(), [&e, &availableActions](const auto &p1, const auto &p2) {
-    if (availableActions.find(KeyMaker::get_action_from_key(e, p2.first)) == availableActions.end())
-      return p1.second < p2.second;
-    return false;
-  });
-  if (maxIdx != this->end()) {
-    action = KeyMaker::get_action_from_key(e, maxIdx->first);
-  }
-
-  return action;
+  return KeyMaker::get_action_from_key(e, this->getArgmaxKey(e, s));
 }
 
 template <typename T>
