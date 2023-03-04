@@ -132,6 +132,15 @@ public:
 
 template <typename T>
 concept isFiniteStateValueFunction = std::is_base_of_v<FiniteValueFunction<typename T::ValueFunctionBaseType>, T>;
+template <typename T>
+concept isFiniteValueFunction = std::is_base_of_v<FiniteValueFunction<typename T::ValueFunctionBaseType>, T>;
+
+template <isValueFunctionKeymaker KEYMAPPER_T,
+          isFiniteValue VALUE_T = Value<typename KEYMAPPER_T::EnvironmentType>,
+          auto INITIAL_VALUE = 0.0F,
+          auto DISCOUNT_RATE = 0.0F>
+using FiniteValueFunctionHelper =
+    FiniteValueFunction<ValueFunction<KEYMAPPER_T, VALUE_T, INITIAL_VALUE, DISCOUNT_RATE>>;
 
 template <environment::FiniteEnvironmentType E,
           auto INITIAL_VALUE = 0.0F,

@@ -8,7 +8,7 @@
 #include "policy/objectives/finite_value_function.hpp"
 #include "policy/objectives/step_size.hpp"
 
-#define GPT FiniteGreedyPolicy<KEYMAPPER_T, VALUE_T, INITIAL_VALUE, DISCOUNT_RATE, INCREMENTAL_STEPSIZE_T>
+#define GPT FiniteGreedyPolicy<VALUE_FUNCTION_T>
 
 namespace policy {
 
@@ -17,36 +17,24 @@ namespace policy {
 // How to handle updates via step size takers? - Unknown at this time - Probably need to think of a way
 // of applying incremental updates to ANY key type Q-table first.
 
-template <objectives::isValueFunctionKeymaker KEYMAPPER_T,
-          objectives::isFiniteValue VALUE_T = objectives::FiniteValue<typename KEYMAPPER_T::EnvironmentType>,
-          auto INITIAL_VALUE = 0.0F,
-          auto DISCOUNT_RATE = 0.0F,
-          objectives::isStepSizeTaker INCREMENTAL_STEPSIZE_T = objectives::weighted_average_step_size_taker<VALUE_T>>
-requires environment::FiniteEnvironmentType<typename KEYMAPPER_T::EnvironmentType>
-struct FiniteGreedyPolicy
-    : FinitePolicyValueFunctionMixin<GreedyPolicy<KEYMAPPER_T, VALUE_T, INITIAL_VALUE, DISCOUNT_RATE>,
-                                     INCREMENTAL_STEPSIZE_T> {
+template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>
+struct FiniteGreedyPolicy : FinitePolicyValueFunctionMixin<GreedyPolicy<VALUE_FUNCTION_T>> {
 
-  SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(KEYMAPPER_T::EnvironmentType));
-  using ValueFunctionBaseType = GreedyPolicy<KEYMAPPER_T, VALUE_T, INITIAL_VALUE, DISCOUNT_RATE>;
-  using StepSizeTaker = INCREMENTAL_STEPSIZE_T;
-  using ValueFunctionType =
-      FinitePolicyValueFunctionMixin<GreedyPolicy<KEYMAPPER_T, VALUE_T, INITIAL_VALUE, DISCOUNT_RATE>,
-                                     INCREMENTAL_STEPSIZE_T>;
-  using KeyMaker = KEYMAPPER_T;
+  SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(VALUE_FUNCTION_T::EnvironmentType));
+  using ValueFunctionType = GreedyPolicy<VALUE_FUNCTION_T>;
+  using ValueFunctionBaseType = typename ValueFunctionType::ValueFunctionBaseType;
+  using StepSizeTaker = typename VALUE_FUNCTION_T::StepSizeTaker;
+  using KeyMaker = typename VALUE_FUNCTION_T::KeyMaker;
   using KeyType = typename KeyMaker::KeyType;
-  using ValueType = VALUE_T;
+  using ValueType = typename VALUE_FUNCTION_T::ValueType;
   using ValueTableType = typename objectives::FiniteValueFunction<ValueFunctionType>::ValueTableType;
 
   void update(const EnvironmentType &e, const TransitionType &s) override;
   // ActionSpace operator()(const EnvironmentType &e, const StateType &s) const override { return ActionSpace{}; };
+  using ValueFunctionType::initialize;
 };
 
-template <objectives::isValueFunctionKeymaker KEYMAPPER_T,
-          objectives::isFiniteValue VALUE_T,
-          auto INITIAL_VALUE,
-          auto DISCOUNT_RATE,
-          objectives::isStepSizeTaker INCREMENTAL_STEPSIZE_T>
+template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>
 void GPT::update(const EnvironmentType &e, const TransitionType &s) {
   this->incrementalUpdate(e, s);
 }
@@ -59,8 +47,9 @@ template <environment::FiniteEnvironmentType E,
           template <typename> typename INCREMENTAL_STEPSIZE_C = objectives::weighted_average_step_size_taker,
           auto INITIAL_VALUE = 0.0F,
           auto DISCOUNT_RATE = 0.0F>
-using FiniteGreedyPolicyC =
-    FiniteGreedyPolicy<KEYMAKER_C<E>, VALUE_C<E>, INITIAL_VALUE, DISCOUNT_RATE, INCREMENTAL_STEPSIZE_C<VALUE_C<E>>>;
+using FiniteGreedyPolicyC = FiniteGreedyPolicy<
+    objectives::FiniteValueFunction<objectives::ValueFunction<KEYMAKER_C<E>, VALUE_C<E>, INITIAL_VALUE, DISCOUNT_RATE>,
+                                    INCREMENTAL_STEPSIZE_C<VALUE_C<E>>>>;
 
 } // namespace policy
 

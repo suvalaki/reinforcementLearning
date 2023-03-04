@@ -61,13 +61,14 @@ struct CoinEnviron : environment::MarkovDecisionEnvironment<CoinStep, CoinReward
 static_assert(environment::FiniteEnvironmentType<CoinEnviron>, "ENVIRON FAILED");
 
 using CoinTransitionModel = typename CoinEnviron::TransitionModel;
-using CoinDistributionPolicy = policy::FiniteDistributionPolicy<policy::objectives::StateActionKeymaker<CoinEnviron>>;
-using CoinDistributionPolicyState = policy::FiniteDistributionPolicy<policy::objectives::StateKeymaker<CoinEnviron>>;
-using CoinDistributionPolicyAction = policy::FiniteDistributionPolicy<policy::objectives::ActionKeymaker<CoinEnviron>>;
 
 using CoinFiniteStateActionValueFunction = policy::objectives::FiniteStateActionValueFunction<CoinEnviron>;
 using CoinFiniteStateValueFunction = policy::objectives::FiniteStateValueFunction<CoinEnviron>;
 using CoinFiniteActionValueFunction = policy::objectives::FiniteActionValueFunction<CoinEnviron>;
+
+using CoinDistributionPolicy = policy::FiniteDistributionPolicy<CoinFiniteStateActionValueFunction>;
+using CoinDistributionPolicyState = policy::FiniteDistributionPolicy<CoinFiniteStateValueFunction>;
+using CoinDistributionPolicyAction = policy::FiniteDistributionPolicy<CoinFiniteActionValueFunction>;
 
 struct CoinModelDataFixture {
 

@@ -64,6 +64,7 @@ struct AdditiveValueFunctionCombination : ValueFunctionCombination<VALUE_FUNCTIO
   using BaseType = ValueFunctionCombination<VALUE_FUNCTION_T...>;
   using ValueFunctionCombination<VALUE_FUNCTION_T...>::ValueFunctionCombination;
   SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(BaseType::EnvironmentType));
+  using BaseType::ValueFunctionTypes;
   using ValueType = typename BaseType::ValueType;
   using KeyType = typename BaseType::KeyType;
 
@@ -75,7 +76,7 @@ template <isValueFunction... VALUE_FUNCTION_T>
 auto AdditiveValueFunctionCombination<VALUE_FUNCTION_T...>::operator()(const KeyType &k) const ->
     typename AdditiveValueFunctionCombination<VALUE_FUNCTION_T...>::ValueType {
   ValueType result = {};
-  std::apply([&](auto const &...valueFunctions) { ((result += valueFunctions(k)), ...); }, this->valueFunctions);
+  std::apply([&](auto &...valueFunctions) { ((result += valueFunctions[k]), ...); }, this->valueFunctions);
   return result;
 }
 

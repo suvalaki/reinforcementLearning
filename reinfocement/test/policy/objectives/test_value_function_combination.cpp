@@ -19,7 +19,8 @@ TEST_CASE("AdditiveFiniteValueFunctionCombination", "[policy][objectives][combin
   auto policy0 = FiniteGreedyPolicyC<S1A2, StateActionKeymaker>{};
   auto policy1 = FiniteGreedyPolicyC<S1A2, StateActionKeymaker>{};
   using policyT = decltype(policy0);
-  auto combination = AdditiveFiniteValueFunctionCombination<decltype(policy0), decltype(policy1)>(policy0, policy1);
+  using AdditiveType = AdditiveFiniteValueFunctionCombination<decltype(policy0), decltype(policy1)>;
+  auto combination = AdditiveType(policy0, policy1);
 
   combination.initialize(env);
   policy0.initialize(env);
@@ -30,6 +31,10 @@ TEST_CASE("AdditiveFiniteValueFunctionCombination", "[policy][objectives][combin
   REQUIRE(combination(key).value == Approx(2.0));
   policy1[key].value = 1.0;
   REQUIRE(combination(key).value == Approx(3.0));
+
+  // Validate we can make a greedy policy based on this value function
+  static_assert(policy::objectives::isFiniteAdditiveValueFunctionCombination<AdditiveType>);
+  // auto policy2 = FiniteGreedyPolicy<AdditiveType>{};
 }
 
 TEST_CASE("AdditiveFiniteValueFunctionCombination::getArgmaxKey", "[policy][objectives][combination]") {

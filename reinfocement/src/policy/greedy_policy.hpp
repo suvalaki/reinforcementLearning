@@ -10,7 +10,7 @@
 #include "policy/value.hpp"
 
 #define GDT GreedyDistributionMixin<E>
-#define GPT GreedyPolicy<KEYMAPPER_T, VALUE_T, INITIAL_VALUE, DISCOUNT_RATE>
+#define GPT GreedyPolicy<VALUE_FUNCTION_T>
 
 namespace policy {
 
@@ -68,24 +68,19 @@ typename GDT::ActionSpace GreedyDistributionMixin<E>::sampleAction(const Environ
   return this->getArgmaxAction(e, s);
 }
 
-template <objectives::isValueFunctionKeymaker KEYMAPPER_T,
-          objectives::isValue VALUE_T,
-          auto INITIAL_VALUE = 0.0F,
-          auto DISCOUNT_RATE = 0.0F>
-struct GreedyPolicy : virtual Policy<typename KEYMAPPER_T::EnvironmentType>,
-                      virtual GreedyDistributionMixin<typename KEYMAPPER_T::EnvironmentType>,
-                      virtual PolicyValueFunctionMixin<KEYMAPPER_T, VALUE_T, INITIAL_VALUE, DISCOUNT_RATE> {
+template <objectives::isValueFunction VALUE_FUNCTION_T>
+struct GreedyPolicy : virtual Policy<typename VALUE_FUNCTION_T::EnvironmentType>,
+                      virtual GreedyDistributionMixin<typename VALUE_FUNCTION_T::EnvironmentType>,
+                      virtual PolicyValueFunctionMixin<VALUE_FUNCTION_T> {
 
-  SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(KEYMAPPER_T::EnvironmentType));
+  SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(VALUE_FUNCTION_T::EnvironmentType));
+  // using ValueFunctionBaseType = VALUE_FUNCTION_T;
 
   ActionSpace operator()(const EnvironmentType &e, const StateType &s) const override;
   //  ActionSpace getArgmaxAction(const EnvironmentType &e, const StateType &s) const = 0;
 };
 
-template <objectives::isValueFunctionKeymaker KEYMAPPER_T,
-          objectives::isValue VALUE_T,
-          auto INITIAL_VALUE,
-          auto DISCOUNT_RATE>
+template <objectives::isValueFunction VALUE_FUNCTION_T>
 typename GPT::ActionSpace GPT::operator()(const EnvironmentType &e, const StateType &s) const {
   return this->getArgmaxAction(e, s);
 }

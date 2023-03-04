@@ -13,33 +13,27 @@
 #include "policy/objectives/step_size.hpp"
 #include "policy/value.hpp"
 
-#define FDP FiniteDistributionPolicy<KEYMAPPER_T, VALUE_T, INITIAL_VALUE, DISCOUNT_RATE, INCREMENTAL_STEPSIZE_T>
+#define FDP FiniteDistributionPolicy<VALUE_FUNCTION_T>
 
 namespace policy {
 
-template <objectives::isValueFunctionKeymaker KEYMAPPER_T,
-          objectives::isFiniteValue VALUE_T = objectives::FiniteValue<typename KEYMAPPER_T::EnvironmentType>,
-          auto INITIAL_VALUE = 0.0F,
-          auto DISCOUNT_RATE = 0.0F,
-          objectives::isStepSizeTaker INCREMENTAL_STEPSIZE_T = objectives::weighted_average_step_size_taker<VALUE_T>>
-struct FiniteDistributionPolicy : virtual DistributionPolicy<typename KEYMAPPER_T::EnvironmentType>,
-                                  virtual FinitePolicyValueFunctionMixin<
-                                      PolicyValueFunctionMixin<KEYMAPPER_T, VALUE_T, INITIAL_VALUE, DISCOUNT_RATE>,
-                                      INCREMENTAL_STEPSIZE_T>
+template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>
+struct FiniteDistributionPolicy : virtual DistributionPolicy<typename VALUE_FUNCTION_T::EnvironmentType>,
+                                  virtual FinitePolicyValueFunctionMixin<VALUE_FUNCTION_T>
 
 {
-  using BaseType = DistributionPolicy<typename KEYMAPPER_T::EnvironmentType>;
+  using BaseType = DistributionPolicy<typename VALUE_FUNCTION_T::EnvironmentType>;
   SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(BaseType::EnvironmentType));
 
-  using ValueFunctionType =
-      FinitePolicyValueFunctionMixin<PolicyValueFunctionMixin<KEYMAPPER_T, VALUE_T, INITIAL_VALUE, DISCOUNT_RATE>,
-                                     INCREMENTAL_STEPSIZE_T>;
-  using KeyMaker = KEYMAPPER_T;
+  using ValueFunctionType = VALUE_FUNCTION_T;
+  using ValueFunctionBaseType = typename ValueFunctionType::ValueFunctionBaseType;
+  using StepSizeTaker = typename ValueFunctionType::StepSizeTaker;
+  using KeyMaker = typename ValueFunctionType::KeyMaker;
   using KeyType = typename KeyMaker::KeyType;
 
   // Pull in the direct functions we need since they have different signatures
   using ValueFunctionType::operator();
-  using DistributionPolicy<typename KEYMAPPER_T::EnvironmentType>::operator();
+  using DistributionPolicy<typename ValueFunctionType::EnvironmentType>::operator();
 
   static constexpr auto min_policy_value = -10.0F;
   static constexpr auto max_policy_value = 10.0F;
@@ -62,18 +56,10 @@ struct FiniteDistributionPolicy : virtual DistributionPolicy<typename KEYMAPPER_
   void setDeterministicPolicy(const EnvironmentType &e, const StateType &s, const ActionSpace &a);
 };
 
-template <objectives::isValueFunctionKeymaker KEYMAPPER_T,
-          objectives::isFiniteValue VALUE_T,
-          auto INITIAL_VALUE,
-          auto DISCOUNT_RATE,
-          objectives::isStepSizeTaker INCREMENTAL_STEPSIZE_T>
+template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>
 void FDP::update(const EnvironmentType &e, const TransitionType &s) {}
 
-template <objectives::isValueFunctionKeymaker KEYMAPPER_T,
-          objectives::isFiniteValue VALUE_T,
-          auto INITIAL_VALUE,
-          auto DISCOUNT_RATE,
-          objectives::isStepSizeTaker INCREMENTAL_STEPSIZE_T>
+template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>
 typename FDP::PrecisionType
 FDP::getProbability(const EnvironmentType &e, const StateType &s, const ActionSpace &a) const {
   const auto key = KeyMaker::make(e, s, a);
@@ -82,11 +68,7 @@ FDP::getProbability(const EnvironmentType &e, const StateType &s, const ActionSp
   return std::exp(this->at(key).value) / getSoftmaxNorm(e, s);
 }
 
-template <objectives::isValueFunctionKeymaker KEYMAPPER_T,
-          objectives::isFiniteValue VALUE_T,
-          auto INITIAL_VALUE,
-          auto DISCOUNT_RATE,
-          objectives::isStepSizeTaker INCREMENTAL_STEPSIZE_T>
+template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>
 typename FDP::PrecisionType
 FDP::getLogProbability(const EnvironmentType &e, const StateType &s, const ActionSpace &a) const {
   const auto key = KeyMaker::make(e, s, a);
@@ -95,39 +77,23 @@ FDP::getLogProbability(const EnvironmentType &e, const StateType &s, const Actio
   return this->at(key).value - std::log(getSoftmaxNorm(e, s));
 }
 
-template <objectives::isValueFunctionKeymaker KEYMAPPER_T,
-          objectives::isFiniteValue VALUE_T,
-          auto INITIAL_VALUE,
-          auto DISCOUNT_RATE,
-          objectives::isStepSizeTaker INCREMENTAL_STEPSIZE_T>
+template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>
 typename FDP::PrecisionType FDP::getKernel(const EnvironmentType &e, const StateType &s, const ActionSpace &a) const {
   const auto key = KeyMaker::make(e, s, a);
   return this->at(key).value;
 }
 
-template <objectives::isValueFunctionKeymaker KEYMAPPER_T,
-          objectives::isFiniteValue VALUE_T,
-          auto INITIAL_VALUE,
-          auto DISCOUNT_RATE,
-          objectives::isStepSizeTaker INCREMENTAL_STEPSIZE_T>
+template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>
 typename FDP::PrecisionType FDP::getNormalisationConstant(const EnvironmentType &e, const StateType &s) const {
   return getSoftmaxNorm(e, s);
 }
 
-template <objectives::isValueFunctionKeymaker KEYMAPPER_T,
-          objectives::isFiniteValue VALUE_T,
-          auto INITIAL_VALUE,
-          auto DISCOUNT_RATE,
-          objectives::isStepSizeTaker INCREMENTAL_STEPSIZE_T>
+template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>
 typename FDP::ActionSpace FDP::sampleAction(const EnvironmentType &e, const StateType &s) const {
   return this->getArgmaxAction(e, s);
 }
 
-template <objectives::isValueFunctionKeymaker KEYMAPPER_T,
-          objectives::isFiniteValue VALUE_T,
-          auto INITIAL_VALUE,
-          auto DISCOUNT_RATE,
-          objectives::isStepSizeTaker INCREMENTAL_STEPSIZE_T>
+template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>
 typename FDP::PrecisionType FDP::getSoftmaxNorm(const EnvironmentType &e, const StateType &s) const {
 
   // get the softmax norm
@@ -143,11 +109,7 @@ typename FDP::PrecisionType FDP::getSoftmaxNorm(const EnvironmentType &e, const 
   return norm;
 }
 
-template <objectives::isValueFunctionKeymaker KEYMAPPER_T,
-          objectives::isFiniteValue VALUE_T,
-          auto INITIAL_VALUE,
-          auto DISCOUNT_RATE,
-          objectives::isStepSizeTaker INCREMENTAL_STEPSIZE_T>
+template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>
 std::enable_if_t<environment::MarkovDecisionEnvironmentType<typename FDP::EnvironmentType>,
                  std::vector<std::pair<typename FDP::KeyType, typename FDP::PrecisionType>>>
 FDP::getProbabilities(const EnvironmentType &e, const StateType &s) const {
@@ -161,11 +123,7 @@ FDP::getProbabilities(const EnvironmentType &e, const StateType &s) const {
   return probs;
 }
 
-template <objectives::isValueFunctionKeymaker KEYMAPPER_T,
-          objectives::isFiniteValue VALUE_T,
-          auto INITIAL_VALUE,
-          auto DISCOUNT_RATE,
-          objectives::isStepSizeTaker INCREMENTAL_STEPSIZE_T>
+template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>
 void FDP::setDeterministicPolicy(const EnvironmentType &e, const StateType &s, const ActionSpace &a0) {
 
   auto reachaleActions = e.getReachableActions(s);
@@ -192,11 +150,9 @@ template <environment::FiniteEnvironmentType E,
           template <typename> typename INCREMENTAL_STEPSIZE_C = objectives::weighted_average_step_size_taker,
           auto INITIAL_VALUE = 0.0F,
           auto DISCOUNT_RATE = 0.0F>
-using FiniteDistributionPolicyC = FiniteDistributionPolicy<KEYMAKER_C<E>,
-                                                           VALUE_C<E>,
-                                                           INITIAL_VALUE,
-                                                           DISCOUNT_RATE,
-                                                           INCREMENTAL_STEPSIZE_C<VALUE_C<E>>>;
+using FiniteDistributionPolicyC = FiniteDistributionPolicy<
+    objectives::FiniteValueFunction<objectives::ValueFunction<KEYMAKER_C<E>, VALUE_C<E>, INITIAL_VALUE, DISCOUNT_RATE>,
+                                    INCREMENTAL_STEPSIZE_C<VALUE_C<E>>>>;
 
 } // namespace policy
 

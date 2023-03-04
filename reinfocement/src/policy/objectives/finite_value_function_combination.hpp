@@ -33,6 +33,7 @@ requires is_finite_value_function_check<VALUE_FUNCTION_T...>::value struct Addit
       virtual get_first_finite_value_function_type_generic<VALUE_FUNCTION_T...>::type {
 
   using BaseType = AdditiveValueFunctionCombination<VALUE_FUNCTION_T...>;
+  using BaseType::ValueFunctionTypes;
   using AdditiveValueFunctionCombination<VALUE_FUNCTION_T...>::AdditiveValueFunctionCombination;
   using fValueFunctionType = get_first_finite_value_function_type_generic<VALUE_FUNCTION_T...>::type;
   using ValueType = typename fValueFunctionType::ValueType;
@@ -69,5 +70,14 @@ requires is_finite_value_function_check<VALUE_FUNCTION_T...>::value struct Addit
     return maxIdx->first;
   }
 };
+
+template <typename... T> struct getter_AdditiveFiniteValueFunctionCombination;
+template <typename... T> struct getter_AdditiveFiniteValueFunctionCombination<std::tuple<T...>> {
+  using type = AdditiveFiniteValueFunctionCombination<T...>;
+};
+
+template <typename T>
+concept isFiniteAdditiveValueFunctionCombination =
+    std::is_base_of_v<typename getter_AdditiveFiniteValueFunctionCombination<typename T::ValueFunctionTypes>::type, T>;
 
 } // namespace policy::objectives

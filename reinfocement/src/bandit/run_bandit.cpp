@@ -71,9 +71,10 @@ using BanditRandomFinitePolicy = policy::FiniteRandomPolicy<NBanditEnvironment>;
 using BanditKeyMaker = policy::objectives::ActionKeymaker<NBanditEnvironment>;
 using BanditValue = policy::objectives::FiniteValue<NBanditEnvironment>;
 using BanditValueFunction = policy::objectives::ValueFunction<BanditKeyMaker, BanditValue>;
-using BanditFiniteValueFunction = policy::objectives::FiniteValueFunction<BanditValueFunction>;
+// using BanditFiniteValueFunction = policy::objectives::FiniteValueFunction<BanditValueFunction>;
+using BanditFiniteValueFunction = policy::objectives::FiniteValueFunctionHelper<BanditKeyMaker, BanditValue>;
 // using BanditFinitePolicyValueFunctionMixin = policy::FinitePolicyValueFunctionMixin<BanditKeyMaker, BanditValue>;
-using BanditGreedy = policy::FiniteGreedyPolicy<BanditKeyMaker>;
+using BanditGreedy = policy::FiniteGreedyPolicy<BanditFiniteValueFunction>;
 using BanditGreedyC = policy::FiniteGreedyPolicyC<NBanditEnvironment, policy::objectives::ActionKeymaker>;
 
 // using NBanditPolicy = RandomPolicy<NBanditEnvironment>;
