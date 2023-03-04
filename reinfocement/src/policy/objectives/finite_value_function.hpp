@@ -47,11 +47,11 @@ public:
 
   /// @brief Extra getter to yield the value no matter the underlying
   /// type being held within the valueEstimates table. value is always a member.
-  PrecisionType valueAt(const KeyType &s) {
+  virtual PrecisionType valueAt(const KeyType &s) {
     return this->emplace(s, valueFactory.create(initial_value, 1)).first->second.value;
   }
 
-  PrecisionType valueAt(const EnvironmentType &e, const StateType &s, const ActionSpace &a) {
+  virtual PrecisionType valueAt(const EnvironmentType &e, const StateType &s, const ActionSpace &a) {
     return valueAt(KeyMaker::make(e, s, a));
   }
 

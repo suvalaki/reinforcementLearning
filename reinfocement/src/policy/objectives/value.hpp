@@ -50,6 +50,11 @@ template <environment::EnvironmentType E> struct Value {
   bool operator==(const PrecisionType &other) const { return value == other; }
   virtual bool operator==(const Value &other) const { return value == other.value; }
   virtual void noFocusUpdate() {}
+  Value operator+(const Value &other) const { return Value{value + other.value}; }
+  Value &operator+=(const Value &other) {
+    this->value += other.value;
+    return *this;
+  }
 
   PrecisionType getValue() const { return value; }
 };

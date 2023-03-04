@@ -34,6 +34,11 @@ template <environment::FiniteEnvironmentType E> struct FiniteValue : Value<E> {
     using BaseType::update;
     void update(const PrecisionType &reward) override;
   };
+  FiniteValue operator+(const FiniteValue &other) const { return FiniteValue{this->value + other.value}; }
+  FiniteValue &operator+=(const FiniteValue &other) {
+    this->value += other.value;
+    return *this;
+  }
 };
 
 template <environment::FiniteEnvironmentType E> void FiniteValue<E>::Factory::update(const PrecisionType &reward) {
