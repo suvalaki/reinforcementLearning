@@ -18,10 +18,10 @@ namespace policy {
 // of applying incremental updates to ANY key type Q-table first.
 
 template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>
-struct FiniteGreedyPolicy : FinitePolicyValueFunctionMixin<GreedyPolicy<VALUE_FUNCTION_T>> {
+struct FiniteGreedyPolicy : FinitePolicyValueFunctionMixin<VALUE_FUNCTION_T>, GreedyPolicy<VALUE_FUNCTION_T> {
 
   SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(VALUE_FUNCTION_T::EnvironmentType));
-  using ValueFunctionType = GreedyPolicy<VALUE_FUNCTION_T>;
+  using ValueFunctionType = VALUE_FUNCTION_T;
   using ValueFunctionBaseType = typename ValueFunctionType::ValueFunctionBaseType;
   using StepSizeTaker = typename VALUE_FUNCTION_T::StepSizeTaker;
   using KeyMaker = typename VALUE_FUNCTION_T::KeyMaker;
