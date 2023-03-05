@@ -47,6 +47,7 @@ struct ValueFunctionCombination : get_first_value_function_type_generic<VALUE_FU
   ValueFunctionRefs valueFunctions;
 
   ValueFunctionCombination(VALUE_FUNCTION_T &...valueFunctions) : valueFunctions(valueFunctions...) {}
+  ValueFunctionCombination(const ValueFunctionCombination &v) : valueFunctions(v.valueFunctions) {}
 
   void initialize(EnvironmentType &environment) override {
     std::apply([&](auto &...valueFunctions) { (valueFunctions.initialize(environment), ...); }, this->valueFunctions);
@@ -62,9 +63,9 @@ requires isAdmissibleValueFunctionCombination<VALUE_FUNCTION_T...>
 struct AdditiveValueFunctionCombination : ValueFunctionCombination<VALUE_FUNCTION_T...> {
 
   using BaseType = ValueFunctionCombination<VALUE_FUNCTION_T...>;
-  using ValueFunctionCombination<VALUE_FUNCTION_T...>::ValueFunctionCombination;
+  AdditiveValueFunctionCombination(auto &&...args) : ValueFunctionCombination<VALUE_FUNCTION_T...>(args...) {}
+
   SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(BaseType::EnvironmentType));
-  using BaseType::ValueFunctionTypes;
   using ValueType = typename BaseType::ValueType;
   using KeyType = typename BaseType::KeyType;
 

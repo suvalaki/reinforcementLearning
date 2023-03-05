@@ -41,18 +41,17 @@ public:
                                                                typename VALUE_FUNCTION_T::ValueType>::type;
   using StepSizeTaker = INCREMENTAL_STEPSIZE_T;
 
-  constexpr static typename EnvironmentType::PrecisionType initial_value = VALUE_FUNCTION_T::initial_value;
   constexpr static auto iterations = 1000;
   typename ValueType::Factory valueFactory{};
 
   /// @brief Extra getter to yield the value no matter the underlying
   /// type being held within the valueEstimates table. value is always a member.
   virtual PrecisionType valueAt(const KeyType &s) {
-    return this->emplace(s, valueFactory.create(initial_value, 1)).first->second.value;
+    return this->emplace(s, valueFactory.create(this->initial_value, 1)).first->second.value;
   }
 
   virtual PrecisionType valueAt(const EnvironmentType &e, const StateType &s, const ActionSpace &a) {
-    return valueAt(KeyMaker::make(e, s, a));
+    return this->valueAt(KeyMaker::make(e, s, a));
   }
 
   void initialize(EnvironmentType &environment) override {

@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "environment.hpp"
+#include "policy/objectives/finite_value_function_combination.hpp"
 #include "policy/objectives/value.hpp"
 #include "policy/objectives/value_function.hpp"
 #include "policy/objectives/value_function_keymaker.hpp"
@@ -25,6 +26,8 @@ template <objectives::isValueFunction VALUE_FUNCTION_T> struct PolicyValueFuncti
   virtual PrecisionType getValue(const EnvironmentType &e, const StateType &s, const ActionSpace &a);
   // virtual PrecisionType getValue(const EnvironmentType &e, const StateType &s) const = 0;
   // virtual ActionSpace getArgmaxAction(const EnvironmentType &e, const StateType &s) const = 0;
+
+  PolicyValueFunctionMixin(auto &&...args) : VALUE_FUNCTION_T(args...) {}
 };
 
 template <objectives::isValueFunction VALUE_FUNCTION_T>

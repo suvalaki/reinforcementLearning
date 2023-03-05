@@ -6,12 +6,12 @@
 
 namespace policy::objectives {
 
-template <isFiniteStateValueFunction... VALUE_FUNCTION_T> struct is_finite_value_function_check;
-template <isFiniteStateValueFunction VALUE_FUNCTION_T>
+template <isFiniteValueFunction... VALUE_FUNCTION_T> struct is_finite_value_function_check;
+template <isFiniteValueFunction VALUE_FUNCTION_T>
 struct is_finite_value_function_check<VALUE_FUNCTION_T> : std::true_type {};
-template <isFiniteStateValueFunction VALUE_FUNCTION_T,
-          isFiniteStateValueFunction VALUE_FUNCTION_T2,
-          isFiniteStateValueFunction... VALUE_FUNCTION_Ts>
+template <isFiniteValueFunction VALUE_FUNCTION_T,
+          isFiniteValueFunction VALUE_FUNCTION_T2,
+          isFiniteValueFunction... VALUE_FUNCTION_Ts>
 struct is_finite_value_function_check<VALUE_FUNCTION_T, VALUE_FUNCTION_T2, VALUE_FUNCTION_Ts...>
     : std::bool_constant<std::is_same_v<typename VALUE_FUNCTION_T::ValueType, typename VALUE_FUNCTION_T2::ValueType> &&
                          is_finite_value_function_check<VALUE_FUNCTION_T2, VALUE_FUNCTION_Ts...>::value> {};
@@ -24,17 +24,19 @@ template <isValueFunction... VALUE_FUNCTION_T>
 requires isAdmissibleFiniteStateValueFunctionCombination<VALUE_FUNCTION_T...>
 struct get_first_finite_value_function_type_generic {
   using vFunctType = typename get_first_value_function_type<VALUE_FUNCTION_T...>::type;
-  using type = FiniteValueFunction<vFunctType, typename vFunctType::StepSizeTaker>;
+  // use a generic finite value function that we can override the virtual methods of
+  using type = FiniteValueFunction<typename vFunctType::ValueFunctionBaseType, typename vFunctType::StepSizeTaker>;
 };
 
-template <isFiniteStateValueFunction... VALUE_FUNCTION_T>
-requires is_finite_value_function_check<VALUE_FUNCTION_T...>::value struct AdditiveFiniteValueFunctionCombination
-    : virtual AdditiveValueFunctionCombination<VALUE_FUNCTION_T...>,
-      virtual get_first_finite_value_function_type_generic<VALUE_FUNCTION_T...>::type {
+template <isFiniteValueFunction... VALUE_FUNCTION_T>
+struct AdditiveFiniteValueFunctionCombination
+    : AdditiveValueFunctionCombination<VALUE_FUNCTION_T...>,
+      get_first_finite_value_function_type_generic<VALUE_FUNCTION_T...>::type {
 
   using BaseType = AdditiveValueFunctionCombination<VALUE_FUNCTION_T...>;
-  using BaseType::ValueFunctionTypes;
-  using AdditiveValueFunctionCombination<VALUE_FUNCTION_T...>::AdditiveValueFunctionCombination;
+  AdditiveFiniteValueFunctionCombination(auto &&...args)
+      : AdditiveValueFunctionCombination<VALUE_FUNCTION_T...>(args...) {}
+
   using fValueFunctionType = get_first_finite_value_function_type_generic<VALUE_FUNCTION_T...>::type;
   using ValueType = typename fValueFunctionType::ValueType;
   using KeyMaker = typename fValueFunctionType::KeyMaker;
@@ -43,8 +45,11 @@ requires is_finite_value_function_check<VALUE_FUNCTION_T...>::value struct Addit
 
   SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(BaseType::EnvironmentType));
 
-  ValueType operator()(const KeyType &k) const override { return BaseType::operator()(k); }
   using BaseType::initialize;
+
+  // Override the FiniteValueFunction virtual members to give the correct summation instead
+  ValueType operator()(const KeyType &k) const override { return BaseType::operator()(k); }
+  PrecisionType valueAt(const KeyType &k) override { return BaseType::operator()(k).value; }
 
   // We intercept the call to the value function and return the sum of the values returned by each value function.
 

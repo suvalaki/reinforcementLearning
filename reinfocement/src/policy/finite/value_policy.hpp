@@ -36,6 +36,9 @@ struct FinitePolicyValueFunctionMixin : virtual PolicyDistributionMixin<typename
 
   ActionSpace getArgmaxAction(const EnvironmentType &e, const StateType &s) const override;
   using ValueFunctionType::initialize;
+
+  FinitePolicyValueFunctionMixin(auto &&...args)
+      : PolicyValueFunctionMixin<VALUE_FUNCTION_T>(args...), VALUE_FUNCTION_T(args...) {}
 };
 
 template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>

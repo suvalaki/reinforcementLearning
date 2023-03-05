@@ -18,7 +18,10 @@ namespace policy {
 // of applying incremental updates to ANY key type Q-table first.
 
 template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>
-struct FiniteGreedyPolicy : FinitePolicyValueFunctionMixin<VALUE_FUNCTION_T>, GreedyPolicy<VALUE_FUNCTION_T> {
+struct FiniteGreedyPolicy : virtual GreedyPolicy<VALUE_FUNCTION_T>,
+                            virtual FinitePolicyValueFunctionMixin<VALUE_FUNCTION_T>,
+                            virtual PolicyValueFunctionMixin<VALUE_FUNCTION_T>,
+                            virtual VALUE_FUNCTION_T {
 
   SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(VALUE_FUNCTION_T::EnvironmentType));
   using ValueFunctionType = VALUE_FUNCTION_T;
@@ -32,6 +35,10 @@ struct FiniteGreedyPolicy : FinitePolicyValueFunctionMixin<VALUE_FUNCTION_T>, Gr
   void update(const EnvironmentType &e, const TransitionType &s) override;
   // ActionSpace operator()(const EnvironmentType &e, const StateType &s) const override { return ActionSpace{}; };
   using ValueFunctionType::initialize;
+
+  FiniteGreedyPolicy(auto &&...args)
+      : FinitePolicyValueFunctionMixin<VALUE_FUNCTION_T>(args...), GreedyPolicy<VALUE_FUNCTION_T>(args...),
+        PolicyValueFunctionMixin<VALUE_FUNCTION_T>(args...), VALUE_FUNCTION_T(args...) {}
 };
 
 template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>
