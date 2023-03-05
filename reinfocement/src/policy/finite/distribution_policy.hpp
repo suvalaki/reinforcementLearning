@@ -19,7 +19,7 @@ namespace policy {
 
 template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>
 struct FiniteDistributionPolicy : virtual DistributionPolicy<typename VALUE_FUNCTION_T::EnvironmentType>,
-                                  virtual FinitePolicyValueFunctionMixin<VALUE_FUNCTION_T>
+                                  FinitePolicyValueFunctionMixin<VALUE_FUNCTION_T>
 
 {
   using BaseType = DistributionPolicy<typename VALUE_FUNCTION_T::EnvironmentType>;
@@ -38,6 +38,13 @@ struct FiniteDistributionPolicy : virtual DistributionPolicy<typename VALUE_FUNC
   static constexpr auto min_policy_value = -10.0F;
   static constexpr auto max_policy_value = 10.0F;
 
+  FiniteDistributionPolicy(auto &&...args) : FinitePolicyValueFunctionMixin<VALUE_FUNCTION_T>(args...) {}
+  FiniteDistributionPolicy(const FiniteDistributionPolicy &p) : FinitePolicyValueFunctionMixin<VALUE_FUNCTION_T>(p) {}
+  FiniteDistributionPolicy &operator=(FiniteDistributionPolicy &&g) {
+    ValueFunctionType(std::move(g));
+    return *this;
+  }
+
   void update(const EnvironmentType &e, const TransitionType &s) override;
 
   PrecisionType getProbability(const EnvironmentType &e, const StateType &s, const ActionSpace &a) const override;
@@ -48,6 +55,10 @@ struct FiniteDistributionPolicy : virtual DistributionPolicy<typename VALUE_FUNC
 
   /// @brief Norm over the potential reachable actions from this state
   PrecisionType getSoftmaxNorm(const EnvironmentType &e, const StateType &s) const;
+
+  ActionSpace getArgmaxAction(const EnvironmentType &e, const StateType &s) const override {
+    return FinitePolicyValueFunctionMixin<VALUE_FUNCTION_T>::getArgmaxAction(e, s);
+  };
 
   std::enable_if_t<environment::MarkovDecisionEnvironmentType<EnvironmentType>,
                    std::vector<std::pair<KeyType, PrecisionType>>>

@@ -15,7 +15,7 @@
 
 namespace policy {
 
-template <objectives::isValueFunction VALUE_FUNCTION_T> struct PolicyValueFunctionMixin : virtual VALUE_FUNCTION_T {
+template <objectives::isValueFunction VALUE_FUNCTION_T> struct PolicyValueFunctionMixin : VALUE_FUNCTION_T {
 
   using BaseType = VALUE_FUNCTION_T;
   using ValueFunctionType = VALUE_FUNCTION_T;
@@ -28,6 +28,7 @@ template <objectives::isValueFunction VALUE_FUNCTION_T> struct PolicyValueFuncti
   // virtual ActionSpace getArgmaxAction(const EnvironmentType &e, const StateType &s) const = 0;
 
   PolicyValueFunctionMixin(auto &&...args) : VALUE_FUNCTION_T(args...) {}
+  PolicyValueFunctionMixin(const PolicyValueFunctionMixin &p) : VALUE_FUNCTION_T(p) {}
   PolicyValueFunctionMixin &operator=(PolicyValueFunctionMixin &&g) {
     VALUE_FUNCTION_T(std::move(g));
     return *this;

@@ -37,7 +37,7 @@ TEST_CASE("monte_carlo::monte_carlo_on_policy_first_visit_control_with_exploring
     CHECK(std::any_of(values.begin(), values.end(), [](auto v) { return v != Approx(0.0); }));
 
     auto randomPolicy = RandomCoinPolicy();
-    auto epsGreedyPolicy = EpsGreedyCoinPolicy{randomPolicy, 0.2F};
+    auto epsGreedyPolicy = EpsGreedyCoinPolicy{randomPolicy, {}, 0.2F};
     std::cout << greedyPolicy.getProbability(environ, s0, a0) << "\n";
     epsGreedyPolicy.getProbability(environ, s0, a0);
 
@@ -66,7 +66,7 @@ TEST_CASE("monte_carlo::monte_carlo_on_policy_first_visit_control_with_exploring
     {
       auto greedyPolicy = GreedyCoinPolicy();
       auto randomPolicy = RandomCoinPolicy();
-      auto epsGreedyPolicy = EpsGreedyCoinPolicy(randomPolicy);
+      auto epsGreedyPolicy = EpsGreedyCoinPolicy(randomPolicy, {});
 
       // We are attempting to learn the greedy policy using the epsilon greedy policy.
 
@@ -91,7 +91,7 @@ TEST_CASE("monte_carlo::monte_carlo_on_policy_first_visit_control_with_exploring
     {
       auto greedyPolicy = GreedyCoinPolicy();
       auto randomPolicy = RandomCoinPolicy();
-      auto epsGreedyPolicy = EpsGreedyCoinPolicy(randomPolicy);
+      auto epsGreedyPolicy = EpsGreedyCoinPolicy(randomPolicy, {});
 
       // Prior to running the policy the estimates are all zero.
       monte_carlo::monte_carlo_off_policy_importance_sampling_every_visit_control_with_exploring_starts<10>(

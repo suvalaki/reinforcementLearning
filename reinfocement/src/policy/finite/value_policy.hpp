@@ -23,8 +23,7 @@ namespace policy {
 template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>
 // requires std::is_same_v<typename KEYMAPPER_T::EnvironmentType, typename VALUE_T::EnvironmentType>
 struct FinitePolicyValueFunctionMixin : virtual PolicyDistributionMixin<typename VALUE_FUNCTION_T::EnvironmentType>,
-                                        virtual PolicyValueFunctionMixin<VALUE_FUNCTION_T>,
-                                        virtual VALUE_FUNCTION_T {
+                                        PolicyValueFunctionMixin<VALUE_FUNCTION_T> {
 
   using BaseType = VALUE_FUNCTION_T;
   SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(VALUE_FUNCTION_T::EnvironmentType));
@@ -37,8 +36,9 @@ struct FinitePolicyValueFunctionMixin : virtual PolicyDistributionMixin<typename
   ActionSpace getArgmaxAction(const EnvironmentType &e, const StateType &s) const override;
   using ValueFunctionType::initialize;
 
-  FinitePolicyValueFunctionMixin(auto &&...args)
-      : PolicyValueFunctionMixin<VALUE_FUNCTION_T>(args...), VALUE_FUNCTION_T(args...) {}
+  FinitePolicyValueFunctionMixin(auto &&...args) : PolicyValueFunctionMixin<VALUE_FUNCTION_T>(args...) {}
+  FinitePolicyValueFunctionMixin(const FinitePolicyValueFunctionMixin &p)
+      : PolicyValueFunctionMixin<VALUE_FUNCTION_T>(p) {}
   FinitePolicyValueFunctionMixin &operator=(FinitePolicyValueFunctionMixin &&g) {
     ValueFunctionType(std::move(g));
     return *this;

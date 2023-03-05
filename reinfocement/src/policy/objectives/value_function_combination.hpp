@@ -64,6 +64,8 @@ struct AdditiveValueFunctionCombination : ValueFunctionCombination<VALUE_FUNCTIO
 
   using BaseType = ValueFunctionCombination<VALUE_FUNCTION_T...>;
   AdditiveValueFunctionCombination(auto &&...args) : ValueFunctionCombination<VALUE_FUNCTION_T...>(args...) {}
+  AdditiveValueFunctionCombination(const AdditiveValueFunctionCombination &v)
+      : ValueFunctionCombination<VALUE_FUNCTION_T...>(v) {}
 
   SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(BaseType::EnvironmentType));
   using ValueType = typename BaseType::ValueType;

@@ -33,7 +33,7 @@ int main() {
   auto explorPolicy = BlackjackRandom();
   auto greedyPolicy = BlackjackGreedy();
   static_assert(policy::isFinitePolicyValueFunctionMixin<BlackjackGreedy>);
-  auto epsilonGreedy = policy::FiniteEpsilonGreedyPolicy<BlackjackRandom, BlackjackGreedy>{explorPolicy, 0.2F};
+  auto epsilonGreedy = policy::FiniteEpsilonGreedyPolicy<BlackjackRandom, BlackjackGreedy>{explorPolicy, {}, 0.2F};
   std::cout << "EPSILON GREEDY ACTIONS\n";
 
   // std::cout << "Progress[]";

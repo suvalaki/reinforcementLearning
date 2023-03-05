@@ -36,7 +36,7 @@ TEST_CASE("blackjack") {
       policy::objectives::FiniteValueFunction<policy::objectives::ValueFunction<BlackjackKeyMaker, BlackjackValue>>;
   using BlackjackGreedy = policy::FiniteGreedyPolicy<BlackjackValueFunction>;
   auto explorPolicy = BlackjackRandom();
-  auto epsilonGreedy = policy::FiniteEpsilonGreedyPolicy<BlackjackRandom, BlackjackGreedy>{explorPolicy, 0.2F};
+  auto epsilonGreedy = policy::FiniteEpsilonGreedyPolicy<BlackjackRandom, BlackjackGreedy>{explorPolicy, {}, 0.2F};
   std::cout << "EPSILON GREEDY ACTIONS\n";
   for (int i = 0; i < 10; i++) {
     auto recommendedAction = epsilonGreedy(environment, environment.state);

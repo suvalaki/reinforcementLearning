@@ -36,6 +36,9 @@ struct AdditiveFiniteValueFunctionCombination
   using BaseType = AdditiveValueFunctionCombination<VALUE_FUNCTION_T...>;
   AdditiveFiniteValueFunctionCombination(auto &&...args)
       : AdditiveValueFunctionCombination<VALUE_FUNCTION_T...>(args...) {}
+  AdditiveFiniteValueFunctionCombination(const AdditiveFiniteValueFunctionCombination &p)
+      : AdditiveValueFunctionCombination<VALUE_FUNCTION_T...>(p) {}
+  AdditiveFiniteValueFunctionCombination() = delete;
 
   using fValueFunctionType = get_first_finite_value_function_type_generic<VALUE_FUNCTION_T...>::type;
   using ValueType = typename fValueFunctionType::ValueType;

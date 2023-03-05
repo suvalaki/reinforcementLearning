@@ -70,9 +70,7 @@ typename GDT::ActionSpace GreedyDistributionMixin<E>::sampleAction(const Environ
 
 template <objectives::isValueFunction VALUE_FUNCTION_T>
 struct GreedyPolicy : virtual Policy<typename VALUE_FUNCTION_T::EnvironmentType>,
-                      virtual GreedyDistributionMixin<typename VALUE_FUNCTION_T::EnvironmentType>,
-                      virtual PolicyValueFunctionMixin<VALUE_FUNCTION_T>,
-                      virtual VALUE_FUNCTION_T {
+                      virtual GreedyDistributionMixin<typename VALUE_FUNCTION_T::EnvironmentType> {
 
   SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(VALUE_FUNCTION_T::EnvironmentType));
   // using ValueFunctionBaseType = VALUE_FUNCTION_T;
@@ -80,7 +78,8 @@ struct GreedyPolicy : virtual Policy<typename VALUE_FUNCTION_T::EnvironmentType>
   ActionSpace operator()(const EnvironmentType &e, const StateType &s) const override;
   //  ActionSpace getArgmaxAction(const EnvironmentType &e, const StateType &s) const = 0;
 
-  GreedyPolicy(auto &&...args) : PolicyValueFunctionMixin<VALUE_FUNCTION_T>(args...), VALUE_FUNCTION_T(args...) {}
+  GreedyPolicy(auto &&...args) {}
+  GreedyPolicy(const GreedyPolicy &p) {}
   GreedyPolicy &operator=(GreedyPolicy &&g) {
     VALUE_FUNCTION_T(std::move(g));
     return *this;

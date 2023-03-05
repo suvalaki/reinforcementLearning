@@ -21,10 +21,15 @@ struct FiniteEpsilonGreedyPolicy : EpsilonSoftPolicy<EXPLORE_POLICY, EXPLOIT_POL
   using ExploitType = typename BaseEpsilonSoftType::ExploitType;
   using EngineType = typename BaseEpsilonSoftType::EngineType;
 
+  //   FiniteEpsilonGreedyPolicy(const ExploreType &explorePolicy,
+  //                             PrecisionType epsilon = 0.1,
+  //                             E &engine = xt::random::get_default_random_engine())
+  //       : BaseEpsilonSoftType(explorePolicy, epsilon, engine) {}
   FiniteEpsilonGreedyPolicy(const ExploreType &explorePolicy,
+                            const ExploitType &exploitPolicy,
                             PrecisionType epsilon = 0.1,
                             E &engine = xt::random::get_default_random_engine())
-      : BaseEpsilonSoftType(explorePolicy, epsilon, engine) {}
+      : BaseEpsilonSoftType(explorePolicy, exploitPolicy, epsilon, engine) {}
 };
 
 template <typename T>

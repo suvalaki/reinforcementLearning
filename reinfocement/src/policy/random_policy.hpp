@@ -52,7 +52,7 @@ typename T::DataType > random_spec_gen(E &engine = xt::random::get_default_rando
   (std::make_index_sequence<std::tuple_size_v<typename T::tupleType>>());
 }
 
-template <environment::EnvironmentType E> struct RandomPolicy : virtual Policy<E>, PolicyDistributionMixin<E> {
+template <environment::EnvironmentType E> struct RandomPolicy : virtual Policy<E>, virtual PolicyDistributionMixin<E> {
 
   SETUP_TYPES_FROM_ENVIRON(SINGLE_ARG(E));
 

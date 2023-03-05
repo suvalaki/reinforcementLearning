@@ -21,7 +21,7 @@ namespace policy {
 template <implementsPolicy EXPLORE_POLICY, implementsPolicy EXPLOIT_POLICY, class E = xt::random::default_engine_type>
 requires(std::is_same_v<typename EXPLORE_POLICY::EnvironmentType,
                         typename EXPLOIT_POLICY::EnvironmentType>) struct EpsilonSoftPolicy
-    : virtual EXPLOIT_POLICY,
+    : EXPLOIT_POLICY,
       virtual PolicyDistributionMixin<typename EXPLORE_POLICY::EnvironmentType> {
 
   SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(EXPLORE_POLICY::EnvironmentType));
@@ -34,9 +34,10 @@ requires(std::is_same_v<typename EXPLORE_POLICY::EnvironmentType,
   EngineType &engine;
 
   EpsilonSoftPolicy(const ExploreType &explorePolicy,
+                    const ExploitType &exploitPolicy,
                     PrecisionType epsilon = 0.1,
                     E &engine = xt::random::get_default_random_engine())
-      : explorePolicy(explorePolicy), epsilon(epsilon), engine(engine) {}
+      : EXPLOIT_POLICY(exploitPolicy), explorePolicy(explorePolicy), epsilon(epsilon), engine(engine) {}
 
   ActionSpace explore(const EnvironmentType &e, const StateType &s) const;
   ActionSpace exploit(const EnvironmentType &e, const StateType &s) const;
@@ -59,7 +60,7 @@ typename EGP::ActionSpace EGP::explore(const EnvironmentType &e, const StateType
 
 template <implementsPolicy EXPLORE_POLICY, implementsPolicy EXPLOIT_POLICY, class E>
 typename EGP::ActionSpace EGP::exploit(const EnvironmentType &e, const StateType &s) const {
-  return const_cast<ExploitType &>(static_cast<const ExploitType &>(*this))(e, s);
+  return ExploitType::operator()(e, s);
 }
 
 template <implementsPolicy EXPLORE_POLICY, implementsPolicy EXPLOIT_POLICY, class E>

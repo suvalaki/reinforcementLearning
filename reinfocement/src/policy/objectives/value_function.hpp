@@ -35,6 +35,7 @@ struct ValueFunction {
 
   ValueFunction(const PrecisionType &initial_value = INITIAL_VALUE,
                 const PrecisionType &discount_rate = DISCOUNT_RATE) {}
+  ValueFunction(const ValueFunction &) = default;
 
   // The starting value estimate
   constexpr static PrecisionType initial_value = INITIAL_VALUE;
@@ -44,7 +45,7 @@ struct ValueFunction {
   virtual ValueType operator()(const KeyType &k) const = 0;
 
   static KeyType makeKey(const EnvironmentType &environment, const StateType &s, const ActionSpace &a);
-  PrecisionType valueAt(const KeyType &s) const;
+  PrecisionType &valueAt(const KeyType &s) const;
   virtual KeyType getArgmaxKey(const EnvironmentType &e, const StateType &s) const = 0;
 };
 
@@ -59,7 +60,7 @@ typename VFT::KeyType VFT::makeKey(const EnvironmentType &e, const StateType &s,
 }
 
 template <isValueFunctionKeymaker KEYMAPPER_T, isValue VALUE_T, auto INITIAL_VALUE, auto DISCOUNT_RATE>
-typename VFT::PrecisionType VFT::valueAt(const KeyType &k) const {
+typename VFT::PrecisionType &VFT::valueAt(const KeyType &k) const {
   return this->operator()(k).getValue();
 }
 
