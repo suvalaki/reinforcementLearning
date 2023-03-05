@@ -113,6 +113,8 @@ using simple_markov_environment_builder_t = typename simple_markov_environment_b
 
 using S1A1 = simple_environment_builder_t<1, 1>;
 using S1A2 = simple_environment_builder_t<1, 2>;
+using S1A3 = simple_environment_builder_t<1, 3>;
+using S1A4 = simple_environment_builder_t<1, 4>;
 using S2A2 = simple_environment_builder_t<2, 2>;
 
 using MS5A2 = simple_markov_environment_builder_t<5, 2>;

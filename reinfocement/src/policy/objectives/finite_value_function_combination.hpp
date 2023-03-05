@@ -67,10 +67,13 @@ struct AdditiveFiniteValueFunctionCombination
     auto availableActions = e.getReachableActions(s);
     auto maxIdx = std::max_element(
         tmpValueFunction.begin(), tmpValueFunction.end(), [&e, &availableActions](const auto &p1, const auto &p2) {
-          if (availableActions.find(KeyMaker::get_action_from_key(e, p2.first)) == availableActions.end())
+          if (availableActions.find(KeyMaker::get_action_from_key(e, p2.first)) != availableActions.end())
             return p1.second < p2.second;
           return false;
         });
+
+    if (maxIdx == tmpValueFunction.end())
+      return KeyMaker::make(e, s, *availableActions.begin()); // or throw a runtime error here...
 
     return maxIdx->first;
   }

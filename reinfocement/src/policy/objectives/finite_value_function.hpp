@@ -104,16 +104,16 @@ public:
     this->valueFactory.update();
   }
 
-  void prettyPrint() const {
+  void prettyPrint() {
     for (const auto &[key, value] : *this) {
-      std::cout << key << " : " << value.value << std::endl;
+      std::cout << key << " : " << this->valueAt(key) << std::endl;
     }
   }
 
   KeyType getArgmaxKey(const EnvironmentType &e, const StateType &s) const override {
     auto availableActions = e.getReachableActions(s);
     auto maxIdx = std::max_element(this->begin(), this->end(), [&e, &availableActions](const auto &p1, const auto &p2) {
-      if (availableActions.find(KeyMaker::get_action_from_key(e, p2.first)) == availableActions.end())
+      if (availableActions.find(KeyMaker::get_action_from_key(e, p2.first)) != availableActions.end())
         return p1.second < p2.second;
       return false;
     });
