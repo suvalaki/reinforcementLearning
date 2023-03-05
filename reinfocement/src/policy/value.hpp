@@ -28,6 +28,10 @@ template <objectives::isValueFunction VALUE_FUNCTION_T> struct PolicyValueFuncti
   // virtual ActionSpace getArgmaxAction(const EnvironmentType &e, const StateType &s) const = 0;
 
   PolicyValueFunctionMixin(auto &&...args) : VALUE_FUNCTION_T(args...) {}
+  PolicyValueFunctionMixin &operator=(PolicyValueFunctionMixin &&g) {
+    VALUE_FUNCTION_T(std::move(g));
+    return *this;
+  }
 };
 
 template <objectives::isValueFunction VALUE_FUNCTION_T>

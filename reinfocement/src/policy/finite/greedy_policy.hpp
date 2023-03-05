@@ -39,6 +39,10 @@ struct FiniteGreedyPolicy : virtual GreedyPolicy<VALUE_FUNCTION_T>,
   FiniteGreedyPolicy(auto &&...args)
       : FinitePolicyValueFunctionMixin<VALUE_FUNCTION_T>(args...), GreedyPolicy<VALUE_FUNCTION_T>(args...),
         PolicyValueFunctionMixin<VALUE_FUNCTION_T>(args...), VALUE_FUNCTION_T(args...) {}
+  FiniteGreedyPolicy &operator=(FiniteGreedyPolicy &&g) {
+    ValueFunctionType(std::move(g));
+    return *this;
+  }
 };
 
 template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>

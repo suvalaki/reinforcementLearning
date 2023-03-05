@@ -39,6 +39,10 @@ struct FinitePolicyValueFunctionMixin : virtual PolicyDistributionMixin<typename
 
   FinitePolicyValueFunctionMixin(auto &&...args)
       : PolicyValueFunctionMixin<VALUE_FUNCTION_T>(args...), VALUE_FUNCTION_T(args...) {}
+  FinitePolicyValueFunctionMixin &operator=(FinitePolicyValueFunctionMixin &&g) {
+    ValueFunctionType(std::move(g));
+    return *this;
+  }
 };
 
 template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>

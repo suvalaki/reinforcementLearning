@@ -44,6 +44,14 @@ public:
   constexpr static auto iterations = 1000;
   typename ValueType::Factory valueFactory{};
 
+  FiniteValueFunction() = default;
+  FiniteValueFunction(const FiniteValueFunction &) = default;
+  FiniteValueFunction &operator=(FiniteValueFunction &&g) {
+    ValueFunctionBaseType(std::move(g));
+    ValueTableType(std::move(g));
+    return *this;
+  }
+
   /// @brief Extra getter to yield the value no matter the underlying
   /// type being held within the valueEstimates table. value is always a member.
   virtual PrecisionType valueAt(const KeyType &s) {

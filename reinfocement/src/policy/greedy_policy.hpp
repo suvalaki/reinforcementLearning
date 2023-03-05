@@ -81,6 +81,10 @@ struct GreedyPolicy : virtual Policy<typename VALUE_FUNCTION_T::EnvironmentType>
   //  ActionSpace getArgmaxAction(const EnvironmentType &e, const StateType &s) const = 0;
 
   GreedyPolicy(auto &&...args) : PolicyValueFunctionMixin<VALUE_FUNCTION_T>(args...), VALUE_FUNCTION_T(args...) {}
+  GreedyPolicy &operator=(GreedyPolicy &&g) {
+    VALUE_FUNCTION_T(std::move(g));
+    return *this;
+  }
 };
 
 template <objectives::isValueFunction VALUE_FUNCTION_T>
