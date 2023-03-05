@@ -13,7 +13,7 @@
 #include "policy/objectives/value_function_keymaker.hpp"
 
 using KeyMaker = policy::objectives::StateActionKeymaker<CoinEnviron>;
-using GreedyCoinPolicy = policy::FiniteGreedyPolicy<KeyMaker>;
+using GreedyCoinPolicy = policy::FiniteGreedyPolicy<CoinFiniteStateActionValueFunction>;
 using RandomCoinPolicy = policy::FiniteRandomPolicy<CoinEnviron>;
 using EpsGreedyCoinPolicy = policy::FiniteEpsilonGreedyPolicy<RandomCoinPolicy, GreedyCoinPolicy>;
 

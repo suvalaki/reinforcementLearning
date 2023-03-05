@@ -41,18 +41,25 @@ public:
                                                                typename VALUE_FUNCTION_T::ValueType>::type;
   using StepSizeTaker = INCREMENTAL_STEPSIZE_T;
 
-  constexpr static typename EnvironmentType::PrecisionType initial_value = VALUE_FUNCTION_T::initial_value;
   constexpr static auto iterations = 1000;
   typename ValueType::Factory valueFactory{};
 
-  /// @brief Extra getter to yield the value no matter the underlying
-  /// type being held within the valueEstimates table. value is always a member.
-  PrecisionType valueAt(const KeyType &s) {
-    return this->emplace(s, valueFactory.create(initial_value, 1)).first->second.value;
+  FiniteValueFunction() = default;
+  FiniteValueFunction(const FiniteValueFunction &) = default;
+  FiniteValueFunction &operator=(FiniteValueFunction &&g) {
+    ValueFunctionBaseType(std::move(g));
+    ValueTableType(std::move(g));
+    return *this;
   }
 
-  PrecisionType valueAt(const EnvironmentType &e, const StateType &s, const ActionSpace &a) {
-    return valueAt(KeyMaker::make(e, s, a));
+  /// @brief Extra getter to yield the value no matter the underlying
+  /// type being held within the valueEstimates table. value is always a member.
+  virtual PrecisionType valueAt(const KeyType &s) {
+    return this->emplace(s, valueFactory.create(this->initial_value, 1)).first->second.value;
+  }
+
+  virtual PrecisionType valueAt(const EnvironmentType &e, const StateType &s, const ActionSpace &a) {
+    return this->valueAt(KeyMaker::make(e, s, a));
   }
 
   void initialize(EnvironmentType &environment) override {
@@ -105,10 +112,24 @@ public:
     this->valueFactory.update();
   }
 
-  void prettyPrint() const {
+  void prettyPrint() {
     for (const auto &[key, value] : *this) {
-      std::cout << key << " : " << value.value << std::endl;
+      std::cout << key << " : " << this->valueAt(key) << std::endl;
     }
+  }
+
+  KeyType getArgmaxKey(const EnvironmentType &e, const StateType &s) const override {
+    auto availableActions = e.getReachableActions(s);
+    auto maxIdx = std::max_element(this->begin(), this->end(), [&e, &availableActions](const auto &p1, const auto &p2) {
+      if (availableActions.find(KeyMaker::get_action_from_key(e, p2.first)) != availableActions.end())
+        return p1.second < p2.second;
+      return false;
+    });
+
+    if (maxIdx == this->end())
+      return KeyMaker::make(e, s, *availableActions.begin()); // or throw a runtime error here...
+
+    return maxIdx->first;
   }
 };
 
@@ -118,6 +139,15 @@ public:
 
 template <typename T>
 concept isFiniteStateValueFunction = std::is_base_of_v<FiniteValueFunction<typename T::ValueFunctionBaseType>, T>;
+template <typename T>
+concept isFiniteValueFunction = std::is_base_of_v<FiniteValueFunction<typename T::ValueFunctionBaseType>, T>;
+
+template <isValueFunctionKeymaker KEYMAPPER_T,
+          isFiniteValue VALUE_T = Value<typename KEYMAPPER_T::EnvironmentType>,
+          auto INITIAL_VALUE = 0.0F,
+          auto DISCOUNT_RATE = 0.0F>
+using FiniteValueFunctionHelper =
+    FiniteValueFunction<ValueFunction<KEYMAPPER_T, VALUE_T, INITIAL_VALUE, DISCOUNT_RATE>>;
 
 template <environment::FiniteEnvironmentType E,
           auto INITIAL_VALUE = 0.0F,

@@ -31,7 +31,10 @@ TEST_CASE("blackjack") {
   // Create an epsilon  greedy policy and run the bandit over them.
   using BlackjackKeyMaker = policy::objectives::StateActionKeymaker<EnvT>;
   using BlackjackRandom = policy::FiniteRandomPolicy<EnvT>;
-  using BlackjackGreedy = policy::FiniteGreedyPolicy<BlackjackKeyMaker>;
+  using BlackjackValue = policy::objectives::FiniteValue<EnvT>;
+  using BlackjackValueFunction =
+      policy::objectives::FiniteValueFunction<policy::objectives::ValueFunction<BlackjackKeyMaker, BlackjackValue>>;
+  using BlackjackGreedy = policy::FiniteGreedyPolicy<BlackjackValueFunction>;
   auto explorPolicy = BlackjackRandom();
   auto epsilonGreedy = policy::FiniteEpsilonGreedyPolicy<BlackjackRandom, BlackjackGreedy>{explorPolicy, 0.2F};
   std::cout << "EPSILON GREEDY ACTIONS\n";

@@ -35,8 +35,8 @@ concept isValueUpdater = requires(T t) {
   // Update the internal state of the Updater itself. When the Updater sees a new return it can perform
   // calculations like weighted averaging, incrementing support or importance sampling estimation.
   t.updateReturns(std::declval<typename T::ValueFunctionType &>(),
-                  std::declval<policy::FiniteGreedyPolicy<typename T::KeyMaker, typename T::ValueType> &>(),
-                  std::declval<policy::FiniteGreedyPolicy<typename T::KeyMaker, typename T::ValueType> &>(),
+                  std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
+                  std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
                   std::declval<typename T::EnvironmentType &>(),
                   std::declval<typename T::StateType &>(),
                   std::declval<typename T::ActionSpace &>(),
@@ -44,16 +44,16 @@ concept isValueUpdater = requires(T t) {
 
   // Using the newly updated state of the Updater, update the value function.
   t.updateValue(std::declval<typename T::ValueFunctionType &>(),
-                std::declval<policy::FiniteGreedyPolicy<typename T::KeyMaker, typename T::ValueType> &>(),
-                std::declval<policy::FiniteGreedyPolicy<typename T::KeyMaker, typename T::ValueType> &>(),
+                std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
+                std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
                 std::declval<typename T::EnvironmentType &>(),
                 std::declval<typename T::StateType &>(),
                 std::declval<typename T::ActionSpace &>());
 
   // Update the internal state of the Updater and then the value function.
   t.update(std::declval<typename T::ValueFunctionType &>(),
-           std::declval<policy::FiniteGreedyPolicy<typename T::KeyMaker, typename T::ValueType> &>(),
-           std::declval<policy::FiniteGreedyPolicy<typename T::KeyMaker, typename T::ValueType> &>(),
+           std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
+           std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
            std::declval<typename T::EnvironmentType &>(),
            std::declval<typename T::StateType &>(),
            std::declval<typename T::ActionSpace &>(),

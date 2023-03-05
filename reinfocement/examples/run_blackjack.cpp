@@ -26,7 +26,10 @@ int main() {
   // Create an epsilon  greedy policy and run the bandit over them.
   using BlackjackRandom = policy::FiniteRandomPolicy<EnvT>;
   using BlackjackKeyMaker = policy::objectives::StateActionKeymaker<EnvT>;
-  using BlackjackGreedy = policy::FiniteGreedyPolicy<BlackjackKeyMaker>;
+  using BlackjackValue = policy::objectives::FiniteValue<EnvT>;
+  using BlackjackValueFunction =
+      policy::objectives::FiniteValueFunction<policy::objectives::ValueFunction<BlackjackKeyMaker, BlackjackValue>>;
+  using BlackjackGreedy = policy::FiniteGreedyPolicy<BlackjackValueFunction>;
   auto explorPolicy = BlackjackRandom();
   auto greedyPolicy = BlackjackGreedy();
   static_assert(policy::isFinitePolicyValueFunctionMixin<BlackjackGreedy>);
