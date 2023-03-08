@@ -36,7 +36,8 @@ using transition::Transition;
 using transition::TransitionKind;
 using transition::TransitionSequence;
 
-template <StepType STEP_T, RewardType REWARD_T, ReturnType RETURN_T> struct Environment {
+template <StepType STEP_T, RewardType REWARD_T, ReturnType RETURN_T>
+struct Environment {
 
   using EnvironmentType = Environment<STEP_T, REWARD_T, RETURN_T>;
   using StateType = typename STEP_T::StateType;
@@ -48,7 +49,8 @@ template <StepType STEP_T, RewardType REWARD_T, ReturnType RETURN_T> struct Envi
   using RewardType = REWARD_T;
   using ReturnType = RETURN_T;
 
-  template <std::size_t EPISODE_LENGTH> using EpisodeType = TransitionSequence<EPISODE_LENGTH, ActionSpace>;
+  template <std::size_t EPISODE_LENGTH>
+  using EpisodeType = TransitionSequence<EPISODE_LENGTH, ActionSpace>;
 
   StateType state;
 
@@ -142,13 +144,16 @@ struct FiniteEnvironment : Environment<STEP_T, REWARD_T, RETURN_T> {
 
   virtual std::unordered_set<StateType, typename StateType::Hash> getAllPossibleStates() const = 0;
   virtual std::unordered_set<ActionSpace, typename ActionSpace::Hash> getAllPossibleActions() const = 0;
-  virtual std::unordered_set<StateType, typename StateType::Hash> getReachableStates(const StateType &s,
-                                                                                     const ActionSpace &a) const {
+  virtual std::unordered_set<StateType, typename StateType::Hash>
+  getReachableStates(const StateType &s, const ActionSpace &a) const {
     return getAllPossibleStates();
   }
   virtual std::unordered_set<ActionSpace, typename ActionSpace::Hash> getReachableActions(const StateType &s) const {
     return getAllPossibleActions();
   }
+  virtual bool isReachableAction(const StateType &s, const ActionSpace &a) const {
+    return getReachableActions(s).find(a) != getReachableActions(s).end();
+  };
 
   StateType randomState() const {
     const auto probabilities = std::vector<double>(nStates, 1.0 / nStates);

@@ -14,7 +14,8 @@
 
 namespace policy {
 
-template <environment::EnvironmentType E> struct GreedyDistributionMixin : virtual PolicyDistributionMixin<E> {
+template <environment::EnvironmentType E>
+struct GreedyDistributionMixin : virtual PolicyDistributionMixin<E> {
 
   using BaseType = PolicyDistributionMixin<E>;
   SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(BaseType::EnvironmentType));
@@ -37,9 +38,8 @@ GreedyDistributionMixin<E>::getProbability(const EnvironmentType &e, const State
 }
 
 template <environment::EnvironmentType E>
-typename GDT::PrecisionType GreedyDistributionMixin<E>::getLogProbability(const EnvironmentType &e,
-                                                                          const StateType &s,
-                                                                          const ActionSpace &a) const {
+typename GDT::PrecisionType GreedyDistributionMixin<E>::getLogProbability(
+    const EnvironmentType &e, const StateType &s, const ActionSpace &a) const {
   if (a == this->getArgmaxAction(e, s)) {
     return 0.0F;
   } else {
@@ -58,8 +58,8 @@ GreedyDistributionMixin<E>::getKernel(const EnvironmentType &e, const StateType 
 }
 
 template <environment::EnvironmentType E>
-typename GDT::PrecisionType GreedyDistributionMixin<E>::getNormalisationConstant(const EnvironmentType &e,
-                                                                                 const StateType &s) const {
+typename GDT::PrecisionType
+GreedyDistributionMixin<E>::getNormalisationConstant(const EnvironmentType &e, const StateType &s) const {
   return 1.0F;
 }
 
@@ -70,21 +70,14 @@ typename GDT::ActionSpace GreedyDistributionMixin<E>::sampleAction(const Environ
 
 template <objectives::isValueFunction VALUE_FUNCTION_T>
 struct GreedyPolicy : virtual Policy<typename VALUE_FUNCTION_T::EnvironmentType>,
-                      virtual GreedyDistributionMixin<typename VALUE_FUNCTION_T::EnvironmentType>,
-                      virtual PolicyValueFunctionMixin<VALUE_FUNCTION_T>,
-                      virtual VALUE_FUNCTION_T {
+                      virtual GreedyDistributionMixin<typename VALUE_FUNCTION_T::EnvironmentType> {
 
   SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(VALUE_FUNCTION_T::EnvironmentType));
-  // using ValueFunctionBaseType = VALUE_FUNCTION_T;
+
+  GreedyPolicy(auto &&...args) {}
+  GreedyPolicy(const GreedyPolicy &p) {}
 
   ActionSpace operator()(const EnvironmentType &e, const StateType &s) const override;
-  //  ActionSpace getArgmaxAction(const EnvironmentType &e, const StateType &s) const = 0;
-
-  GreedyPolicy(auto &&...args) : PolicyValueFunctionMixin<VALUE_FUNCTION_T>(args...), VALUE_FUNCTION_T(args...) {}
-  GreedyPolicy &operator=(GreedyPolicy &&g) {
-    VALUE_FUNCTION_T(std::move(g));
-    return *this;
-  }
 };
 
 template <objectives::isValueFunction VALUE_FUNCTION_T>

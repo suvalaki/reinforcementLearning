@@ -1,86 +1,105 @@
 #pragma once
 #include <type_traits>
 
+#include "finite_value_function_utilities.hpp"
 #include "policy/objectives/finite_value_function.hpp"
 #include "policy/objectives/value_function_combination.hpp"
+#include <ranges>
 
 namespace policy::objectives {
 
-template <isFiniteValueFunction... VALUE_FUNCTION_T> struct is_finite_value_function_check;
-template <isFiniteValueFunction VALUE_FUNCTION_T>
-struct is_finite_value_function_check<VALUE_FUNCTION_T> : std::true_type {};
-template <isFiniteValueFunction VALUE_FUNCTION_T,
-          isFiniteValueFunction VALUE_FUNCTION_T2,
-          isFiniteValueFunction... VALUE_FUNCTION_Ts>
-struct is_finite_value_function_check<VALUE_FUNCTION_T, VALUE_FUNCTION_T2, VALUE_FUNCTION_Ts...>
-    : std::bool_constant<std::is_same_v<typename VALUE_FUNCTION_T::ValueType, typename VALUE_FUNCTION_T2::ValueType> &&
-                         is_finite_value_function_check<VALUE_FUNCTION_T2, VALUE_FUNCTION_Ts...>::value> {};
+template <isFiniteValueFunction... V>
+struct AdditiveFiniteValueFunctionCombination : AdditiveValueFunctionCombination<V...>,
+                                                get_first_finite_value_function_type_generic<V...>::type {
 
-template <typename... VALUE_FUNCTION_T>
-concept isAdmissibleFiniteStateValueFunctionCombination = is_finite_value_function_check<VALUE_FUNCTION_T...>::value;
-
-/// @brief Get a generic Value Function from the first element of the parameter pack
-template <isValueFunction... VALUE_FUNCTION_T>
-requires isAdmissibleFiniteStateValueFunctionCombination<VALUE_FUNCTION_T...>
-struct get_first_finite_value_function_type_generic {
-  using vFunctType = typename get_first_value_function_type<VALUE_FUNCTION_T...>::type;
-  // use a generic finite value function that we can override the virtual methods of
-  using type = FiniteValueFunction<typename vFunctType::ValueFunctionBaseType, typename vFunctType::StepSizeTaker>;
-};
-
-template <isFiniteValueFunction... VALUE_FUNCTION_T>
-struct AdditiveFiniteValueFunctionCombination
-    : AdditiveValueFunctionCombination<VALUE_FUNCTION_T...>,
-      get_first_finite_value_function_type_generic<VALUE_FUNCTION_T...>::type {
-
-  using BaseType = AdditiveValueFunctionCombination<VALUE_FUNCTION_T...>;
-  AdditiveFiniteValueFunctionCombination(auto &&...args)
-      : AdditiveValueFunctionCombination<VALUE_FUNCTION_T...>(args...) {}
-
-  using fValueFunctionType = get_first_finite_value_function_type_generic<VALUE_FUNCTION_T...>::type;
+  using BaseType = AdditiveValueFunctionCombination<V...>;
+  SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(BaseType::EnvironmentType));
+  using fValueFunctionType = get_first_finite_value_function_type_generic<V...>::type;
   using ValueType = typename fValueFunctionType::ValueType;
   using KeyMaker = typename fValueFunctionType::KeyMaker;
   using KeyType = typename fValueFunctionType::KeyType;
   using ValueTableType = typename fValueFunctionType::ValueTableType;
 
-  SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(BaseType::EnvironmentType));
+  AdditiveFiniteValueFunctionCombination(auto &&...args);
+  AdditiveFiniteValueFunctionCombination(const AdditiveFiniteValueFunctionCombination &p);
+  AdditiveFiniteValueFunctionCombination() = delete;
 
   using BaseType::initialize;
+  ValueType operator()(const KeyType &k) const override;
+  PrecisionType valueAt(const KeyType &k) override;
+  KeyType getArgmaxKey(const EnvironmentType &e, const StateType &s) const override;
 
-  // Override the FiniteValueFunction virtual members to give the correct summation instead
-  ValueType operator()(const KeyType &k) const override { return BaseType::operator()(k); }
-  PrecisionType valueAt(const KeyType &k) override { return BaseType::operator()(k).value; }
-
-  // We intercept the call to the value function and return the sum of the values returned by each value function.
-
-  KeyType getArgmaxKey(const EnvironmentType &e, const StateType &s) const override {
-
-    // Construct an in memory additive value function by incrementally adding each value function
-    // to the previous one.
-    // Fill up the possible keys as a combination of the keys of each value function
-    auto tmpValueFunction = ValueTableType();
-    const auto inserter = [&tmpValueFunction](const auto &k) -> void { tmpValueFunction[k.first] += k.second; };
-    std::apply([&tmpValueFunction, &inserter](
-                   const auto &...vFuncts) { (..., (std::for_each(vFuncts.begin(), vFuncts.end(), inserter))); },
-               this->valueFunctions);
-
-    auto availableActions = e.getReachableActions(s);
-    auto maxIdx = std::max_element(
-        tmpValueFunction.begin(), tmpValueFunction.end(), [&e, &availableActions](const auto &p1, const auto &p2) {
-          if (availableActions.find(KeyMaker::get_action_from_key(e, p2.first)) != availableActions.end())
-            return p1.second < p2.second;
-          return false;
-        });
-
-    if (maxIdx == tmpValueFunction.end())
-      return KeyMaker::make(e, s, *availableActions.begin()); // or throw a runtime error here...
-
-    return maxIdx->first;
-  }
+  ValueTableType createTemporaryValueTable() const;
+  KeyType getMaxKeyFromTable(const EnvironmentType &e, const StateType &s, const ValueTableType &v) const;
 };
 
-template <typename... T> struct getter_AdditiveFiniteValueFunctionCombination;
-template <typename... T> struct getter_AdditiveFiniteValueFunctionCombination<std::tuple<T...>> {
+template <isFiniteValueFunction... T>
+AdditiveFiniteValueFunctionCombination<T...>::AdditiveFiniteValueFunctionCombination(auto &&...args)
+    : AdditiveValueFunctionCombination<T...>(args...) {}
+
+template <isFiniteValueFunction... T>
+AdditiveFiniteValueFunctionCombination<T...>::AdditiveFiniteValueFunctionCombination(
+    const AdditiveFiniteValueFunctionCombination &p)
+    : AdditiveValueFunctionCombination<T...>(p) {}
+
+template <isFiniteValueFunction... T>
+auto AdditiveFiniteValueFunctionCombination<T...>::operator()(const KeyType &k) const -> ValueType {
+  return BaseType::operator()(k);
+}
+template <isFiniteValueFunction... T>
+auto AdditiveFiniteValueFunctionCombination<T...>::valueAt(const KeyType &k) -> PrecisionType {
+  return BaseType::operator()(k).value;
+}
+
+template <isFiniteValueFunction... T>
+auto AdditiveFiniteValueFunctionCombination<T...>::getArgmaxKey(const EnvironmentType &e, const StateType &s) const
+    -> KeyType {
+
+  const auto tmpValueFunction = this->createTemporaryValueTable();
+  auto filteredTable = std::views::filter(tmpValueFunction, [&e, &s](const auto &p) {
+    return e.isReachableAction(s, KeyMaker::get_action_from_key(e, p.first));
+  });
+  const auto key = this->getMaxKeyFromTable(e, s, tmpValueFunction);
+  return key;
+}
+
+/** @brief Construct an additive construction of all value functions in this combination
+ * @details Construct an in memory additive value function by incrementally adding each value function
+ *  to the previous one. Then fill up the possible keys as a combination of the keys of each value function.
+ *  This gives us the value of each possible action in the state.
+ */
+template <isFiniteValueFunction... T>
+auto AdditiveFiniteValueFunctionCombination<T...>::createTemporaryValueTable() const -> ValueTableType {
+
+  auto tmpValueFunction = ValueTableType();
+  const auto inserter = [&tmpValueFunction](const auto &k) -> void { tmpValueFunction[k.first] += k.second; };
+  std::apply(
+      [&tmpValueFunction, &inserter](const auto &...vFuncts) {
+        (..., (std::for_each(vFuncts.begin(), vFuncts.end(), inserter)));
+      },
+      this->valueFunctions);
+  return tmpValueFunction;
+}
+
+/** @brief For the provided valueTable find the maximum key */
+template <isFiniteValueFunction... T>
+auto AdditiveFiniteValueFunctionCombination<T...>::getMaxKeyFromTable(
+    const EnvironmentType &e, const StateType &s, const ValueTableType &tmpValueFunction) const -> KeyType {
+
+  auto maxIdx = std::max_element(tmpValueFunction.begin(), tmpValueFunction.end(), [](const auto &p1, const auto &p2) {
+    return p1.second < p2.second;
+  });
+
+  if (maxIdx == tmpValueFunction.end())
+    return KeyMaker::make(e, s, *e.getReachableActions(s).begin()); // or throw a runtime error here...
+
+  return maxIdx->first;
+}
+
+template <typename... T>
+struct getter_AdditiveFiniteValueFunctionCombination;
+template <typename... T>
+struct getter_AdditiveFiniteValueFunctionCombination<std::tuple<T...>> {
   using type = AdditiveFiniteValueFunctionCombination<T...>;
 };
 

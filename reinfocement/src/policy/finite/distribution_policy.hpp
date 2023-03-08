@@ -19,12 +19,11 @@ namespace policy {
 
 template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>
 struct FiniteDistributionPolicy : virtual DistributionPolicy<typename VALUE_FUNCTION_T::EnvironmentType>,
-                                  virtual FinitePolicyValueFunctionMixin<VALUE_FUNCTION_T>
+                                  FinitePolicyValueFunctionMixin<VALUE_FUNCTION_T>
 
 {
   using BaseType = DistributionPolicy<typename VALUE_FUNCTION_T::EnvironmentType>;
   SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(BaseType::EnvironmentType));
-
   using ValueFunctionType = VALUE_FUNCTION_T;
   using ValueFunctionBaseType = typename ValueFunctionType::ValueFunctionBaseType;
   using StepSizeTaker = typename ValueFunctionType::StepSizeTaker;
@@ -38,6 +37,9 @@ struct FiniteDistributionPolicy : virtual DistributionPolicy<typename VALUE_FUNC
   static constexpr auto min_policy_value = -10.0F;
   static constexpr auto max_policy_value = 10.0F;
 
+  FiniteDistributionPolicy(auto &&...args) : FinitePolicyValueFunctionMixin<VALUE_FUNCTION_T>(args...) {}
+  FiniteDistributionPolicy(const FiniteDistributionPolicy &p) : FinitePolicyValueFunctionMixin<VALUE_FUNCTION_T>(p) {}
+
   void update(const EnvironmentType &e, const TransitionType &s) override;
 
   PrecisionType getProbability(const EnvironmentType &e, const StateType &s, const ActionSpace &a) const override;
@@ -48,9 +50,11 @@ struct FiniteDistributionPolicy : virtual DistributionPolicy<typename VALUE_FUNC
 
   /// @brief Norm over the potential reachable actions from this state
   PrecisionType getSoftmaxNorm(const EnvironmentType &e, const StateType &s) const;
+  ActionSpace getArgmaxAction(const EnvironmentType &e, const StateType &s) const override;
 
-  std::enable_if_t<environment::MarkovDecisionEnvironmentType<EnvironmentType>,
-                   std::vector<std::pair<KeyType, PrecisionType>>>
+  std::enable_if_t<
+      environment::MarkovDecisionEnvironmentType<EnvironmentType>,
+      std::vector<std::pair<KeyType, PrecisionType>>>
   getProbabilities(const EnvironmentType &e, const StateType &s) const;
 
   void setDeterministicPolicy(const EnvironmentType &e, const StateType &s, const ActionSpace &a);
@@ -110,8 +114,14 @@ typename FDP::PrecisionType FDP::getSoftmaxNorm(const EnvironmentType &e, const 
 }
 
 template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>
-std::enable_if_t<environment::MarkovDecisionEnvironmentType<typename FDP::EnvironmentType>,
-                 std::vector<std::pair<typename FDP::KeyType, typename FDP::PrecisionType>>>
+typename FDP::ActionSpace FDP::getArgmaxAction(const EnvironmentType &e, const StateType &s) const {
+  return FinitePolicyValueFunctionMixin<VALUE_FUNCTION_T>::getArgmaxAction(e, s);
+};
+
+template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>
+std::enable_if_t<
+    environment::MarkovDecisionEnvironmentType<typename FDP::EnvironmentType>,
+    std::vector<std::pair<typename FDP::KeyType, typename FDP::PrecisionType>>>
 FDP::getProbabilities(const EnvironmentType &e, const StateType &s) const {
   std::vector<std::pair<KeyType, PrecisionType>> probs;
   for (const auto &[k, v] : *this) {
@@ -144,15 +154,16 @@ void FDP::setDeterministicPolicy(const EnvironmentType &e, const StateType &s, c
   }
 }
 
-template <environment::FiniteEnvironmentType E,
-          template <typename> typename KEYMAKER_C = objectives::StateActionKeymaker,
-          template <typename> typename VALUE_C = objectives::FiniteValue,
-          template <typename> typename INCREMENTAL_STEPSIZE_C = objectives::weighted_average_step_size_taker,
-          auto INITIAL_VALUE = 0.0F,
-          auto DISCOUNT_RATE = 0.0F>
-using FiniteDistributionPolicyC = FiniteDistributionPolicy<
-    objectives::FiniteValueFunction<objectives::ValueFunction<KEYMAKER_C<E>, VALUE_C<E>, INITIAL_VALUE, DISCOUNT_RATE>,
-                                    INCREMENTAL_STEPSIZE_C<VALUE_C<E>>>>;
+template <
+    environment::FiniteEnvironmentType E,
+    template <typename> typename KEYMAKER_C = objectives::StateActionKeymaker,
+    template <typename> typename VALUE_C = objectives::FiniteValue,
+    template <typename> typename INCREMENTAL_STEPSIZE_C = objectives::weighted_average_step_size_taker,
+    auto INITIAL_VALUE = 0.0F,
+    auto DISCOUNT_RATE = 0.0F>
+using FiniteDistributionPolicyC = FiniteDistributionPolicy<objectives::FiniteValueFunction<
+    objectives::ValueFunction<KEYMAKER_C<E>, VALUE_C<E>, INITIAL_VALUE, DISCOUNT_RATE>,
+    INCREMENTAL_STEPSIZE_C<VALUE_C<E>>>>;
 
 } // namespace policy
 

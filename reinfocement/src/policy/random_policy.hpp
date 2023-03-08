@@ -52,22 +52,26 @@ typename T::DataType > random_spec_gen(E &engine = xt::random::get_default_rando
   (std::make_index_sequence<std::tuple_size_v<typename T::tupleType>>());
 }
 
-template <environment::EnvironmentType E> struct RandomPolicy : virtual Policy<E>, PolicyDistributionMixin<E> {
+template <environment::EnvironmentType E>
+struct RandomPolicy : virtual Policy<E>, virtual PolicyDistributionMixin<E> {
 
   SETUP_TYPES_FROM_ENVIRON(SINGLE_ARG(E));
 
   // Get a random event over the bounded specification
-  ActionSpace operator()(const EnvironmentType &e, const StateType &s) const override {
-    return this->sampleAction(e, s);
-  }
+  ActionSpace operator()(const EnvironmentType &e, const StateType &s) const override;
   virtual void update(const EnvironmentType &e, const TransitionType &s){};
   ActionSpace sampleAction(const EnvironmentType &e, const StateType &s) const override;
 };
 
+template <environment::EnvironmentType E>
+typename RandomPolicy<E>::ActionSpace RandomPolicy<E>::operator()(const EnvironmentType &e, const StateType &s) const {
+  return this->sampleAction(e, s);
+}
+
 // impl PolicyDistributionMixin - the other methods should be implemented by the user for their specific policy
 template <environment::EnvironmentType E>
-typename RandomPolicy<E>::ActionSpace RandomPolicy<E>::sampleAction(const EnvironmentType &e,
-                                                                    const StateType &s) const {
+typename RandomPolicy<E>::ActionSpace
+RandomPolicy<E>::sampleAction(const EnvironmentType &e, const StateType &s) const {
   return ActionSpace{random_spec_gen<typename ActionSpace::SpecType>()};
 }
 
