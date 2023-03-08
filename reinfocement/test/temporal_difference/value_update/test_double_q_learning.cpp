@@ -32,10 +32,17 @@ TEST_CASE("temporal_difference::DoubleQLearningUpdater") {
 
   policy0.initialize(environ);
   policy1.initialize(environ);
-  updater.update(epsGreedy, policy0, policy1, environ, a0, 0.5F);
 
-  // Values all start at zero. After the reset we start at state s0. we can only have updated s0 so far...
-  // We know the reward is 1.0 no matter the action or next state. So the value update is defined by:
-  CHECK(((policy0.valueAt(decltype(updater)::KeyMaker::make(environ, s0, a0)) != Approx(0.0)) or
-         (policy1.valueAt(decltype(updater)::KeyMaker::make(environ, s0, a0)) != Approx(0.0))));
+  const auto key = decltype(updater)::KeyMaker::make(environ, s0, a0);
+  updater.updatePolicy(environ, policy0, policy1, key, 1.0F, 0.5F);
+
+  // We update the off Policy with a reward of 1.0F
+  CHECK((not(policy1.valueAt(key) == Approx(0.0))));
+
+  // Argmax for Q2 is now a0
+  // Lets update Q1 using this action after specifying a value for Q1 at a0
+  policy0[key] = 2.0F;
+  updater.updatePolicy(environ, policy1, policy0, key, 1.0F, 0.5F);
+  // Q1[s,a] <- Q1[s,a] + alpha * (r + gamma * Q2[s',argmax_a(Q1[s',a])] - Q1[s,a])
+  CHECK((policy0.valueAt(key) == Approx(2.0F + (1.0F + 0.5F * 2.0F - 2.0F))));
 }

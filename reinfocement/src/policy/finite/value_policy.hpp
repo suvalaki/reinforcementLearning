@@ -26,27 +26,31 @@ struct FinitePolicyValueFunctionMixin : virtual PolicyDistributionMixin<typename
                                         PolicyValueFunctionMixin<VALUE_FUNCTION_T> {
 
   using BaseType = VALUE_FUNCTION_T;
+
   SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(VALUE_FUNCTION_T::EnvironmentType));
   using ValueFunctionType = VALUE_FUNCTION_T;
   using ValueFunctionBaseType = typename ValueFunctionType::ValueFunctionBaseType;
   using KeyMaker = typename ValueFunctionType::KeyMaker;
+  using KeyType = typename ValueFunctionType::KeyType;
   using ValueType = typename ValueFunctionType::ValueType;
   using StepSizeTaker = typename ValueFunctionType::StepSizeTaker;
 
-  ActionSpace getArgmaxAction(const EnvironmentType &e, const StateType &s) const override;
-  using ValueFunctionType::initialize;
+  FinitePolicyValueFunctionMixin(auto &&...args);
+  FinitePolicyValueFunctionMixin(const FinitePolicyValueFunctionMixin &p);
 
-  FinitePolicyValueFunctionMixin(auto &&...args) : PolicyValueFunctionMixin<VALUE_FUNCTION_T>(args...) {}
-  FinitePolicyValueFunctionMixin(const FinitePolicyValueFunctionMixin &p)
-      : PolicyValueFunctionMixin<VALUE_FUNCTION_T>(p) {}
-  FinitePolicyValueFunctionMixin &operator=(FinitePolicyValueFunctionMixin &&g) {
-    ValueFunctionType(std::move(g));
-    return *this;
-  }
+  using ValueFunctionType::initialize;
+  ActionSpace getArgmaxAction(const EnvironmentType &e, const StateType &s) const override;
 };
 
 template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>
-typename FVT::ActionSpace FVT::getArgmaxAction(const EnvironmentType &e, const StateType &s) const {
+FVT::FinitePolicyValueFunctionMixin(auto &&...args) : PolicyValueFunctionMixin<VALUE_FUNCTION_T>(args...) {}
+
+template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>
+FVT::FinitePolicyValueFunctionMixin(const FinitePolicyValueFunctionMixin &p)
+    : PolicyValueFunctionMixin<VALUE_FUNCTION_T>(p) {}
+
+template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>
+auto FVT::getArgmaxAction(const EnvironmentType &e, const StateType &s) const -> ActionSpace {
   return KeyMaker::get_action_from_key(e, this->getArgmaxKey(e, s));
 }
 

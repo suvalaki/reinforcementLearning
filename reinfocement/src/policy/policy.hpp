@@ -19,7 +19,8 @@ using spec::CompositeArraySpecType;
 using spec::isBoundedArraySpec;
 using spec::isCategoricalArraySpec;
 
-template <environment::EnvironmentType ENVIRON_T> struct Policy {
+template <environment::EnvironmentType ENVIRON_T>
+struct Policy {
 
   SETUP_TYPES_FROM_ENVIRON(SINGLE_ARG(ENVIRON_T));
   using BaseType = Policy<EnvironmentType>;
@@ -34,7 +35,8 @@ concept implementsPolicy = std::is_base_of_v<Policy<typename T::EnvironmentType>
 
 /// @brief Default methods to mix into a policy to setup an interface for a distribution over actions from a given
 /// state.
-template <environment::EnvironmentType ENVIRON_T> struct PolicyDistributionMixin {
+template <environment::EnvironmentType ENVIRON_T>
+struct PolicyDistributionMixin {
 
   SETUP_TYPES_FROM_ENVIRON(SINGLE_ARG(ENVIRON_T));
 
@@ -48,17 +50,21 @@ template <environment::EnvironmentType ENVIRON_T> struct PolicyDistributionMixin
   virtual ActionSpace sampleAction(const EnvironmentType &e, const StateType &s) const = 0;
   virtual ActionSpace getArgmaxAction(const EnvironmentType &e, const StateType &s) const = 0;
 
-  // Assuming this is the target policy what is the importance ratio against the observed policy
+  /// @brief Assuming this is the target policy what is the importance ratio against the observed policy
   template <typename DISTRIBUTION_POLICY_T>
-  PrecisionType importanceSamplingRatio(const EnvironmentType &e,
-                                        const StateType &s,
-                                        const ActionSpace &a,
-                                        const DISTRIBUTION_POLICY_T &other) const {
-    if (this == &other)
-      return 1.0;
-    return getProbability(e, s, a) / other.getProbability(e, s, a);
-  }
+  PrecisionType importanceSamplingRatio(
+      const EnvironmentType &e, const StateType &s, const ActionSpace &a, const DISTRIBUTION_POLICY_T &other) const;
 };
+
+template <environment::EnvironmentType E>
+template <typename DISTRIBUTION_POLICY_T>
+auto PolicyDistributionMixin<E>::importanceSamplingRatio(
+    const EnvironmentType &e, const StateType &s, const ActionSpace &a, const DISTRIBUTION_POLICY_T &other) const
+    -> PrecisionType {
+  if (this == &other)
+    return 1.0;
+  return getProbability(e, s, a) / other.getProbability(e, s, a);
+}
 
 template <typename T>
 concept implementsPolicyDistributionMixin = std::is_base_of_v<PolicyDistributionMixin<typename T::EnvironmentType>, T>;

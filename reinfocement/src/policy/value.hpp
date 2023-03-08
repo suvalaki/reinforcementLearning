@@ -15,24 +15,19 @@
 
 namespace policy {
 
-template <objectives::isValueFunction VALUE_FUNCTION_T> struct PolicyValueFunctionMixin : VALUE_FUNCTION_T {
+template <objectives::isValueFunction VALUE_FUNCTION_T>
+struct PolicyValueFunctionMixin : VALUE_FUNCTION_T {
 
   using BaseType = VALUE_FUNCTION_T;
+  SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(BaseType::EnvironmentType));
   using ValueFunctionType = VALUE_FUNCTION_T;
   using KeyMaker = typename VALUE_FUNCTION_T::KeyMaker;
   using ValueType = typename VALUE_FUNCTION_T::ValueType;
-  SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(BaseType::EnvironmentType));
-
-  virtual PrecisionType getValue(const EnvironmentType &e, const StateType &s, const ActionSpace &a);
-  // virtual PrecisionType getValue(const EnvironmentType &e, const StateType &s) const = 0;
-  // virtual ActionSpace getArgmaxAction(const EnvironmentType &e, const StateType &s) const = 0;
 
   PolicyValueFunctionMixin(auto &&...args) : VALUE_FUNCTION_T(args...) {}
   PolicyValueFunctionMixin(const PolicyValueFunctionMixin &p) : VALUE_FUNCTION_T(p) {}
-  PolicyValueFunctionMixin &operator=(PolicyValueFunctionMixin &&g) {
-    VALUE_FUNCTION_T(std::move(g));
-    return *this;
-  }
+
+  virtual PrecisionType getValue(const EnvironmentType &e, const StateType &s, const ActionSpace &a);
 };
 
 template <objectives::isValueFunction VALUE_FUNCTION_T>
