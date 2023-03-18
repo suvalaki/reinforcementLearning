@@ -89,14 +89,7 @@ struct TDValueUpdaterBase {
       const typename VALUE_FUNCTION_T::KeyType &keyCurrent,
       const typename VALUE_FUNCTION_T::KeyType &keyNext,
       const typename VALUE_FUNCTION_T::PrecisionType &reward,
-      const typename VALUE_FUNCTION_T::PrecisionType &discountRate) {
-
-    valueFunction[keyCurrent].value =
-        valueFunction.valueAt(keyCurrent) +
-        temporal_differenc_error(
-            valueFunction.valueAt(keyCurrent), valueFunction.valueAt(keyNext), reward, discountRate);
-    valueFunction[keyCurrent].step++;
-  }
+      const typename VALUE_FUNCTION_T::PrecisionType &discountRate);
 
   std::pair<bool, ActionSpace> update(
       VALUE_FUNCTION_T &valueFunction,
@@ -104,24 +97,50 @@ struct TDValueUpdaterBase {
       policy::isFinitePolicyValueFunctionMixin auto &target_policy,
       EnvironmentType &environment,
       const ActionSpace &action,
-      const PrecisionType &discountRate) {
-
-    const auto [isDone, nextAction, transition, reward] =
-        static_cast<CRTP *>(this)->step(valueFunction, policy, target_policy, environment, action, discountRate);
-
-    // Update the value function.
-    static_cast<CRTP *>(this)->updateValue(
-        valueFunction,
-        policy,
-        target_policy,
-        environment,
-        KeyMaker::make(environment, transition.state, transition.action),
-        KeyMaker::make(environment, transition.nextState, nextAction),
-        reward,
-        discountRate);
-
-    return {transition.isDone(), nextAction};
-  }
+      const PrecisionType &discountRate);
 };
+
+template <typename CRTP, policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T>
+auto TDValueUpdaterBase<CRTP, VALUE_FUNCTION_T>::updateValue(
+    VALUE_FUNCTION_T &valueFunction,
+    policy::isFinitePolicyValueFunctionMixin auto &policy,
+    policy::isFinitePolicyValueFunctionMixin auto &target_policy,
+    typename VALUE_FUNCTION_T::EnvironmentType &environment,
+    const typename VALUE_FUNCTION_T::KeyType &keyCurrent,
+    const typename VALUE_FUNCTION_T::KeyType &keyNext,
+    const typename VALUE_FUNCTION_T::PrecisionType &reward,
+    const typename VALUE_FUNCTION_T::PrecisionType &discountRate) -> void {
+
+  valueFunction[keyCurrent].value =
+      valueFunction.valueAt(keyCurrent) +
+      temporal_differenc_error(valueFunction.valueAt(keyCurrent), valueFunction.valueAt(keyNext), reward, discountRate);
+  valueFunction[keyCurrent].step++;
+}
+
+template <typename CRTP, policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T>
+auto TDValueUpdaterBase<CRTP, VALUE_FUNCTION_T>::update(
+    VALUE_FUNCTION_T &valueFunction,
+    policy::isFinitePolicyValueFunctionMixin auto &policy,
+    policy::isFinitePolicyValueFunctionMixin auto &target_policy,
+    EnvironmentType &environment,
+    const ActionSpace &action,
+    const PrecisionType &discountRate) -> std::pair<bool, ActionSpace> {
+
+  const auto [isDone, nextAction, transition, reward] =
+      static_cast<CRTP *>(this)->step(valueFunction, policy, target_policy, environment, action, discountRate);
+
+  // Update the value function.
+  static_cast<CRTP *>(this)->updateValue(
+      valueFunction,
+      policy,
+      target_policy,
+      environment,
+      KeyMaker::make(environment, transition.state, transition.action),
+      KeyMaker::make(environment, transition.nextState, nextAction),
+      reward,
+      discountRate);
+
+  return {transition.isDone(), nextAction};
+}
 
 } // namespace temporal_difference
