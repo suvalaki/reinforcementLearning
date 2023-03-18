@@ -15,7 +15,8 @@ namespace action {
 
 using typename state::StateType;
 
-template <StateType STATE_T, spec::CompositeArraySpecType T = spec::CompositeArraySpec<>> struct Action : T::DataType {
+template <StateType STATE_T, spec::CompositeArraySpecType T = spec::CompositeArraySpec<>>
+struct Action : T::DataType {
   // using typename T::DataType;
   using SpecType = T;
   using StateType = STATE_T;

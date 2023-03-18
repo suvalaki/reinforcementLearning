@@ -14,7 +14,8 @@ concept Float = std::is_floating_point<T>::value;
 template <typename T>
 concept Number = std::is_arithmetic<T>::value;
 
-template <typename T, T MIN, T MAX, std::size_t... DIMS> struct BoundedAarraySpec {
+template <typename T, T MIN, T MAX, std::size_t... DIMS>
+struct BoundedAarraySpec {
 
   static_assert(std::is_arithmetic_v<T>, "T must be an arithmetic type");
 
@@ -56,7 +57,8 @@ concept isBoundedArraySpec = BoundedArraySpecType<T> && BoundedArraySpecProtocol
 template <typename T>
 concept EnumType = std::is_enum_v<T>;
 
-template <EnumType CHOICES, std::size_t NCHOICE, std::size_t... DIMS> struct CategoricalArraySpec {
+template <EnumType CHOICES, std::size_t NCHOICE, std::size_t... DIMS>
+struct CategoricalArraySpec {
   using ChoicesType = CHOICES;
   using Shape = xt::xshape<DIMS...>;
   using DataType = xt::xtensor_fixed<int, Shape>;
@@ -97,10 +99,17 @@ concept AnyArraySpecType = isBoundedArraySpec<T> || isCategoricalArraySpec<T>;
 template <typename... T>
 concept AllElementsAnyArraySpecType = (AnyArraySpecType<T> && ...);
 
-template <typename T> struct type_getter_bound { using type = T::ValueType; };
-template <typename T> struct type_getter_cat { using type = double; };
+template <typename T>
+struct type_getter_bound {
+  using type = T::ValueType;
+};
+template <typename T>
+struct type_getter_cat {
+  using type = double;
+};
 
-template <AllElementsAnyArraySpecType... T> struct CompositeArray : std::tuple<typename T::DataType...> {
+template <AllElementsAnyArraySpecType... T>
+struct CompositeArray : std::tuple<typename T::DataType...> {
   using tupleType = std::tuple<T...>;
   using tupleDataType = std::tuple<typename T::DataType...>;
   using tupleValueType = std::tuple<
@@ -138,7 +147,8 @@ template <AllElementsAnyArraySpecType... T> struct CompositeArray : std::tuple<t
   }
 };
 
-template <AllElementsAnyArraySpecType... T> struct CompositeArraySpec : std::tuple<T...> {
+template <AllElementsAnyArraySpecType... T>
+struct CompositeArraySpec : std::tuple<T...> {
   using tupleType = std::tuple<T...>;
   using DataType = CompositeArray<T...>;
   // If any of the subspecs isnt finite then the whole thing isnt finite
@@ -188,7 +198,8 @@ template <isCategoricalArraySpec T>
 requires isCategoricalArraySpec<T>
 typename T::DataType default_spec_gen() { return T::min * xt::ones<double>(T::shape); }
 
-template <CompositeArraySpecType T> typename T::DataType default_spec_gen() {
+template <CompositeArraySpecType T>
+typename T::DataType default_spec_gen() {
 
   // Tuple of the random types
   return []<std::size_t... N>(std::index_sequence<N...>) {
@@ -247,7 +258,8 @@ typename T::DataType > constant_spec_gen(const typename T::tupleValueType &value
 }
 
 // Turn spec into a tuple
-template <isBoundedArraySpec T> struct BoundedArray {
+template <isBoundedArraySpec T>
+struct BoundedArray {
   using SpecType = T;
   using typename SpecType::DataType;
   using ValueType = typename T::ValueType;

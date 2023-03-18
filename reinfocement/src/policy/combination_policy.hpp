@@ -6,7 +6,8 @@
 namespace policy {
 
 /// @brief A base template interface for use in defining different types of combinations of policies.
-template <implementsPolicy... POLICY_T> struct PolicyCombination {
+template <implementsPolicy... POLICY_T>
+struct PolicyCombination {
 
   using PolicyTypes = std::tuple<POLICY_T...>;
   SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(std::tuple_element_t<0, PolicyTypes>::EnvironmentType));

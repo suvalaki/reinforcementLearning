@@ -37,12 +37,13 @@ struct WeightedImportanceSamplingUpdate
   }
 
   template <policy::isFinitePolicyValueFunctionMixin POLICY_T0, policy::isFinitePolicyValueFunctionMixin POLICY_T1>
-  void updateValue(VALUE_FUNCTION_T &valueFunction,
-                   POLICY_T0 &policy,
-                   POLICY_T1 &target_policy,
-                   typename VALUE_FUNCTION_T::EnvironmentType &environment,
-                   const StateType &state,
-                   const ActionSpace &action) {
+  void updateValue(
+      VALUE_FUNCTION_T &valueFunction,
+      POLICY_T0 &policy,
+      POLICY_T1 &target_policy,
+      typename VALUE_FUNCTION_T::EnvironmentType &environment,
+      const StateType &state,
+      const ActionSpace &action) {
     const auto key = KeyMaker::make(environment, state, action);
     valueFunction[key].value = getWeightedReturn(key);
     valueFunction[key].step = this->returns[key].size();
@@ -70,13 +71,14 @@ struct WeightedImportanceSamplingIncrementalUpdate
   ReturnsMap returns;
 
   template <policy::isFinitePolicyValueFunctionMixin POLICY_T0, policy::isFinitePolicyValueFunctionMixin POLICY_T1>
-  void updateReturns(VALUE_FUNCTION_T &valueFunction,
-                     POLICY_T0 &policy,
-                     POLICY_T1 &target_policy,
-                     typename VALUE_FUNCTION_T::EnvironmentType &environment,
-                     const StateType &state,
-                     const ActionSpace &action,
-                     const typename VALUE_FUNCTION_T::PrecisionType &discountedReturns) {
+  void updateReturns(
+      VALUE_FUNCTION_T &valueFunction,
+      POLICY_T0 &policy,
+      POLICY_T1 &target_policy,
+      typename VALUE_FUNCTION_T::EnvironmentType &environment,
+      const StateType &state,
+      const ActionSpace &action,
+      const typename VALUE_FUNCTION_T::PrecisionType &discountedReturns) {
     const auto key = KeyMaker::make(environment, state, action);
 
     const auto importanceRatio = target_policy.importanceSamplingRatio(environment, state, action, policy);
@@ -96,12 +98,13 @@ struct WeightedImportanceSamplingIncrementalUpdate
   }
 
   template <policy::isFinitePolicyValueFunctionMixin POLICY_T0, policy::isFinitePolicyValueFunctionMixin POLICY_T1>
-  void updateValue(VALUE_FUNCTION_T &valueFunction,
-                   POLICY_T0 &policy,
-                   POLICY_T1 &target_policy,
-                   typename VALUE_FUNCTION_T::EnvironmentType &environment,
-                   const StateType &state,
-                   const ActionSpace &action) {
+  void updateValue(
+      VALUE_FUNCTION_T &valueFunction,
+      POLICY_T0 &policy,
+      POLICY_T1 &target_policy,
+      typename VALUE_FUNCTION_T::EnvironmentType &environment,
+      const StateType &state,
+      const ActionSpace &action) {
     const auto key = KeyMaker::make(environment, state, action);
     valueFunction[key].value = returns[key].averageWeightedReturn;
     valueFunction[key].step++;

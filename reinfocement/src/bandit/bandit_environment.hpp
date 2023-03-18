@@ -13,7 +13,8 @@
 
 namespace bandit {
 
-template <std::size_t N_BANDITS> struct BanditState : environment::State<float> {
+template <std::size_t N_BANDITS>
+struct BanditState : environment::State<float> {
 
   using BaseType = environment::State<float>;
   using typename BaseType::PrecisionType;
@@ -23,16 +24,18 @@ template <std::size_t N_BANDITS> struct BanditState : environment::State<float> 
   std::array<float, N_BANDITS> hiddenBanditStd;
   std::array<float, N_BANDITS> observableBanditSample;
 
-  BanditState(std::minstd_rand &engine,
-              const std::array<float, N_BANDITS> &hiddenBanditMeans,
-              const std::array<float, N_BANDITS> &hiddenBanditStd,
-              const std::array<float, N_BANDITS> &observableBanditSample)
+  BanditState(
+      std::minstd_rand &engine,
+      const std::array<float, N_BANDITS> &hiddenBanditMeans,
+      const std::array<float, N_BANDITS> &hiddenBanditStd,
+      const std::array<float, N_BANDITS> &observableBanditSample)
       : BaseType(), hiddenRandomEngine(engine), hiddenBanditMeans(hiddenBanditMeans), hiddenBanditStd(hiddenBanditStd),
         observableBanditSample(observableBanditSample) {}
 
-  BanditState static nullFactory(std::minstd_rand &engine,
-                                 const std::array<float, N_BANDITS> &hiddenBanditMeans,
-                                 const std::array<float, N_BANDITS> &hiddenBanditStd) {
+  BanditState static nullFactory(
+      std::minstd_rand &engine,
+      const std::array<float, N_BANDITS> &hiddenBanditMeans,
+      const std::array<float, N_BANDITS> &hiddenBanditStd) {
     return BanditState{engine, hiddenBanditMeans, hiddenBanditStd, {0}};
   }
 
@@ -79,9 +82,10 @@ struct BanditAction : action::Action<BanditState<N_BANDITS>, BanditActionSpec<N_
 
   // std::array<bool, N_BANDITS> banditChoice;
 
-  std::array<float, N_BANDITS> sample(std::minstd_rand &engine,
-                                      const std::array<float, N_BANDITS> &hiddenBanditMeans,
-                                      const std::array<float, N_BANDITS> &hiddenBanditStd) const {
+  std::array<float, N_BANDITS> sample(
+      std::minstd_rand &engine,
+      const std::array<float, N_BANDITS> &hiddenBanditMeans,
+      const std::array<float, N_BANDITS> &hiddenBanditStd) const {
     std::array<float, N_BANDITS> samples;
     for (std::size_t i = 0; i < N_BANDITS; i++) {
       // if (banditChoice[i]) {
@@ -94,10 +98,11 @@ struct BanditAction : action::Action<BanditState<N_BANDITS>, BanditActionSpec<N_
   }
 
   StateType step(const StateType &state) const override {
-    return StateType{state.hiddenRandomEngine,
-                     state.hiddenBanditMeans,
-                     state.hiddenBanditStd,
-                     this->sample(state.hiddenRandomEngine, state.hiddenBanditMeans, state.hiddenBanditStd)};
+    return StateType{
+        state.hiddenRandomEngine,
+        state.hiddenBanditMeans,
+        state.hiddenBanditStd,
+        this->sample(state.hiddenRandomEngine, state.hiddenBanditMeans, state.hiddenBanditStd)};
   }
 
   friend std::ostream &operator<<(std::ostream &os, const BanditAction &b) {
@@ -106,7 +111,8 @@ struct BanditAction : action::Action<BanditState<N_BANDITS>, BanditActionSpec<N_
   }
 };
 
-template <std::size_t N_BANDITS> struct BanditStep : environment::Step<BanditAction<N_BANDITS>> {
+template <std::size_t N_BANDITS>
+struct BanditStep : environment::Step<BanditAction<N_BANDITS>> {
   using BaseType = environment::Step<BanditAction<N_BANDITS>>;
   using typename BaseType::ActionSpace;
   using typename BaseType::PrecisionType;
@@ -118,8 +124,9 @@ template <std::size_t N_BANDITS> struct BanditStep : environment::Step<BanditAct
 template <std::size_t N_BANDITS, environment::RewardType REWARD_T, environment::ReturnType RETURN_T>
 struct BanditEnvironment : environment::FiniteEnvironment<BanditStep<N_BANDITS>, REWARD_T, RETURN_T> {
 
-  SETUP_TYPES_W_ENVIRON(SINGLE_ARG(environment::FiniteEnvironment<BanditStep<N_BANDITS>, REWARD_T, RETURN_T>),
-                        SINGLE_ARG(BanditEnvironment<N_BANDITS, REWARD_T, RETURN_T>));
+  SETUP_TYPES_W_ENVIRON(
+      SINGLE_ARG(environment::FiniteEnvironment<BanditStep<N_BANDITS>, REWARD_T, RETURN_T>),
+      SINGLE_ARG(BanditEnvironment<N_BANDITS, REWARD_T, RETURN_T>));
 
   constexpr static std::size_t N = N_BANDITS;
 
@@ -129,11 +136,12 @@ struct BanditEnvironment : environment::FiniteEnvironment<BanditStep<N_BANDITS>,
   std::array<PrecisionType, N_BANDITS> means;
   std::array<PrecisionType, N_BANDITS> stddevs;
 
-  BanditEnvironment(std::minstd_rand &engine,
-                    PrecisionType prior_mu_ave = 0,
-                    PrecisionType prior_mu_stddev = 1,
-                    PrecisionType prior_var_ave = 0,
-                    PrecisionType prior_var_stddev = 1)
+  BanditEnvironment(
+      std::minstd_rand &engine,
+      PrecisionType prior_mu_ave = 0,
+      PrecisionType prior_mu_stddev = 1,
+      PrecisionType prior_var_ave = 0,
+      PrecisionType prior_var_stddev = 1)
       : engine(engine), prior_mu(prior_mu_ave, prior_mu_stddev), prior_var(prior_var_ave, prior_var_stddev),
         BaseType(StateType::nullFactory(engine, means, stddevs)) {
     reset();

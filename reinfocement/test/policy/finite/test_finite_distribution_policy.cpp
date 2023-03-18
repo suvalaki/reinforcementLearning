@@ -65,7 +65,8 @@ TEST_CASE("FiniteDistributionPolicy", "[policy][finite][distribution]") {
 
   // size of probabilities should be the size of available actions
   for (int i = 0; i < 5; i++) {
-    CHECK(policy.getProbabilities(env, env.stateFromIndex(i)).size() ==
-          env.getReachableActions(env.stateFromIndex(i)).size());
+    CHECK(
+        policy.getProbabilities(env, env.stateFromIndex(i)).size() ==
+        env.getReachableActions(env.stateFromIndex(i)).size());
   }
 }

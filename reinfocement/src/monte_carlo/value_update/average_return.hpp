@@ -28,13 +28,14 @@ struct NiaveAverageReturnsUpdate : ValueUpdaterBase<NiaveAverageReturnsUpdate<VA
 
   ReturnsMap returns;
 
-  void updateReturns(VALUE_FUNCTION_T &valueFunction,
-                     policy::isFinitePolicyValueFunctionMixin auto &policy,
-                     policy::isFinitePolicyValueFunctionMixin auto &target_policy,
-                     typename VALUE_FUNCTION_T::EnvironmentType &environment,
-                     const StateType &state,
-                     const ActionSpace &action,
-                     const typename VALUE_FUNCTION_T::PrecisionType &discountedReturn) {
+  void updateReturns(
+      VALUE_FUNCTION_T &valueFunction,
+      policy::isFinitePolicyValueFunctionMixin auto &policy,
+      policy::isFinitePolicyValueFunctionMixin auto &target_policy,
+      typename VALUE_FUNCTION_T::EnvironmentType &environment,
+      const StateType &state,
+      const ActionSpace &action,
+      const typename VALUE_FUNCTION_T::PrecisionType &discountedReturn) {
     const auto key = KeyMaker::make(environment, state, action);
     returns[key].emplace_back(discountedReturn);
   }
@@ -48,12 +49,13 @@ struct NiaveAverageReturnsUpdate : ValueUpdaterBase<NiaveAverageReturnsUpdate<VA
     return sum / ret.size();
   }
 
-  void updateValue(VALUE_FUNCTION_T &valueFunction,
-                   policy::isFinitePolicyValueFunctionMixin auto &policy,
-                   policy::isFinitePolicyValueFunctionMixin auto &target_policy,
-                   typename VALUE_FUNCTION_T::EnvironmentType &environment,
-                   const StateType &state,
-                   const ActionSpace &action) {
+  void updateValue(
+      VALUE_FUNCTION_T &valueFunction,
+      policy::isFinitePolicyValueFunctionMixin auto &policy,
+      policy::isFinitePolicyValueFunctionMixin auto &target_policy,
+      typename VALUE_FUNCTION_T::EnvironmentType &environment,
+      const StateType &state,
+      const ActionSpace &action) {
     const auto key = KeyMaker::make(environment, state, action);
     valueFunction[key].value = getAverageReturn(key);
     valueFunction[key].step = returns[key].size();
@@ -78,25 +80,27 @@ struct NiaveAverageReturnsIncrementalUpdate
 
   ReturnsMap returns;
 
-  void updateReturns(VALUE_FUNCTION_T &valueFunction,
-                     policy::isFinitePolicyValueFunctionMixin auto &policy,
-                     policy::isFinitePolicyValueFunctionMixin auto &target_policy,
-                     typename VALUE_FUNCTION_T::EnvironmentType &environment,
-                     const StateType &state,
-                     const ActionSpace &action,
-                     const typename VALUE_FUNCTION_T::PrecisionType &discountedReturns) {
+  void updateReturns(
+      VALUE_FUNCTION_T &valueFunction,
+      policy::isFinitePolicyValueFunctionMixin auto &policy,
+      policy::isFinitePolicyValueFunctionMixin auto &target_policy,
+      typename VALUE_FUNCTION_T::EnvironmentType &environment,
+      const StateType &state,
+      const ActionSpace &action,
+      const typename VALUE_FUNCTION_T::PrecisionType &discountedReturns) {
     const auto key = KeyMaker::make(environment, state, action);
     returns[key].averageReturn =
         (returns[key].averageReturn * returns[key].n + discountedReturns) / (returns[key].n + 1);
     returns[key].n++;
   }
 
-  void updateValue(VALUE_FUNCTION_T &valueFunction,
-                   policy::isFinitePolicyValueFunctionMixin auto &policy,
-                   policy::isFinitePolicyValueFunctionMixin auto &target_policy,
-                   typename VALUE_FUNCTION_T::EnvironmentType &environment,
-                   const StateType &state,
-                   const ActionSpace &action) {
+  void updateValue(
+      VALUE_FUNCTION_T &valueFunction,
+      policy::isFinitePolicyValueFunctionMixin auto &policy,
+      policy::isFinitePolicyValueFunctionMixin auto &target_policy,
+      typename VALUE_FUNCTION_T::EnvironmentType &environment,
+      const StateType &state,
+      const ActionSpace &action) {
     const auto key = KeyMaker::make(environment, state, action);
     valueFunction[key].value = returns[key].averageReturn;
     valueFunction[key].step++;

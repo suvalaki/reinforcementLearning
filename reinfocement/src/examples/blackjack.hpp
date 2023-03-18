@@ -99,8 +99,9 @@ using BlackjackStep = environment::Step<BlackjackAction>;
 
 struct BlackjackReward : reward::Reward<BlackjackAction> {
 
-  static int bestPossibleScore(const typename BlackjackPlayerStateSpec::DataType &handState,
-                               const typename BlackjackHasAceSpec::DataType &hasAce) {
+  static int bestPossibleScore(
+      const typename BlackjackPlayerStateSpec::DataType &handState,
+      const typename BlackjackHasAceSpec::DataType &hasAce) {
     auto handVal = handState.at(0);
     if (hasAce.at(0) == 1) {
       if (handVal + 10 <= 21) {
@@ -140,8 +141,8 @@ constexpr auto nActions = 2;
 template <environment::RewardType REWARD_T, environment::ReturnType RETURN_T>
 struct BlackjackEnvironment : environment::FiniteEnvironment<BlackjackStep, REWARD_T, RETURN_T> {
 
-  SETUP_TYPES_W_ENVIRON(SINGLE_ARG(environment::Environment<BlackjackStep, REWARD_T, RETURN_T>),
-                        SINGLE_ARG(BlackjackEnvironment));
+  SETUP_TYPES_W_ENVIRON(
+      SINGLE_ARG(environment::Environment<BlackjackStep, REWARD_T, RETURN_T>), SINGLE_ARG(BlackjackEnvironment));
 
   // init random device
   std::random_device rd;

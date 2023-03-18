@@ -19,8 +19,9 @@ namespace policy {
 // implicit in the epsilon selection criteria.
 
 template <implementsPolicy EXPLORE_POLICY, implementsPolicy EXPLOIT_POLICY, class E = xt::random::default_engine_type>
-requires(std::is_same_v<typename EXPLORE_POLICY::EnvironmentType,
-                        typename EXPLOIT_POLICY::EnvironmentType>) struct EpsilonSoftPolicy
+requires(std::is_same_v<
+         typename EXPLORE_POLICY::EnvironmentType,
+         typename EXPLOIT_POLICY::EnvironmentType>) struct EpsilonSoftPolicy
     : EXPLOIT_POLICY,
       virtual PolicyDistributionMixin<typename EXPLORE_POLICY::EnvironmentType> {
 
@@ -33,10 +34,11 @@ requires(std::is_same_v<typename EXPLORE_POLICY::EnvironmentType,
   PrecisionType epsilon = 0.1;
   EngineType &engine;
 
-  EpsilonSoftPolicy(const ExploreType &explorePolicy,
-                    const ExploitType &exploitPolicy,
-                    PrecisionType epsilon = 0.1,
-                    E &engine = xt::random::get_default_random_engine())
+  EpsilonSoftPolicy(
+      const ExploreType &explorePolicy,
+      const ExploitType &exploitPolicy,
+      PrecisionType epsilon = 0.1,
+      E &engine = xt::random::get_default_random_engine())
       : EXPLOIT_POLICY(exploitPolicy), explorePolicy(explorePolicy), epsilon(epsilon), engine(engine) {}
 
   ActionSpace explore(const EnvironmentType &e, const StateType &s) const;

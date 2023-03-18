@@ -12,10 +12,8 @@ using namespace monte_carlo;
 struct MockPolicyWithFixedRatio : CoinDistributionPolicy {
   using Base = CoinDistributionPolicy;
   using Base::Base;
-  PrecisionType importanceSamplingRatio(const EnvironmentType &environment,
-                                        const StateType &state,
-                                        const ActionSpace &action,
-                                        const Base &other) const {
+  PrecisionType importanceSamplingRatio(
+      const EnvironmentType &environment, const StateType &state, const ActionSpace &action, const Base &other) const {
     return 2;
   }
 };

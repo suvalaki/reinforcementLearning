@@ -17,16 +17,18 @@ TEST_CASE("temporal_difference::QLearningUpdater") {
   // auto returns = monte_carlo::n_visit_returns_initialisation(valueFunction, environ);
   auto updater = QLearningUpdater<std::decay_t<decltype(valueFunction)>>();
   updater.initialize(environ, valueFunction);
-  updater.update(valueFunction,
-                 policySA,
-                 policySA, // This does nothing under this updater. Because this updater is on-policy
-                 environ,
-                 a0,
-                 0.5F // discount rate
+  updater.update(
+      valueFunction,
+      policySA,
+      policySA, // This does nothing under this updater. Because this updater is on-policy
+      environ,
+      a0,
+      0.5F // discount rate
   );
 
   // Values all start at zero. After the reset we start at state s0. we can only have updated s0 so far...
   // We know the reward is 1.0 no matter the action or next state. So the value update is defined by:
-  CHECK(((valueFunction.valueAt(decltype(updater)::KeyMaker::make(environ, s0, a0)) != Approx(0.0)) or
-         (valueFunction.valueAt(decltype(updater)::KeyMaker::make(environ, s0, a1)) != Approx(0.0))));
+  CHECK(
+      ((valueFunction.valueAt(decltype(updater)::KeyMaker::make(environ, s0, a0)) != Approx(0.0)) or
+       (valueFunction.valueAt(decltype(updater)::KeyMaker::make(environ, s0, a1)) != Approx(0.0))));
 }

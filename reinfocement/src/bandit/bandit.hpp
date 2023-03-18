@@ -9,7 +9,8 @@
 /** @brief Base class for a single random bandit
  *
  */
-template <class TYPE_T> class Bandit {
+template <class TYPE_T>
+class Bandit {
 public:
   virtual TYPE_T sample(std::minstd_rand &engine) { return static_cast<TYPE_T>(NULL); };
   virtual TYPE_T value() { return qA; }
@@ -18,7 +19,8 @@ private:
   TYPE_T qA;
 };
 
-template <typename TYPE_T> class MultiArmedBandit {
+template <typename TYPE_T>
+class MultiArmedBandit {
 public:
   Bandit<TYPE_T> &getBandit(size_t i) { return &bandits[i]; };
   std::size_t getBestBanditIdx() {
@@ -39,7 +41,8 @@ private:
   std::size_t n_bandits;
 };
 
-template <class TYPE_T> class NormalBandit : public Bandit<TYPE_T> {
+template <class TYPE_T>
+class NormalBandit : public Bandit<TYPE_T> {
 
 public:
   NormalBandit(TYPE_T avg = 0, TYPE_T stddev = 1) : qA(avg), avg(avg), stddev(stddev), distribution(avg, stddev){};
@@ -64,15 +67,17 @@ private:
   TYPE_T min = 0;
 };
 
-template <typename TYPE_T> class NormalPriorNormalMultiArmedBandit : public MultiArmedBandit<TYPE_T> {
+template <typename TYPE_T>
+class NormalPriorNormalMultiArmedBandit : public MultiArmedBandit<TYPE_T> {
 public:
   NormalPriorNormalMultiArmedBandit() = default;
-  NormalPriorNormalMultiArmedBandit(std::size_t n_bandits,
-                                    std::minstd_rand &engine,
-                                    TYPE_T prior_mu_ave = 0,
-                                    TYPE_T prior_mu_stddev = 1,
-                                    TYPE_T prior_var_ave = 0,
-                                    TYPE_T prior_var_stddev = 1)
+  NormalPriorNormalMultiArmedBandit(
+      std::size_t n_bandits,
+      std::minstd_rand &engine,
+      TYPE_T prior_mu_ave = 0,
+      TYPE_T prior_mu_stddev = 1,
+      TYPE_T prior_var_ave = 0,
+      TYPE_T prior_var_stddev = 1)
       : n_bandits(n_bandits) {
     this->bandits.reserve(n_bandits);
 

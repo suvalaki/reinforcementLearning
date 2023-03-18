@@ -16,7 +16,8 @@ using step::Step;
 // Terminal transitions precipitate a reset of the environment
 enum class TransitionKind { NON_TERMINAL, TERMINAL };
 
-template <ActionType ACTION0> struct Transition {
+template <ActionType ACTION0>
+struct Transition {
   using StateType = typename ACTION0::StateType;
   using PrecisionType = typename StateType::PrecisionType;
   using ActionSpace = ACTION0;

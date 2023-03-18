@@ -14,9 +14,10 @@ concept isValueFunctionKeymaker = requires(T t) {
   typename T::KeyType;
   typename T::Hash;
   {
-    T::make(std::declval<typename T::EnvironmentType>(),
-            std::declval<typename T::StateType>(),
-            std::declval<typename T::ActionSpace>())
+    T::make(
+        std::declval<typename T::EnvironmentType>(),
+        std::declval<typename T::StateType>(),
+        std::declval<typename T::ActionSpace>())
     } -> std::same_as<typename T::KeyType>;
   {
     T::get_action_from_key(std::declval<typename T::EnvironmentType>(), std::declval<typename T::KeyType>())
@@ -24,12 +25,14 @@ concept isValueFunctionKeymaker = requires(T t) {
   { T::hash(std::declval<typename T::KeyType>()) } -> std::same_as<std::size_t>;
 };
 
-template <typename T> struct HashBuilder {
+template <typename T>
+struct HashBuilder {
   std::size_t operator()(const typename T::KeyType &key) const { return T::hash(key); }
 };
 
 // Interface
-template <environment::EnvironmentType ENVIRON_T, typename KEY_T> struct ValueFunctionKeymaker {
+template <environment::EnvironmentType ENVIRON_T, typename KEY_T>
+struct ValueFunctionKeymaker {
 
   SETUP_TYPES_FROM_ENVIRON(SINGLE_ARG(ENVIRON_T));
 
@@ -44,9 +47,9 @@ template <environment::EnvironmentType ENVIRON_T, typename KEY_T> struct ValueFu
 };
 
 template <template <typename, typename> class C>
-concept isValueFunctionKeymakerTemplate =
-    std::is_base_of_v<ValueFunctionKeymaker<environment::dummy::DummyEnvironment, void>,
-                      C<environment::dummy::DummyEnvironment, void>>;
+concept isValueFunctionKeymakerTemplate = std::is_base_of_v<
+    ValueFunctionKeymaker<environment::dummy::DummyEnvironment, void>,
+    C<environment::dummy::DummyEnvironment, void>>;
 
 #define SETUP_KEYMAKER_TYPES(BASE_T)                                                                                   \
   SETUP_TYPES(SINGLE_ARG(BASE_T))                                                                                      \
@@ -107,7 +110,8 @@ struct StateKeymaker : ValueFunctionKeymaker<ENVIRON_T, typename ENVIRON_T::Stat
 };
 
 // Helper to print the default key type
-template <typename T0, typename T1> std::ostream &operator<<(std::ostream &os, const std::pair<T0, T1> &p) {
+template <typename T0, typename T1>
+std::ostream &operator<<(std::ostream &os, const std::pair<T0, T1> &p) {
   os << "(" << p.first << ", " << p.second << ")";
   return os;
 }

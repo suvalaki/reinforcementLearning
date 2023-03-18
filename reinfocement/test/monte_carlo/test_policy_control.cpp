@@ -30,10 +30,11 @@ TEST_CASE("monte_carlo::monte_carlo_on_policy_first_visit_control_with_exploring
     monte_carlo::monte_carlo_on_policy_first_visit_control_with_exploring_starts<10>(greedyPolicy, environ, 15);
 
     // No garuntee that the stat action pair is selected, but at least one should be.
-    auto values = std::vector<float>{greedyPolicy[{s0, a0}].value,
-                                     greedyPolicy[{s1, a0}].value,
-                                     greedyPolicy[{s0, a1}].value,
-                                     greedyPolicy[{s1, a1}].value};
+    auto values = std::vector<float>{
+        greedyPolicy[{s0, a0}].value,
+        greedyPolicy[{s1, a0}].value,
+        greedyPolicy[{s0, a1}].value,
+        greedyPolicy[{s1, a1}].value};
     CHECK(std::any_of(values.begin(), values.end(), [](auto v) { return v != Approx(0.0); }));
 
     auto randomPolicy = RandomCoinPolicy();
@@ -51,10 +52,11 @@ TEST_CASE("monte_carlo::monte_carlo_on_policy_first_visit_control_with_exploring
     // Prior to running the policy the estimates are all zero.
     monte_carlo::monte_carlo_on_policy_first_visit_control_with_exploring_starts<10>(epsGreedyPolicy, environ, 50);
 
-    auto valuesEps = std::vector<float>{epsGreedyPolicy[{s0, a0}].value,
-                                        epsGreedyPolicy[{s1, a0}].value,
-                                        epsGreedyPolicy[{s0, a1}].value,
-                                        epsGreedyPolicy[{s1, a1}].value};
+    auto valuesEps = std::vector<float>{
+        epsGreedyPolicy[{s0, a0}].value,
+        epsGreedyPolicy[{s1, a0}].value,
+        epsGreedyPolicy[{s0, a1}].value,
+        epsGreedyPolicy[{s1, a1}].value};
     CHECK(std::any_of(valuesEps.begin(), valuesEps.end(), [](auto v) { return v != Approx(0.0); }));
   }
 
@@ -81,10 +83,11 @@ TEST_CASE("monte_carlo::monte_carlo_on_policy_first_visit_control_with_exploring
           environ,
           5);
 
-      auto values = std::vector<float>{greedyPolicy[{s0, a0}].value,
-                                       greedyPolicy[{s1, a0}].value,
-                                       greedyPolicy[{s0, a1}].value,
-                                       greedyPolicy[{s1, a1}].value};
+      auto values = std::vector<float>{
+          greedyPolicy[{s0, a0}].value,
+          greedyPolicy[{s1, a0}].value,
+          greedyPolicy[{s0, a1}].value,
+          greedyPolicy[{s1, a1}].value};
       CHECK(std::any_of(values.begin(), values.end(), [](auto v) { return v != Approx(0.0); }));
     }
 
@@ -97,10 +100,11 @@ TEST_CASE("monte_carlo::monte_carlo_on_policy_first_visit_control_with_exploring
       monte_carlo::monte_carlo_off_policy_importance_sampling_every_visit_control_with_exploring_starts<10>(
           epsGreedyPolicy, greedyPolicy, environ, 5);
 
-      auto values = std::vector<float>{greedyPolicy[{s0, a0}].value,
-                                       greedyPolicy[{s1, a0}].value,
-                                       greedyPolicy[{s0, a1}].value,
-                                       greedyPolicy[{s1, a1}].value};
+      auto values = std::vector<float>{
+          greedyPolicy[{s0, a0}].value,
+          greedyPolicy[{s1, a0}].value,
+          greedyPolicy[{s0, a1}].value,
+          greedyPolicy[{s1, a1}].value};
       CHECK(std::any_of(values.begin(), values.end(), [](auto v) { return v != Approx(0.0); }));
     }
   }

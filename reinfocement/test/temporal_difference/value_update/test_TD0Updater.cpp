@@ -17,12 +17,13 @@ TEST_CASE("temporal_difference::TD0Updater") {
   // auto returns = monte_carlo::n_visit_returns_initialisation(valueFunction, environ);
   auto updater = TD0Updater<std::decay_t<decltype(valueFunction)>>();
   updater.initialize(environ, valueFunction);
-  updater.update(valueFunction,
-                 policySA,
-                 policySA, // This does nothing under this updater. Because this updater is on-policy
-                 environ,
-                 a0,
-                 0.5F // discount rate
+  updater.update(
+      valueFunction,
+      policySA,
+      policySA, // This does nothing under this updater. Because this updater is on-policy
+      environ,
+      a0,
+      0.5F // discount rate
   );
 
   // Values all start at zero. After the reset we start at state s0. we can only have updated s0 so far...

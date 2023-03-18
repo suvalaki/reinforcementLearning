@@ -11,9 +11,8 @@ namespace monte_carlo {
 
 // Monte carlo constrol is about maximusing average(Return(s,a)) over all states and actions under pi.
 template <std::size_t episode_size, policy::implementsFiniteValuePolicy POLICY_T>
-void monte_carlo_on_policy_first_visit_control_with_exploring_starts(POLICY_T &policy,
-                                                                     typename POLICY_T::EnvironmentType &environment,
-                                                                     std::size_t episodes) {
+void monte_carlo_on_policy_first_visit_control_with_exploring_starts(
+    POLICY_T &policy, typename POLICY_T::EnvironmentType &environment, std::size_t episodes) {
 
   using PolicyType = POLICY_T;
   using EnvironmentType = typename POLICY_T::EnvironmentType;
@@ -32,9 +31,8 @@ void monte_carlo_on_policy_first_visit_control_with_exploring_starts(POLICY_T &p
 }
 
 template <std::size_t episode_size, policy::implementsFiniteValuePolicy POLICY_T>
-void monte_carlo_on_policy_every_visit_control_with_exploring_starts(POLICY_T &policy,
-                                                                     typename POLICY_T::EnvironmentType &environment,
-                                                                     std::size_t episodes) {
+void monte_carlo_on_policy_every_visit_control_with_exploring_starts(
+    POLICY_T &policy, typename POLICY_T::EnvironmentType &environment, std::size_t episodes) {
 
   using PolicyType = POLICY_T;
   using EnvironmentType = typename POLICY_T::EnvironmentType;
@@ -42,9 +40,10 @@ void monte_carlo_on_policy_every_visit_control_with_exploring_starts(POLICY_T &p
   every_visit_valueEstimate<episode_size>(policy, environment, policy, policy, episodes, episodeGenerator);
 }
 
-template <std::size_t episode_size,
-          policy::isFinitePolicyValueFunctionMixin POLICY_T0,
-          policy::isFinitePolicyValueFunctionMixin POLICY_T1>
+template <
+    std::size_t episode_size,
+    policy::isFinitePolicyValueFunctionMixin POLICY_T0,
+    policy::isFinitePolicyValueFunctionMixin POLICY_T1>
 void monte_carlo_off_policy_importance_sampling_first_visit_control_with_exploring_starts(
     POLICY_T0 &control_policy,
     POLICY_T1 &target_policy,
@@ -59,9 +58,10 @@ void monte_carlo_off_policy_importance_sampling_first_visit_control_with_explori
       target_policy, environment, control_policy, target_policy, episodes, episodeGenerator);
 }
 
-template <std::size_t episode_size,
-          policy::implementsFiniteValuePolicy POLICY_T0,
-          policy::implementsFiniteValuePolicy POLICY_T1>
+template <
+    std::size_t episode_size,
+    policy::implementsFiniteValuePolicy POLICY_T0,
+    policy::implementsFiniteValuePolicy POLICY_T1>
 void monte_carlo_off_policy_importance_sampling_every_visit_control_with_exploring_starts(
     POLICY_T0 &control_policy,
     POLICY_T1 &target_policy,

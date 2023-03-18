@@ -38,10 +38,10 @@ namespace markov_decision_process::value_iteration {
  * possible values.
  */
 template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T>
-typename VALUE_FUNCTION_T::PrecisionType
-value_iteration_policy_estimation_step(VALUE_FUNCTION_T &valueFunction,
-                                       const typename VALUE_FUNCTION_T::EnvironmentType &environment,
-                                       const typename VALUE_FUNCTION_T::StateType &state) {
+typename VALUE_FUNCTION_T::PrecisionType value_iteration_policy_estimation_step(
+    VALUE_FUNCTION_T &valueFunction,
+    const typename VALUE_FUNCTION_T::EnvironmentType &environment,
+    const typename VALUE_FUNCTION_T::StateType &state) {
 
   using EnvironmentType = typename VALUE_FUNCTION_T::EnvironmentType;
   using PrecisionType = typename EnvironmentType::PrecisionType;
@@ -72,9 +72,10 @@ value_iteration_policy_estimation_step(VALUE_FUNCTION_T &valueFunction,
  * epsilon.
  */
 template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T>
-void value_iteration_policy_estimation(VALUE_FUNCTION_T &valueFunction,
-                                       const typename VALUE_FUNCTION_T::EnvironmentType &environment,
-                                       const typename VALUE_FUNCTION_T::PrecisionType &epsilon) {
+void value_iteration_policy_estimation(
+    VALUE_FUNCTION_T &valueFunction,
+    const typename VALUE_FUNCTION_T::EnvironmentType &environment,
+    const typename VALUE_FUNCTION_T::PrecisionType &epsilon) {
 
   typename VALUE_FUNCTION_T::PrecisionType delta = 0.0F;
   // sweep over all states and update the value function. When finally no
@@ -100,10 +101,11 @@ void value_iteration_policy_estimation(VALUE_FUNCTION_T &valueFunction,
  * by its singlular update method and therefore this policy cannot change.
  */
 template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T, policy::isDistributionPolicy POLICY_T>
-void value_iteration(VALUE_FUNCTION_T &valueFunction,
-                     const typename VALUE_FUNCTION_T::EnvironmentType &environment,
-                     POLICY_T &policy,
-                     const typename VALUE_FUNCTION_T::PrecisionType &epsilon) {
+void value_iteration(
+    VALUE_FUNCTION_T &valueFunction,
+    const typename VALUE_FUNCTION_T::EnvironmentType &environment,
+    POLICY_T &policy,
+    const typename VALUE_FUNCTION_T::PrecisionType &epsilon) {
 
   // No loop for policy stability required here as is the case with policy
   // iteration.

@@ -5,7 +5,8 @@
 
 namespace fixtures {
 
-template <std::size_t N, std::size_t M> struct simple_environment_builder {
+template <std::size_t N, std::size_t M>
+struct simple_environment_builder {
 
   using StateType0 = state::State<float, spec::CompositeArraySpec<spec::BoundedAarraySpec<int, 0, N, 1>>>;
   using ActionType0 = action::Action<StateType0, spec::CompositeArraySpec<spec::BoundedAarraySpec<int, 0, M, 1>>>;
@@ -39,7 +40,8 @@ template <std::size_t N, std::size_t M> struct simple_environment_builder {
 template <std::size_t N, std::size_t M>
 using simple_environment_builder_t = typename simple_environment_builder<N, M>::type;
 
-template <std::size_t N, std::size_t M> struct simple_markov_environment_builder {
+template <std::size_t N, std::size_t M>
+struct simple_markov_environment_builder {
 
   using StateType0 = state::State<float, spec::CompositeArraySpec<spec::BoundedAarraySpec<int, 0, N, 1>>>;
   using ActionType0 = action::Action<StateType0, spec::CompositeArraySpec<spec::BoundedAarraySpec<int, 0, M, 1>>>;
@@ -60,9 +62,10 @@ template <std::size_t N, std::size_t M> struct simple_markov_environment_builder
           for (std::size_t k = 0; k < N; ++k) {
             if (k > i or j > i) //
               continue;
-            tm.emplace(TransitionType{StateType(i, {}), ActionSpace(j), StateType(k, {})},
-                       // Weighted distribtion by action index j / (i * sum j=0...M)
-                       static_cast<float>(j) / static_cast<float>(i * (M * (M - 1) / 2)));
+            tm.emplace(
+                TransitionType{StateType(i, {}), ActionSpace(j), StateType(k, {})},
+                // Weighted distribtion by action index j / (i * sum j=0...M)
+                static_cast<float>(j) / static_cast<float>(i * (M * (M - 1) / 2)));
           }
         }
       }
