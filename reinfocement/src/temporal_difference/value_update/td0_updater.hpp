@@ -17,13 +17,16 @@ struct TD0Updater : TDValueUpdaterBase<TD0Updater<VALUE_FUNCTION_T>, VALUE_FUNCT
 
   SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(VALUE_FUNCTION_T::EnvironmentType));
   using KeyMaker = typename VALUE_FUNCTION_T::KeyMaker;
+  using StatefulUpdateResult =
+      typename TDValueUpdaterBase<TD0Updater<VALUE_FUNCTION_T>, VALUE_FUNCTION_T>::StatefulUpdateResult;
 
-  std::pair<bool, ActionSpace> update(VALUE_FUNCTION_T &valueFunction,
-                                      policy::isFinitePolicyValueFunctionMixin auto &policy,
-                                      policy::isFinitePolicyValueFunctionMixin auto &target_policy,
-                                      EnvironmentType &environment,
-                                      const ActionSpace &action,
-                                      const PrecisionType &discountRate) {
+  StatefulUpdateResult step(
+      VALUE_FUNCTION_T &valueFunction,
+      policy::isFinitePolicyValueFunctionMixin auto &policy,
+      policy::isFinitePolicyValueFunctionMixin auto &target_policy,
+      EnvironmentType &environment,
+      const ActionSpace &action,
+      const PrecisionType &discountRate) {
 
     // Sample the next action from the behavior policy.
     const auto nextAction = policy(environment, environment.state);
@@ -33,15 +36,7 @@ struct TD0Updater : TDValueUpdaterBase<TD0Updater<VALUE_FUNCTION_T>, VALUE_FUNCT
     environment.update(transition);
     const auto reward = RewardType::reward(transition);
 
-    // Update the value function.
-    this->updateValue(valueFunction,
-                      environment,
-                      KeyMaker::make(environment, transition.state, transition.action),
-                      KeyMaker::make(environment, transition.nextState, nextAction),
-                      reward,
-                      discountRate);
-
-    return {transition.isDone(), nextAction};
+    return {transition.isDone(), nextAction, transition, reward};
   }
 };
 

@@ -29,7 +29,7 @@ struct DoubleQLearningUpdater : TDValueUpdaterBase<DoubleQLearningUpdater<VALUE_
 
   template <policy::isFinitePolicyValueFunctionMixin POLICY_T0, policy::isFinitePolicyValueFunctionMixin POLICY_T1>
   requires std::is_same_v<KeyType, typename POLICY_T0::KeyType>
-      std::tuple<bool, ActionSpace, TransitionType, PrecisionType> double_q_learning_step(
+      std::tuple<bool, ActionSpace, TransitionType, PrecisionType> step(
           VALUE_FUNCTION_T &valueFunction,
           POLICY_T0 &policy0,
           POLICY_T1 &policy1,
@@ -46,13 +46,16 @@ struct DoubleQLearningUpdater : TDValueUpdaterBase<DoubleQLearningUpdater<VALUE_
       const PrecisionType &discountRate);
 
   template <policy::isFinitePolicyValueFunctionMixin POLICY_T0, policy::isFinitePolicyValueFunctionMixin POLICY_T1>
-  requires std::is_same_v<KeyType, typename POLICY_T0::KeyType> std::pair<bool, ActionSpace> update(
+  requires std::is_same_v<KeyType, typename POLICY_T0::KeyType>
+  void updateValue(
       VALUE_FUNCTION_T &valueFunction,
-      POLICY_T0 &policy0,
-      POLICY_T1 &policy1,
-      EnvironmentType &environment,
-      const ActionSpace &action,
-      const PrecisionType &discountRate);
+      POLICY_T0 &policy,
+      POLICY_T1 &target_policy,
+      typename VALUE_FUNCTION_T::EnvironmentType &environment,
+      const typename VALUE_FUNCTION_T::KeyType &keyCurrent,
+      const typename VALUE_FUNCTION_T::KeyType &keyNext,
+      const typename VALUE_FUNCTION_T::PrecisionType &reward,
+      const typename VALUE_FUNCTION_T::PrecisionType &discountRate);
 };
 
 /**
@@ -64,7 +67,7 @@ struct DoubleQLearningUpdater : TDValueUpdaterBase<DoubleQLearningUpdater<VALUE_
 template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T, class E>
 template <policy::isFinitePolicyValueFunctionMixin POLICY_T0, policy::isFinitePolicyValueFunctionMixin POLICY_T1>
 requires std::is_same_v<typename VALUE_FUNCTION_T::KeyType, typename POLICY_T0::KeyType>
-auto DoubleQLearningUpdater<VALUE_FUNCTION_T, E>::double_q_learning_step(
+auto DoubleQLearningUpdater<VALUE_FUNCTION_T, E>::step(
     VALUE_FUNCTION_T &valueFunction,
     POLICY_T0 &policy0,
     POLICY_T1 &policy1,
@@ -154,26 +157,22 @@ void DoubleQLearningUpdater<VALUE_FUNCTION_T, E>::updatePolicy(
 template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T, class E>
 template <policy::isFinitePolicyValueFunctionMixin POLICY_T0, policy::isFinitePolicyValueFunctionMixin POLICY_T1>
 requires std::is_same_v<typename VALUE_FUNCTION_T::KeyType, typename POLICY_T0::KeyType>
-auto DoubleQLearningUpdater<VALUE_FUNCTION_T, E>::update(
+auto DoubleQLearningUpdater<VALUE_FUNCTION_T, E>::updateValue(
     VALUE_FUNCTION_T &valueFunction,
     POLICY_T0 &policy0,
     POLICY_T1 &policy1,
-    EnvironmentType &environment,
-    const ActionSpace &action,
-    const PrecisionType &discountRate) -> std::pair<bool, ActionSpace> {
-
-  const auto [isDone, nextAction, transition, reward] =
-      this->double_q_learning_step(valueFunction, policy0, policy1, environment, action, discountRate);
+    typename VALUE_FUNCTION_T::EnvironmentType &environment,
+    const typename VALUE_FUNCTION_T::KeyType &key,
+    const typename VALUE_FUNCTION_T::KeyType &keyNext,
+    const typename VALUE_FUNCTION_T::PrecisionType &reward,
+    const typename VALUE_FUNCTION_T::PrecisionType &discountRate) -> void {
 
   // with prob 0.5 update q1 using thegreedy action from q2 else update q2 using the greedy action from q1
-  const auto key = KeyMaker::make(environment, transition.state, transition.action);
   if (xt::random::rand<double>(xt::xshape<1>{}, 0, 1, this->engine)[0] < this->QPROB) {
     updatePolicy(environment, policy0, policy1, key, reward, discountRate);
   } else {
-    updatePolicy(environment, policy0, policy1, key, reward, discountRate);
+    updatePolicy(environment, policy1, policy0, key, reward, discountRate);
   }
-
-  return {transition.isDone(), nextAction};
 }
 
 } // namespace temporal_difference

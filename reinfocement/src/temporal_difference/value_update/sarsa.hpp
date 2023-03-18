@@ -14,15 +14,16 @@ struct SARSAUpdater : TDValueUpdaterBase<SARSAUpdater<VALUE_FUNCTION_T>, VALUE_F
 
   SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(VALUE_FUNCTION_T::EnvironmentType));
   using KeyMaker = typename VALUE_FUNCTION_T::KeyMaker;
+  using StatefulUpdateResult =
+      typename TDValueUpdaterBase<SARSAUpdater<VALUE_FUNCTION_T>, VALUE_FUNCTION_T>::StatefulUpdateResult;
 
-  template <policy::isFinitePolicyValueFunctionMixin POLICY_T0, policy::isFinitePolicyValueFunctionMixin POLICY_T1>
-  requires std::is_same_v<typename VALUE_FUNCTION_T::KeyType, typename POLICY_T0::KeyType> std::pair<bool, ActionSpace>
-  update(VALUE_FUNCTION_T &valueFunction,
-         POLICY_T0 &policy,
-         POLICY_T1 &target_policy,
-         EnvironmentType &environment,
-         const ActionSpace &action,
-         const PrecisionType &discountRate) {
+  StatefulUpdateResult step(
+      VALUE_FUNCTION_T &valueFunction,
+      policy::isFinitePolicyValueFunctionMixin auto &policy,
+      policy::isFinitePolicyValueFunctionMixin auto &target_policy,
+      EnvironmentType &environment,
+      const ActionSpace &action,
+      const PrecisionType &discountRate) {
 
     // Take Action - By stepping the environment automatically updates the state.
     const auto transition = environment.step(action);
@@ -32,15 +33,7 @@ struct SARSAUpdater : TDValueUpdaterBase<SARSAUpdater<VALUE_FUNCTION_T>, VALUE_F
     // Sample the next action from the behavior policy.
     const auto nextAction = policy(environment, environment.state);
 
-    // Update the value function.
-    this->updateValue(valueFunction,
-                      environment,
-                      KeyMaker::make(environment, transition.state, transition.action),
-                      KeyMaker::make(environment, transition.nextState, nextAction),
-                      reward,
-                      discountRate);
-
-    return {transition.isDone(), nextAction};
+    return {transition.isDone(), nextAction, transition, reward};
   }
 };
 
