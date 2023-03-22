@@ -5,90 +5,76 @@
 #include <utility>
 
 #include "policy/objectives/finite_value_function.hpp"
-#include "temporal_difference/value_update/td0_updater.hpp"
+#include "temporal_difference/value_update/value_update.hpp"
 
 namespace temporal_difference {
 
-template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T>
-requires policy::objectives::isStateActionKeymaker<typename VALUE_FUNCTION_T::KeyMaker>
-struct QLearningUpdater : TDValueUpdaterBase<QLearningUpdater<VALUE_FUNCTION_T>, VALUE_FUNCTION_T> {
+template <typename CRTP>
+struct QLearningStepMixin {
 
-  // This is SARSA when valueFunction == policy
+  SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(CRTP::EnvironmentType));
 
-  SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(VALUE_FUNCTION_T::EnvironmentType));
-  using KeyMaker = typename VALUE_FUNCTION_T::KeyMaker;
-  using StatefulUpdateResult =
-      typename TDValueUpdaterBase<QLearningUpdater<VALUE_FUNCTION_T>, VALUE_FUNCTION_T>::StatefulUpdateResult;
-
-  StatefulUpdateResult step(
-      VALUE_FUNCTION_T &valueFunction,
+  auto step(
+      typename CRTP::ValueFunctionType &valueFunction,
       policy::isFinitePolicyValueFunctionMixin auto &policy,
       policy::isFinitePolicyValueFunctionMixin auto &target_policy,
       EnvironmentType &environment,
       const ActionSpace &action,
-      const PrecisionType &discountRate);
+      const PrecisionType &discountRate) -> typename CRTP::StatefulUpdateResult {
 
-  void updateValue(
-      VALUE_FUNCTION_T &valueFunction,
-      policy::isFinitePolicyValueFunctionMixin auto &policy,
-      policy::isFinitePolicyValueFunctionMixin auto &target_policy,
-      typename VALUE_FUNCTION_T::EnvironmentType &environment,
-      const VALUE_FUNCTION_T::KeyType &keyCurrent,
-      const VALUE_FUNCTION_T::KeyType &keyNext,
-      const typename VALUE_FUNCTION_T::PrecisionType &reward,
-      const typename VALUE_FUNCTION_T::PrecisionType &discountRate);
+    // Take Action - By stepping the environment automatically updates the state.
+    // Sample the next action from the behavior policy.
+    const auto nextAction = policy(environment, environment.state);
+
+    // Take Action - By stepping the environment automatically updates the state.
+    const auto transition = environment.step(nextAction);
+    environment.update(transition);
+    const auto reward = RewardType::reward(transition);
+
+    return {transition.isDone(), action, transition, reward};
+  }
 };
 
-template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T>
-auto QLearningUpdater<VALUE_FUNCTION_T>::step(
-    VALUE_FUNCTION_T &valueFunction,
-    policy::isFinitePolicyValueFunctionMixin auto &policy,
-    policy::isFinitePolicyValueFunctionMixin auto &target_policy,
-    EnvironmentType &environment,
-    const ActionSpace &action,
-    const PrecisionType &discountRate) -> StatefulUpdateResult {
+template <typename CRTP>
+struct QLearningValueUpdateMixin {
 
-  // Take Action - By stepping the environment automatically updates the state.
-  // Sample the next action from the behavior policy.
-  const auto nextAction = policy(environment, environment.state);
+  SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(CRTP::EnvironmentType));
+  using KeyMaker = typename CRTP::KeyMaker;
+  using KeyType = typename CRTP::KeyType;
 
-  // Take Action - By stepping the environment automatically updates the state.
-  const auto transition = environment.step(nextAction);
-  environment.update(transition);
-  const auto reward = RewardType::reward(transition);
+  void updateValue(
+      typename CRTP::ValueFunctionType &valueFunction,
+      policy::isFinitePolicyValueFunctionMixin auto &policy,
+      policy::isFinitePolicyValueFunctionMixin auto &target_policy,
+      EnvironmentType &environment,
+      const KeyType &keyCurrent,
+      const KeyType &keyNext,
+      const PrecisionType &reward,
+      const PrecisionType &discountRate) {
 
-  return {transition.isDone(), action, transition, reward};
-}
+    // get the max value from the next state.
+    // This is the difference between SARSA and Q-Learning.
+    const auto reachableActions = environment.getReachableActions(environment.state);
+    const auto maxNextValue = std::accumulate(
+        reachableActions.begin(),
+        reachableActions.end(),
+        std::numeric_limits<PrecisionType>::lowest(),
+        [&](const auto &a, const auto &action) {
+          const auto val = valueFunction.valueAt(KeyMaker::make(environment, environment.state, action));
+          if (val > a)
+            return val;
+          return a;
+        });
 
-template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T>
-auto QLearningUpdater<VALUE_FUNCTION_T>::updateValue(
-    VALUE_FUNCTION_T &valueFunction,
-    policy::isFinitePolicyValueFunctionMixin auto &policy,
-    policy::isFinitePolicyValueFunctionMixin auto &target_policy,
-    typename VALUE_FUNCTION_T::EnvironmentType &environment,
-    const VALUE_FUNCTION_T::KeyType &keyCurrent,
-    const VALUE_FUNCTION_T::KeyType &keyNext,
-    const typename VALUE_FUNCTION_T::PrecisionType &reward,
-    const typename VALUE_FUNCTION_T::PrecisionType &discountRate) -> void {
+    valueFunction[keyCurrent].value =
+        valueFunction.valueAt(keyCurrent) +
+        temporal_differenc_error(valueFunction.valueAt(keyCurrent), maxNextValue, reward, discountRate);
+    valueFunction[keyCurrent].step++;
+  }
+};
 
-  // get the max value from the next state.
-  // This is the difference between SARSA and Q-Learning.
-  const auto reachableActions = environment.getReachableActions(environment.state);
-  const auto maxNextValue = std::accumulate(
-      reachableActions.begin(),
-      reachableActions.end(),
-      std::numeric_limits<PrecisionType>::lowest(),
-      [&](const auto &a, const auto &action) {
-        const auto val = valueFunction.valueAt(KeyMaker::make(environment, environment.state, action));
-        if (val > a)
-          return val;
-        return a;
-      });
-
-  valueFunction[keyCurrent].value =
-      valueFunction.valueAt(keyCurrent) +
-      temporal_differenc_error(valueFunction.valueAt(keyCurrent), maxNextValue, reward, discountRate);
-  valueFunction[keyCurrent].step++;
-}
+template <policy::objectives::isFiniteStateValueFunction V>
+requires policy::objectives::isStateActionKeymaker<typename V::KeyMaker>
+using QLearningUpdater = TemporalDifferenceValueUpdater<V, QLearningStepMixin, QLearningValueUpdateMixin>;
 
 } // namespace temporal_difference

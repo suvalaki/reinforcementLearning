@@ -64,15 +64,34 @@ concept isTDValueUpdater = requires(T t) {
   //     std::declval<const typename T::KeyType &>());
 };
 
-template <typename CRTP, policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T>
-struct TDValueUpdaterBase {
+template <typename CRTP>
+struct DefaultValueUpdater {
 
+  void updateValue(
+      typename CRTP::ValueFunctionType &valueFunction,
+      policy::isFinitePolicyValueFunctionMixin auto &policy,
+      policy::isFinitePolicyValueFunctionMixin auto &target_policy,
+      typename CRTP::EnvironmentType &environment,
+      const typename CRTP::KeyType &keyCurrent,
+      const typename CRTP::KeyType &keyNext,
+      const typename CRTP::PrecisionType &reward,
+      const typename CRTP::PrecisionType &discountRate) {
+
+    valueFunction[keyCurrent].value =
+        valueFunction.valueAt(keyCurrent) +
+        temporal_differenc_error(
+            valueFunction.valueAt(keyCurrent), valueFunction.valueAt(keyNext), reward, discountRate);
+    valueFunction[keyCurrent].step++;
+  };
+};
+
+template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T>
+struct TemporalDifferenceValueUpdaterBase {
+
+  using ValueFunctionType = VALUE_FUNCTION_T;
   SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(VALUE_FUNCTION_T::EnvironmentType));
   using KeyMaker = typename VALUE_FUNCTION_T::KeyMaker;
-
-  void initialize(typename VALUE_FUNCTION_T::EnvironmentType &environment, VALUE_FUNCTION_T &valueFunction) {
-    valueFunction.initialize(environment);
-  }
+  using KeyType = typename VALUE_FUNCTION_T::KeyType;
 
   struct StatefulUpdateResult {
     bool isDone;
@@ -80,16 +99,27 @@ struct TDValueUpdaterBase {
     TransitionType transition;
     PrecisionType reward;
   };
+};
 
-  void updateValue(
-      VALUE_FUNCTION_T &valueFunction,
-      policy::isFinitePolicyValueFunctionMixin auto &policy,
-      policy::isFinitePolicyValueFunctionMixin auto &target_policy,
-      typename VALUE_FUNCTION_T::EnvironmentType &environment,
-      const typename VALUE_FUNCTION_T::KeyType &keyCurrent,
-      const typename VALUE_FUNCTION_T::KeyType &keyNext,
-      const typename VALUE_FUNCTION_T::PrecisionType &reward,
-      const typename VALUE_FUNCTION_T::PrecisionType &discountRate);
+template <
+    policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T,
+    template <typename CRTP>
+    class StepInterface,
+    template <typename CRTP> class ValueUpdaterInterface = DefaultValueUpdater>
+struct TemporalDifferenceValueUpdater : StepInterface<TemporalDifferenceValueUpdaterBase<VALUE_FUNCTION_T>>,
+                                        ValueUpdaterInterface<TemporalDifferenceValueUpdaterBase<VALUE_FUNCTION_T>> {
+
+  using ValueFunctionType = VALUE_FUNCTION_T;
+  SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(VALUE_FUNCTION_T::EnvironmentType));
+  using KeyMaker = typename VALUE_FUNCTION_T::KeyMaker;
+  using KeyType = typename VALUE_FUNCTION_T::KeyType;
+
+  using StepI = StepInterface<TemporalDifferenceValueUpdaterBase<VALUE_FUNCTION_T>>;
+  using ValueI = ValueUpdaterInterface<TemporalDifferenceValueUpdaterBase<VALUE_FUNCTION_T>>;
+
+  void initialize(typename VALUE_FUNCTION_T::EnvironmentType &environment, VALUE_FUNCTION_T &valueFunction) {
+    valueFunction.initialize(environment);
+  }
 
   std::pair<bool, ActionSpace> update(
       VALUE_FUNCTION_T &valueFunction,
@@ -100,26 +130,14 @@ struct TDValueUpdaterBase {
       const PrecisionType &discountRate);
 };
 
-template <typename CRTP, policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T>
-auto TDValueUpdaterBase<CRTP, VALUE_FUNCTION_T>::updateValue(
-    VALUE_FUNCTION_T &valueFunction,
-    policy::isFinitePolicyValueFunctionMixin auto &policy,
-    policy::isFinitePolicyValueFunctionMixin auto &target_policy,
-    typename VALUE_FUNCTION_T::EnvironmentType &environment,
-    const typename VALUE_FUNCTION_T::KeyType &keyCurrent,
-    const typename VALUE_FUNCTION_T::KeyType &keyNext,
-    const typename VALUE_FUNCTION_T::PrecisionType &reward,
-    const typename VALUE_FUNCTION_T::PrecisionType &discountRate) -> void {
-
-  valueFunction[keyCurrent].value =
-      valueFunction.valueAt(keyCurrent) +
-      temporal_differenc_error(valueFunction.valueAt(keyCurrent), valueFunction.valueAt(keyNext), reward, discountRate);
-  valueFunction[keyCurrent].step++;
-}
-
-template <typename CRTP, policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T>
-auto TDValueUpdaterBase<CRTP, VALUE_FUNCTION_T>::update(
-    VALUE_FUNCTION_T &valueFunction,
+template <
+    policy::objectives::isFiniteStateValueFunction V,
+    template <typename CRTP>
+    class StepInterface,
+    template <typename CRTP>
+    class ValueUpdaterInterface>
+auto TemporalDifferenceValueUpdater<V, StepInterface, ValueUpdaterInterface>::update(
+    V &valueFunction,
     policy::isFinitePolicyValueFunctionMixin auto &policy,
     policy::isFinitePolicyValueFunctionMixin auto &target_policy,
     EnvironmentType &environment,
@@ -127,10 +145,10 @@ auto TDValueUpdaterBase<CRTP, VALUE_FUNCTION_T>::update(
     const PrecisionType &discountRate) -> std::pair<bool, ActionSpace> {
 
   const auto [isDone, nextAction, transition, reward] =
-      static_cast<CRTP *>(this)->step(valueFunction, policy, target_policy, environment, action, discountRate);
+      this->step(valueFunction, policy, target_policy, environment, action, discountRate);
 
   // Update the value function.
-  static_cast<CRTP *>(this)->updateValue(
+  this->updateValue(
       valueFunction,
       policy,
       target_policy,
