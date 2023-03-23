@@ -15,7 +15,7 @@ namespace temporal_difference {
 template <typename CRTP>
 struct DoubleQLearningStepMixin {
 
-  SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(CRTP::EnvironmentType));
+  SETUP_TYPES_W_VALUE_FUNCTION(CRTP::ValueFunctionType);
 
   /**
    * @brief Prior to each update of the policies (either Q1 or Q2) in double Q learning we select an action A from a
@@ -50,9 +50,7 @@ struct DoubleQLearningStepMixin {
 template <typename CRTP, class E = xt::random::default_engine_type>
 struct DoubleQLearningValueUpdateMixin {
 
-  SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(CRTP::EnvironmentType));
-  using KeyMaker = typename CRTP::KeyMaker;
-  using KeyType = typename CRTP::KeyType;
+  SETUP_TYPES_W_VALUE_FUNCTION(CRTP::ValueFunctionType);
   using EngineType = E;
 
   EngineType &engine = xt::random::get_default_random_engine();

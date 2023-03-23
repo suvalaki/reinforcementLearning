@@ -16,12 +16,7 @@ namespace monte_carlo {
 template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T>
 struct NiaveAverageReturnsUpdate : ValueUpdaterBase<NiaveAverageReturnsUpdate<VALUE_FUNCTION_T>, VALUE_FUNCTION_T> {
 
-  SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(VALUE_FUNCTION_T::EnvironmentType));
-
-  using ValueFunctionType = VALUE_FUNCTION_T;
-  using KeyMaker = typename VALUE_FUNCTION_T::KeyMaker;
-  using KeyType = typename VALUE_FUNCTION_T::KeyType;
-  using ValueType = typename VALUE_FUNCTION_T::ValueType;
+  SETUP_TYPES_W_VALUE_FUNCTION(VALUE_FUNCTION_T);
   using ReturnsContainer = std::vector<typename VALUE_FUNCTION_T::PrecisionType>;
   using ReturnsMap = std::
       unordered_map<typename VALUE_FUNCTION_T::KeyType, ReturnsContainer, typename VALUE_FUNCTION_T::KeyMaker::Hash>;
@@ -66,9 +61,7 @@ template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T>
 struct NiaveAverageReturnsIncrementalUpdate
     : ValueUpdaterBase<NiaveAverageReturnsIncrementalUpdate<VALUE_FUNCTION_T>, VALUE_FUNCTION_T> {
 
-  SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(VALUE_FUNCTION_T::EnvironmentType));
-  using KeyMaker = typename VALUE_FUNCTION_T::KeyMaker;
-  using KeyType = typename VALUE_FUNCTION_T::KeyType;
+  SETUP_TYPES_W_VALUE_FUNCTION(VALUE_FUNCTION_T);
 
   struct ReturnsContainer {
     typename VALUE_FUNCTION_T::PrecisionType averageReturn = 0;

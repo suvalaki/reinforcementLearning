@@ -110,6 +110,14 @@ template <typename T>
 concept isActionValueFunction =
     isValueFunction<T> && std::is_same_v<typename T::KeyMaker, ActionValueFunction<typename T::EnvironmentType>>;
 
+#define SETUP_TYPES_W_VALUE_FUNCTION(VALUE_FUNCTION_T)                                                                 \
+  SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(VALUE_FUNCTION_T::EnvironmentType));                                      \
+  using ValueFunctionType = VALUE_FUNCTION_T;                                                                          \
+  using KeyMaker = typename VALUE_FUNCTION_T::KeyMaker;                                                                \
+  using KeyType = typename VALUE_FUNCTION_T::KeyType;                                                                  \
+  using ValueType = typename VALUE_FUNCTION_T::ValueType;                                                              \
+  using ValueFactory = typename VALUE_FUNCTION_T::ValueFactory;
+
 } // namespace policy::objectives
 
 #undef VFT

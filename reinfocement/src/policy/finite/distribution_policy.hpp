@@ -23,12 +23,9 @@ struct FiniteDistributionPolicy : virtual DistributionPolicy<typename VALUE_FUNC
 
 {
   using BaseType = DistributionPolicy<typename VALUE_FUNCTION_T::EnvironmentType>;
-  SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(BaseType::EnvironmentType));
-  using ValueFunctionType = VALUE_FUNCTION_T;
+  SETUP_TYPES_W_VALUE_FUNCTION(VALUE_FUNCTION_T);
   using ValueFunctionBaseType = typename ValueFunctionType::ValueFunctionBaseType;
   using StepSizeTaker = typename ValueFunctionType::StepSizeTaker;
-  using KeyMaker = typename ValueFunctionType::KeyMaker;
-  using KeyType = typename KeyMaker::KeyType;
 
   // Pull in the direct functions we need since they have different signatures
   using ValueFunctionType::operator();

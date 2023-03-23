@@ -55,9 +55,7 @@ requires(std::is_same_v<typename VALUE_FUNCTION_T::KeyMaker, typename POLICY_T0:
         const EPISODE_GENERATOR_T &episodeGenerator =
             EpisodeGenerator<max_episode_length, typename VALUE_FUNCTION_T::EnvironmentType, POLICY_T0>()) {
 
-  using EnvironmentType = typename VALUE_FUNCTION_T::EnvironmentType;
-  using ValueFunctionKeyMaker = typename VALUE_FUNCTION_T::KeyMaker;
-  using PolicyKeyMaker = typename POLICY_T0::KeyMaker;
+  SETUP_TYPES_W_VALUE_FUNCTION(VALUE_FUNCTION_T);
 
   auto episode = episodeGenerator(environment, policy);
 
@@ -114,7 +112,7 @@ void visit_valueEstimate(
 template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T>
 struct FirstVisitStopCondition : StopCondition<VALUE_FUNCTION_T> {
 
-  using KeyMaker = VALUE_FUNCTION_T::KeyMaker;
+  SETUP_TYPES_W_VALUE_FUNCTION(VALUE_FUNCTION_T);
 
   // Only update the average for the first visit in the episode
   template <typename EPISODE_T>

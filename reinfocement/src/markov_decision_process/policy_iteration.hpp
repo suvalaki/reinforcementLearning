@@ -47,11 +47,7 @@ typename VALUE_FUNCTION_T::PrecisionType value_from_state_action(
     const typename VALUE_FUNCTION_T::EnvironmentType::StateType &state,
     const typename VALUE_FUNCTION_T::EnvironmentType::ActionSpace &action) {
 
-  using EnvironmentType = typename VALUE_FUNCTION_T::EnvironmentType;
-  using PrecisionType = typename EnvironmentType::PrecisionType;
-  using RewardType = typename EnvironmentType::RewardType;
-  using StateType = typename EnvironmentType::StateType;
-  using TransitionType = typename EnvironmentType::TransitionType;
+  SETUP_TYPES_W_VALUE_FUNCTION(VALUE_FUNCTION_T);
 
   const auto &transitionModel = environment.transitionModel;
 
@@ -107,15 +103,6 @@ typename VALUE_FUNCTION_T::PrecisionType policy_evaluation_step(
     const typename VALUE_FUNCTION_T::EnvironmentType &environment,
     const POLICY_T &policy,
     const typename VALUE_FUNCTION_T::StateType &state) {
-
-  using EnvironmentType = typename VALUE_FUNCTION_T::EnvironmentType;
-  using PrecisionType = typename EnvironmentType::PrecisionType;
-  using RewardType = typename EnvironmentType::RewardType;
-  using StateType = typename EnvironmentType::StateType;
-  using TransitionType = typename EnvironmentType::TransitionType;
-
-  using ValueFunctionKeyMaker = typename VALUE_FUNCTION_T::KeyMaker;
-  using PolicyKeyMaker = typename POLICY_T::KeyMaker;
 
   const auto &transitionModel = environment.transitionModel;
   auto currentValueEstimate = valueFunction.valueAt(state);
@@ -215,13 +202,6 @@ bool policy_improvement_step(
     POLICY_T &policy,
     const typename VALUE_FUNCTION_T::EnvironmentType::StateType &state) {
 
-  using EnvironmentType = typename VALUE_FUNCTION_T::EnvironmentType;
-  using PrecisionType = typename EnvironmentType::PrecisionType;
-  using RewardType = typename EnvironmentType::RewardType;
-  using StateType = typename EnvironmentType::StateType;
-  using TransitionType = typename EnvironmentType::TransitionType;
-
-  using ValueFunctionKeyMaker = typename VALUE_FUNCTION_T::KeyMaker;
   using PolicyKeyMaker = typename POLICY_T::KeyMaker;
 
   // using KeyMaker = typename POLICY_T::KeyMaker;

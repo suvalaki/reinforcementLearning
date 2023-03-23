@@ -12,7 +12,7 @@ namespace temporal_difference {
 template <typename CRTP>
 struct QLearningStepMixin {
 
-  SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(CRTP::EnvironmentType));
+  SETUP_TYPES_W_VALUE_FUNCTION(CRTP::ValueFunctionType);
 
   auto step(
       typename CRTP::ValueFunctionType &valueFunction,
@@ -38,9 +38,7 @@ struct QLearningStepMixin {
 template <typename CRTP>
 struct QLearningValueUpdateMixin {
 
-  SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(CRTP::EnvironmentType));
-  using KeyMaker = typename CRTP::KeyMaker;
-  using KeyType = typename CRTP::KeyType;
+  SETUP_TYPES_W_VALUE_FUNCTION(CRTP::ValueFunctionType);
 
   void updateValue(
       typename CRTP::ValueFunctionType &valueFunction,

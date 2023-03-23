@@ -43,12 +43,6 @@ typename VALUE_FUNCTION_T::PrecisionType value_iteration_policy_estimation_step(
     const typename VALUE_FUNCTION_T::EnvironmentType &environment,
     const typename VALUE_FUNCTION_T::StateType &state) {
 
-  using EnvironmentType = typename VALUE_FUNCTION_T::EnvironmentType;
-  using PrecisionType = typename EnvironmentType::PrecisionType;
-  using RewardType = typename EnvironmentType::RewardType;
-  using StateType = typename EnvironmentType::StateType;
-  using TransitionType = typename EnvironmentType::TransitionType;
-
   const auto &transitionModel = environment.transitionModel;
   auto currentValueEstimate = valueFunction.valueAt(state);
 

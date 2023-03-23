@@ -17,11 +17,34 @@ auto temporal_differenc_error(
   return reward + discountRate * valueAtStateT1 - valueAtStateT;
 }
 
-/// @brief Value update interface. Value updates are responsible for modifying the value function during
-/// episodic monte carlo value estimation. They may have internal state - such is a list of returns or
-/// importance sampling rations.
 template <typename T>
-concept isTDValueUpdater = requires(T t) {
+concept isTDUpdaterStep = requires(T t) {
+
+  t.step(
+      std::declval<typename T::ValueFunctionType &>(),
+      std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
+      std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
+      std::declval<typename T::EnvironmentType &>(),
+      std::declval<const typename T::ActionSpace &>(),
+      std::declval<const typename T::PrecisionType &>());
+};
+
+template <typename T>
+concept isTDUpdaterValueUpdate = requires(T t) {
+
+  t.updateValue(
+      std::declval<typename T::ValueFunctionType &>(),
+      std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
+      std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
+      std::declval<typename T::EnvironmentType &>(),
+      std::declval<const typename T::KeyType &>(),
+      std::declval<const typename T::KeyType &>(),
+      std::declval<const typename T::PrecisionType &>(),
+      std::declval<const typename T::PrecisionType &>());
+};
+
+template <typename T>
+concept isTDUpdaterUpdate = requires(T t) {
 
   typename T::ValueFunctionType;
   typename T::EnvironmentType;
@@ -31,41 +54,31 @@ concept isTDValueUpdater = requires(T t) {
   typename T::PrecisionType;
   typename T::StateType;
   typename T::ActionSpace;
-  // typename T::ReturnsContainer;
+  typename T::StatefulUpdateResult;
 
   // Initialise both the environment and the value function. It may be uneccessary to initialise the value
   // function because it will be automatically initialised on the first update.
   t.initialize(std::declval<typename T::EnvironmentType &>(), std::declval<typename T::ValueFunctionType &>());
 
-  // Using the newly updated state of the Updater, update the value function.
-  // t.updateValue(
-  //     std::declval<typename T::ValueFunctionType &>(),
-  //     std::declval<policy::FiniteGreedyPolicy<typename T::KeyMaker, typename T::ValueType> &>(),
-  //     std::declval<policy::FiniteGreedyPolicy<typename T::KeyMaker, typename T::ValueType> &>(),
-  //     std::declval<typename T::EnvironmentType &>(),
-  //     std::declval<const KeyType &>(),
-  //     std::declval<const KeyType &>(),
-  //     std::declval<const PrecisionType &>(),
-  //     std::declval<const PrecisionType &>());
-  // t.updateValue(std::declval<typename T::ValueFunctionType &>(),
-  //               std::declval<policy::FiniteGreedyPolicy<typename T::KeyMaker, typename T::ValueType> &>(),
-  //               std::declval<policy::FiniteGreedyPolicy<typename T::KeyMaker, typename T::ValueType> &>(),
-  //               std::declval<typename T::EnvironmentType &>(),
-  //               std::declval<const KeyType &>(),
-  //               std::declval<const KeyType &>(),
-  //               std::declval<const PrecisionType &>(),
-  //               std::declval<const PrecisionType &>());
-  // t.update(
-  //     std::declval<typename T::ValueFunctionType &>(),
-  //     std::declval<policy::FiniteGreedyPolicy<typename T::KeyMaker, typename T::ValueType> &>(),
-  //     std::declval<policy::FiniteGreedyPolicy<typename T::KeyMaker, typename T::ValueType> &>(),
-  //     std::declval<typename T::EnvironmentType &>(),
-  //     std::declval<const typename T::KeyType &>(),
-  //     std::declval<const typename T::KeyType &>());
+  t.updateValue(
+      std::declval<typename T::ValueFunctionType &>(),
+      std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
+      std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
+      std::declval<typename T::EnvironmentType &>(),
+      std::declval<const typename T::ActionSpace &>(),
+      std::declval<const typename T::PrecisionType &>());
 };
+
+/// @brief Value update interface. Value updates are responsible for modifying the value function during
+/// episodic monte carlo value estimation. They may have internal state - such is a list of returns or
+/// importance sampling rations.
+template <typename T>
+concept isTDValueUpdater = isTDUpdaterStep<T> && isTDUpdaterValueUpdate<T> && isTDUpdaterUpdate<T>;
 
 template <typename CRTP>
 struct DefaultValueUpdater {
+
+  SETUP_TYPES_W_VALUE_FUNCTION(CRTP::ValueFunctionType);
 
   void updateValue(
       typename CRTP::ValueFunctionType &valueFunction,
@@ -88,10 +101,7 @@ struct DefaultValueUpdater {
 template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T>
 struct TemporalDifferenceValueUpdaterBase {
 
-  using ValueFunctionType = VALUE_FUNCTION_T;
-  SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(VALUE_FUNCTION_T::EnvironmentType));
-  using KeyMaker = typename VALUE_FUNCTION_T::KeyMaker;
-  using KeyType = typename VALUE_FUNCTION_T::KeyType;
+  SETUP_TYPES_W_VALUE_FUNCTION(VALUE_FUNCTION_T);
 
   struct StatefulUpdateResult {
     bool isDone;
@@ -109,10 +119,10 @@ template <
 struct TemporalDifferenceValueUpdater : StepInterface<TemporalDifferenceValueUpdaterBase<VALUE_FUNCTION_T>>,
                                         ValueUpdaterInterface<TemporalDifferenceValueUpdaterBase<VALUE_FUNCTION_T>> {
 
-  using ValueFunctionType = VALUE_FUNCTION_T;
-  SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(VALUE_FUNCTION_T::EnvironmentType));
-  using KeyMaker = typename VALUE_FUNCTION_T::KeyMaker;
-  using KeyType = typename VALUE_FUNCTION_T::KeyType;
+  static_assert(isTDUpdaterStep<StepInterface<TemporalDifferenceValueUpdaterBase<VALUE_FUNCTION_T>>>);
+  static_assert(isTDUpdaterValueUpdate<ValueUpdaterInterface<TemporalDifferenceValueUpdaterBase<VALUE_FUNCTION_T>>>);
+
+  SETUP_TYPES_W_VALUE_FUNCTION(VALUE_FUNCTION_T);
 
   using StepI = StepInterface<TemporalDifferenceValueUpdaterBase<VALUE_FUNCTION_T>>;
   using ValueI = ValueUpdaterInterface<TemporalDifferenceValueUpdaterBase<VALUE_FUNCTION_T>>;

@@ -9,7 +9,7 @@ namespace temporal_difference {
 template <typename CRTP>
 struct SarsaStepMixin {
 
-  SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(CRTP::EnvironmentType));
+  SETUP_TYPES_W_VALUE_FUNCTION(CRTP::ValueFunctionType);
 
   auto step(
       typename CRTP::ValueFunctionType &valueFunction,
