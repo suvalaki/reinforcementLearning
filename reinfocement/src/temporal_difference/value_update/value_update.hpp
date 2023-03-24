@@ -18,33 +18,42 @@ auto temporal_differenc_error(
 }
 
 template <typename T>
-concept isTDUpdaterStep = requires(T t) {
+concept isTDUpdaterStep = requires(
+    T t,
+    typename T::ValueFunctionType &valueFunction,
+    policy::FinitePolicyValueFunctionMixin<typename T::ValueFunctionType> &policy,
+    policy::FinitePolicyValueFunctionMixin<typename T::ValueFunctionType> &target_policy,
+    typename T::EnvironmentType &environment,
+    const typename T::ActionSpace &action,
+    const typename T::PrecisionType &discountRate) {
 
-  t.step(
-      std::declval<typename T::ValueFunctionType &>(),
-      std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
-      std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
-      std::declval<typename T::EnvironmentType &>(),
-      std::declval<const typename T::ActionSpace &>(),
-      std::declval<const typename T::PrecisionType &>());
+  t.step(valueFunction, policy, target_policy, environment, action, discountRate);
 };
 
 template <typename T>
-concept isTDUpdaterValueUpdate = requires(T t) {
+concept isTDUpdaterValueUpdate = requires(
+    T t,
+    typename T::ValueFunctionType &valueFunction,
+    policy::FinitePolicyValueFunctionMixin<typename T::ValueFunctionType> &policy,
+    policy::FinitePolicyValueFunctionMixin<typename T::ValueFunctionType> &target_policy,
+    typename T::EnvironmentType &environment,
+    const typename T::KeyType &keyCurrent,
+    const typename T::KeyType &keyNext,
+    const typename T::PrecisionType &reward,
+    const typename T::PrecisionType &discountRate) {
 
-  t.updateValue(
-      std::declval<typename T::ValueFunctionType &>(),
-      std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
-      std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
-      std::declval<typename T::EnvironmentType &>(),
-      std::declval<const typename T::KeyType &>(),
-      std::declval<const typename T::KeyType &>(),
-      std::declval<const typename T::PrecisionType &>(),
-      std::declval<const typename T::PrecisionType &>());
+  t.updateValue(valueFunction, policy, target_policy, environment, keyCurrent, keyNext, reward, discountRate);
 };
 
 template <typename T>
-concept isTDUpdaterUpdate = requires(T t) {
+concept isTDUpdaterUpdate = requires(
+    T t,
+    typename T::ValueFunctionType &valueFunction,
+    policy::FinitePolicyValueFunctionMixin<typename T::ValueFunctionType> &policy,
+    policy::FinitePolicyValueFunctionMixin<typename T::ValueFunctionType> &target_policy,
+    typename T::EnvironmentType &environment,
+    const typename T::ActionSpace &action,
+    const typename T::PrecisionType &discountRate) {
 
   typename T::ValueFunctionType;
   typename T::EnvironmentType;
@@ -58,15 +67,8 @@ concept isTDUpdaterUpdate = requires(T t) {
 
   // Initialise both the environment and the value function. It may be uneccessary to initialise the value
   // function because it will be automatically initialised on the first update.
-  t.initialize(std::declval<typename T::EnvironmentType &>(), std::declval<typename T::ValueFunctionType &>());
-
-  t.updateValue(
-      std::declval<typename T::ValueFunctionType &>(),
-      std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
-      std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
-      std::declval<typename T::EnvironmentType &>(),
-      std::declval<const typename T::ActionSpace &>(),
-      std::declval<const typename T::PrecisionType &>());
+  t.initialize(environment, valueFunction);
+  t.update(valueFunction, policy, target_policy, environment, action, discountRate);
 };
 
 /// @brief Value update interface. Value updates are responsible for modifying the value function during
