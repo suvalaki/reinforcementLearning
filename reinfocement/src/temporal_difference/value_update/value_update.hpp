@@ -140,6 +140,14 @@ struct TemporalDifferenceValueUpdater : StepInterface<TemporalDifferenceValueUpd
       EnvironmentType &environment,
       const ActionSpace &action,
       const PrecisionType &discountRate);
+
+  void update(
+      VALUE_FUNCTION_T &valueFunction,
+      policy::isFinitePolicyValueFunctionMixin auto &policy,
+      policy::isFinitePolicyValueFunctionMixin auto &target_policy,
+      EnvironmentType &environment,
+      const PrecisionType &discountRate,
+      const std::size_t &maxSteps);
 };
 
 template <
@@ -171,6 +179,33 @@ auto TemporalDifferenceValueUpdater<V, StepInterface, ValueUpdaterInterface>::up
       discountRate);
 
   return {transition.isDone(), nextAction};
+}
+
+template <
+    policy::objectives::isFiniteStateValueFunction V,
+    template <typename CRTP>
+    class StepInterface,
+    template <typename CRTP>
+    class ValueUpdaterInterface>
+auto TemporalDifferenceValueUpdater<V, StepInterface, ValueUpdaterInterface>::update(
+    V &valueFunction,
+    policy::isFinitePolicyValueFunctionMixin auto &policy,
+    policy::isFinitePolicyValueFunctionMixin auto &target_policy,
+    EnvironmentType &environment,
+    const PrecisionType &discountRate,
+    const std::size_t &maxSteps) -> void {
+
+  environment.reset();
+
+  auto action = policy(environment, environment.state);
+  auto isTerminal = false;
+  auto step = 0;
+
+  while (not isTerminal and step < maxSteps) {
+    std::tie(isTerminal, action) =
+        this->update(valueFunction, policy, target_policy, environment, action, discountRate);
+    step++;
+  };
 }
 
 } // namespace temporal_difference
