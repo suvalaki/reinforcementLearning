@@ -46,75 +46,107 @@ requires policy::objectives::isStateActionKeymaker<typename V::KeyMaker>
 using NStepSarsaUpdater =
     NStepUpdater<V, SarsaStepMixin, DefaultStorageInterface, OnPolicySarsaReturn, DefaultNStepValueUpdater>;
 
-// /// @brief Assume we want to progressively store the importance ratio for each state-action pairing up to the current
-// /// time - 1
-// /// @tparam CRTP
-// template <typename CRTP>
-// struct ProgressiveImportanceSamplingStorageInterface {
+/// @brief Assume we want to progressively store the importance ratio for each state-action pairing up to the current
+/// time - 1
+/// @tparam CRTP
+template <typename CRTP>
+struct ProgressiveImportanceSamplingStorageInterface {
 
-//   struct AdditionalData {
-//     const PrecisionType importanceRatio;
-//   };
+  SETUP_TYPES_W_VALUE_FUNCTION(CRTP::ValueFunctionType);
 
-//   auto store(
-//       const VALUE_FUNCTION_T &valueFunction,
-//       policy::isFinitePolicyValueFunctionMixin auto &policy,
-//       policy::isFinitePolicyValueFunctionMixin auto &target_policy,
-//       const std::size_t &T,
-//       const std::size_t &n,
-//       const std::size_t &t,
-//       const PrecisionType &discountRate,
-//       const boost::circular_buffer<typename CRTP::ExpandedStatefulUpdateResult> &expandedTransitions)
-//       -> AdditionalData {
+  struct AdditionalData {
+    PrecisionType importanceRatio;
+  };
 
-//     // return additional data
-//     if (&policy == &target_policy)
-//       return 1.0F;
+  auto store(
+      const ValueFunctionType &valueFunction,
+      policy::isFinitePolicyValueFunctionMixin auto &policy,
+      policy::isFinitePolicyValueFunctionMixin auto &target_policy,
+      EnvironmentType &environment,
+      const PrecisionType &discountRate,
+      const std::size_t &n,
+      const std::size_t &t,
+      const typename CRTP::StatefulUpdateResult &statefulUpdateResult) -> AdditionalData {
 
-//     const auto maximportancesamplingtimestep = std::min(tau + n - 1, T - 1);
-//     const auto importanceRatio = std::accumulate(
-//         expandedTransitions.begin() + tau + 1,
-//         expandedTransitions.begin() + maxImportanceSamplingTimeStep,
-//         1.0F,
-//         [&policy, &target_policy](const auto &acc, const auto &e) {
-//           return acc * target_policy(e.state, e.action) / policy(e.state, e.action);
-//         });
+    // return additional data
+    if (&policy == &target_policy)
+      return {1.0F};
 
-//     return {importanceRatio};
-//   }
-// };
+    const auto &e = statefulUpdateResult.transition;
+    return {
+        target_policy.getProbability(environment, e.state, e.action) /
+        policy.getProbability(environment, e.state, e.action)};
+  }
+};
 
-// template <typename CRTP>
-// struct OffPolicySarsaReturnCalculator {
+template <typename CRTP>
+struct OffPolicySarsaReturnCalculator {
 
-//   PrecisionType calculateReturn(
-//       const VALUE_FUNCTION_T &valueFunction,
-//       policy::isFinitePolicyValueFunctionMixin auto &policy,
-//       policy::isFinitePolicyValueFunctionMixin auto &target_policy,
-//       const std::size_t &T,
-//       const std::size_t &n,
-//       const std::size_t &tau,
-//       const PrecisionType &discountRate,
-//       const boost::circular_buffer<typename CRTP::ExpandedStatefulUpdateResult> &expandedTransitions) {
+  SETUP_TYPES_W_VALUE_FUNCTION(CRTP::ValueFunctionType);
+  using ExpandedStatefulUpdateResult = typename CRTP::ExpandedStatefulUpdateResult;
+  struct ReturnMetrics {
+    const PrecisionType ret = 0;
+    const PrecisionType importanceRatio = 0;
+  };
 
-//     const auto maximportancesamplingtimestep = std::min(tau + n - 1, T - 1);
-//     const auto importanceRatio = std::accumulate(
-//         expandedTransitions.begin() + tau + 1,
-//         expandedTransitions.begin() + maxImportanceSamplingTimeStep,
-//         1.0F,
-//         [&policy, &target_policy](const auto &acc, const auto &e) {
-//           return acc * target_policy(e.state, e.action) / policy(e.state, e.action);
-//         });
+  ReturnMetrics calculateReturn(
+      const ValueFunctionType &valueFunction,
+      policy::isFinitePolicyValueFunctionMixin auto &policy,
+      policy::isFinitePolicyValueFunctionMixin auto &target_policy,
+      EnvironmentType &environment,
+      const PrecisionType &discountRate,
+      typename boost::circular_buffer<ExpandedStatefulUpdateResult>::iterator start,
+      typename boost::circular_buffer<ExpandedStatefulUpdateResult>::iterator end) {
 
-//     const auto maxtimestep = std::min(tau + n, T);
-//     const auto return = std::accumulate(
-//         expandedTransitions.begin() + tau,
-//         expandedTransitions.begin() + maxtimestep,
-//         0.0F,
-//         [discountRate](const auto &acc, const auto &e) { return acc + e.reward + discountRate * e.nextValue; });
+    auto G = std::accumulate(start, end, 0.0F, [&discountRate](const auto &acc, const auto &itr) {
+      return acc + std::pow(discountRate, 1) * itr.reward;
+    });
 
-//     return importanceRatio * return;
-//   }
-// };
+    auto rho = start == end ? 1.0F : std::accumulate(start, (end - 1), 1.0F, [](const auto &acc, const auto &itr) {
+      return acc * itr.importanceRatio;
+    });
+
+    const auto last = end - 1;
+    if (last->isDone)
+      return {
+          .ret =
+              G + discountRate *
+                      valueFunction(KeyMaker::make(environment, last->transition.state, last->transition.action)).value,
+          .importanceRatio = rho};
+
+    return {.ret = G, .importanceRatio = rho};
+  }
+};
+
+template <typename CRTP>
+struct OffPolicySarsaNStepValueUpdater {
+
+  SETUP_TYPES_W_VALUE_FUNCTION(CRTP::ValueFunctionType);
+  using ReturnMetrics = typename CRTP::ReturnMetrics;
+
+  void updateValue(
+      ValueFunctionType &valueFunction,
+      policy::isFinitePolicyValueFunctionMixin auto &policy,
+      policy::isFinitePolicyValueFunctionMixin auto &target_policy,
+      EnvironmentType &environment,
+      const PrecisionType &discountRate,
+      const KeyType &keyCurrent,
+      const ReturnMetrics &G) {
+
+    const auto alpha = 1.0F;
+    valueFunction[keyCurrent].value =
+        valueFunction.valueAt(keyCurrent) +
+        alpha * G.importanceRatio * temporal_differenc_error(valueFunction.valueAt(keyCurrent), 0.0F, G.ret, 0.0F);
+  }
+};
+
+template <policy::objectives::isFiniteStateValueFunction V>
+requires policy::objectives::isStateActionKeymaker<typename V::KeyMaker>
+using NStepSarsaOffPolicyUpdater = NStepUpdater<
+    V,
+    SarsaStepMixin,
+    ProgressiveImportanceSamplingStorageInterface,
+    OffPolicySarsaReturnCalculator,
+    OffPolicySarsaNStepValueUpdater>;
 
 } // namespace temporal_difference
