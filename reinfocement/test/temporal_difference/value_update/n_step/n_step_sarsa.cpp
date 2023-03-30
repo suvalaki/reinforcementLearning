@@ -19,7 +19,7 @@ TEST_CASE("temporal_difference::NStepSarsa") {
   auto updater = NStepSarsaUpdater<std::decay_t<decltype(valueFunction)>>(10);
 
   const auto s = updater.step(valueFunction, policySA, policySA, environ, a0, 1.0F);
-  const auto a = updater.store(valueFunction, policySA, policySA, environ, 1.0F, 1);
+  const auto a = updater.store(valueFunction, policySA, policySA, environ, 1.0F, n, 1);
 
   using BufferType = typename decltype(updater)::BufferType;
   using BufferAtom = typename decltype(updater)::ExpandedStatefulUpdateResult;

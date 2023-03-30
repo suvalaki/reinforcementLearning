@@ -25,10 +25,11 @@ concept isNStepTemporalDifferenceStorageInterface = requires(
     typename Tp::EnvironmentType &environment,
     const typename Tp::ActionSpace &action,
     const typename T::PrecisionType &discountRate,
+    const std::size_t &n,
     const std::size_t &t) {
 
   {
-    obj.store(valueFunction, policy, target_policy, environment, discountRate, t)
+    obj.store(valueFunction, policy, target_policy, environment, discountRate, n, t)
     } -> std::same_as<typename Tp::AdditionalData>;
 };
 
@@ -44,6 +45,7 @@ struct DefaultStorageInterface {
       policy::isFinitePolicyValueFunctionMixin auto &target_policy,
       EnvironmentType &environment,
       const PrecisionType &discountRate,
+      const std::size_t &n,
       const std::size_t &t) -> AdditionalData {
     return {};
   }
@@ -110,6 +112,8 @@ struct NStepUpdater
     return x - t + n;
   }
 
+  int getTau(const std::size_t &n, const std::size_t &t) const { return t - n + 1; }
+
   bool hasReachedTerminalObservation(const boost::circular_buffer<ExpandedStatefulUpdateResult> &expandedTransitions) {
     if (expandedTransitions.size() > 0) {
       if (expandedTransitions.back().isDone) {
@@ -157,7 +161,7 @@ struct NStepUpdater
       // Return some signal here to indicate that we have reached a terminal state.
     } else {
       // add transition to buffer
-      const auto additional = this->store(valueFunction, policy, target_policy, environment, discountRate, t);
+      const auto additional = this->store(valueFunction, policy, target_policy, environment, discountRate, n, t);
       expandedTransitions.push_back(ExpandedStatefulUpdateResult{s, additional});
     }
     // std::cout << "observe: t:" << t << " size:" << expandedTransitions.size() << std::endl;
@@ -239,7 +243,7 @@ struct NStepUpdater
       observe(valueFunction, policy, target_policy, environment, action, discountRate, n, t, expandedTransitions);
     }
 
-    const int tau = (t + 1) - n;
+    const int tau = getTau(n, t);
     updateValue(
         valueFunction, policy, target_policy, environment, action, discountRate, n, t, tau, expandedTransitions);
 
