@@ -13,7 +13,11 @@ struct OnPolicySarsaReturn {
   SETUP_TYPES_W_VALUE_FUNCTION(CRTP::ValueFunctionType);
   using ExpandedStatefulUpdateResult = typename CRTP::ExpandedStatefulUpdateResult;
 
-  PrecisionType calculateReturn(
+  struct ReturnMetrics {
+    const PrecisionType ret = 0;
+  };
+
+  ReturnMetrics calculateReturn(
       const ValueFunctionType &valueFunction,
       policy::isFinitePolicyValueFunctionMixin auto &policy,
       policy::isFinitePolicyValueFunctionMixin auto &target_policy,
@@ -29,16 +33,18 @@ struct OnPolicySarsaReturn {
 
     const auto last = end - 1;
     if (last->isDone)
-      return G + discountRate *
-                     valueFunction(KeyMaker::make(environment, last->transition.state, last->transition.action)).value;
+      return {
+          G + discountRate *
+                  valueFunction(KeyMaker::make(environment, last->transition.state, last->transition.action)).value};
 
-    return G;
+    return {G};
   }
 };
 
 template <policy::objectives::isFiniteStateValueFunction V>
 requires policy::objectives::isStateActionKeymaker<typename V::KeyMaker>
-using NStepSarsaUpdater = NStepUpdater<V, SarsaStepMixin, DefaultStorageInterface, OnPolicySarsaReturn>;
+using NStepSarsaUpdater =
+    NStepUpdater<V, SarsaStepMixin, DefaultStorageInterface, OnPolicySarsaReturn, DefaultNStepValueUpdater>;
 
 // /// @brief Assume we want to progressively store the importance ratio for each state-action pairing up to the current
 // /// time - 1

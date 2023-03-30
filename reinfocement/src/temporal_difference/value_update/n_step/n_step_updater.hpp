@@ -26,10 +26,11 @@ concept isNStepTemporalDifferenceStorageInterface = requires(
     const typename Tp::ActionSpace &action,
     const typename T::PrecisionType &discountRate,
     const std::size_t &n,
-    const std::size_t &t) {
+    const std::size_t &t,
+    const typename Tp::StatefulUpdateResult &statefulUpdateResult) {
 
   {
-    obj.store(valueFunction, policy, target_policy, environment, discountRate, n, t)
+    obj.store(valueFunction, policy, target_policy, environment, discountRate, n, t, statefulUpdateResult)
     } -> std::same_as<typename Tp::AdditionalData>;
 };
 
@@ -46,7 +47,8 @@ struct DefaultStorageInterface {
       EnvironmentType &environment,
       const PrecisionType &discountRate,
       const std::size_t &n,
-      const std::size_t &t) -> AdditionalData {
+      const std::size_t &t,
+      const typename CRTP::StatefulUpdateResult &statefulUpdateResult) -> AdditionalData {
     return {};
   }
 };
@@ -62,9 +64,49 @@ concept isNStepTemporalDifferenceReturnCalculator = requires(
     typename boost::circular_buffer<typename T::ExpandedStatefulUpdateResult>::iterator start,
     typename boost::circular_buffer<typename T::ExpandedStatefulUpdateResult>::iterator end) {
 
+  typename T::ReturnMetrics;
+
   {
     t.calculateReturn(valueFunction, policy, target_policy, environment, discountRate, start, end)
-    } -> std::same_as<typename T::PrecisionType>;
+    } -> std::same_as<typename T::ReturnMetrics>;
+};
+
+template <typename T>
+concept isNStepTemporalDifferenceValueUpdater = requires(
+    T t,
+    typename T::ValueFunctionType &valueFunction,
+    policy::FinitePolicyValueFunctionMixin<typename T::ValueFunctionType> &policy,
+    policy::FinitePolicyValueFunctionMixin<typename T::ValueFunctionType> &target_policy,
+    typename T::EnvironmentType &environment,
+    const typename T::PrecisionType &discountRate,
+    const typename T::KeyType &keyCurrent,
+    const typename T::ReturnMetrics &G) {
+
+  {
+    t.updateValue(valueFunction, policy, target_policy, environment, discountRate, keyCurrent, G)
+    } -> std::same_as<void>;
+};
+
+template <typename CRTP>
+struct DefaultNStepValueUpdater {
+
+  SETUP_TYPES_W_VALUE_FUNCTION(CRTP::ValueFunctionType);
+  using ReturnMetrics = typename CRTP::ReturnMetrics;
+
+  void updateValue(
+      ValueFunctionType &valueFunction,
+      policy::isFinitePolicyValueFunctionMixin auto &policy,
+      policy::isFinitePolicyValueFunctionMixin auto &target_policy,
+      EnvironmentType &environment,
+      const PrecisionType &discountRate,
+      const KeyType &keyCurrent,
+      const ReturnMetrics &G) {
+
+    const auto alpha = 1.0F;
+    valueFunction[keyCurrent].value =
+        valueFunction.valueAt(keyCurrent) +
+        alpha * temporal_differenc_error(valueFunction.valueAt(keyCurrent), 0.0F, G.ret, 0.0F);
+  }
 };
 
 template <policy::objectives::isFiniteStateValueFunction V, template <typename CRTP> class StorageInterface>
@@ -72,6 +114,7 @@ struct NStepTemporalDifferenceValueUpdaterBase : TemporalDifferenceValueUpdaterB
 
   SETUP_TYPES_W_VALUE_FUNCTION(V);
 
+  using StatefulUpdateResult = typename TemporalDifferenceValueUpdaterBase<V>::StatefulUpdateResult;
   using ExpandedStatefulUpdateResult = typename ExpandedStateBuilder<
       typename TemporalDifferenceValueUpdaterBase<V>::StatefulUpdateResult,
       typename StorageInterface<TemporalDifferenceValueUpdaterBase<V>>::AdditionalData>::ExpandedStatefulUpdateResult;
@@ -84,11 +127,15 @@ template <
     template <typename CRTP>
     class StorageInterface,
     template <typename CRTP>
-    class ReturnCalculationInterface>
+    class ReturnCalculationInterface,
+    template <typename CRTP>
+    class ValueUpdateInterface>
 struct NStepUpdater
     : StepInterface<TemporalDifferenceValueUpdaterBase<VALUE_FUNCTION_T>>,
       StorageInterface<TemporalDifferenceValueUpdaterBase<VALUE_FUNCTION_T>>,
-      ReturnCalculationInterface<NStepTemporalDifferenceValueUpdaterBase<VALUE_FUNCTION_T, StorageInterface>> {
+      ReturnCalculationInterface<NStepTemporalDifferenceValueUpdaterBase<VALUE_FUNCTION_T, StorageInterface>>,
+      ValueUpdateInterface<
+          ReturnCalculationInterface<NStepTemporalDifferenceValueUpdaterBase<VALUE_FUNCTION_T, StorageInterface>>> {
 
   static_assert(isTDUpdaterStep<StepInterface<TemporalDifferenceValueUpdaterBase<VALUE_FUNCTION_T>>>);
   static_assert(
@@ -97,11 +144,14 @@ struct NStepUpdater
 
   SETUP_TYPES_W_VALUE_FUNCTION(VALUE_FUNCTION_T);
 
-  using This = NStepUpdater<VALUE_FUNCTION_T, StepInterface, StorageInterface, ReturnCalculationInterface>;
+  using This =
+      NStepUpdater<VALUE_FUNCTION_T, StepInterface, StorageInterface, ReturnCalculationInterface, ValueUpdateInterface>;
   using ExpandedStatefulUpdateResult =
       typename NStepTemporalDifferenceValueUpdaterBase<VALUE_FUNCTION_T, StorageInterface>::
           ExpandedStatefulUpdateResult;
   using BufferType = boost::circular_buffer<ExpandedStatefulUpdateResult>;
+  using ReturnMetrics = typename ReturnCalculationInterface<
+      NStepTemporalDifferenceValueUpdaterBase<VALUE_FUNCTION_T, StorageInterface>>::ReturnMetrics;
 
   std::size_t n;
 
@@ -161,11 +211,14 @@ struct NStepUpdater
       // Return some signal here to indicate that we have reached a terminal state.
     } else {
       // add transition to buffer
-      const auto additional = this->store(valueFunction, policy, target_policy, environment, discountRate, n, t);
+      const auto additional = this->store(valueFunction, policy, target_policy, environment, discountRate, n, t, s);
       expandedTransitions.push_back(ExpandedStatefulUpdateResult{s, additional});
     }
     // std::cout << "observe: t:" << t << " size:" << expandedTransitions.size() << std::endl;
   }
+
+  using ValueUpdateInterface<ReturnCalculationInterface<
+      NStepTemporalDifferenceValueUpdaterBase<VALUE_FUNCTION_T, StorageInterface>>>::updateValue;
 
   void updateValue(
       VALUE_FUNCTION_T &valueFunction,
@@ -192,9 +245,9 @@ struct NStepUpdater
 
       const auto tauBufferOffset = moveByOffset(n, t, tau);
 
-      const auto discountedReturnG = [&]() -> PrecisionType {
+      const auto discountedReturnG = [&]() -> ReturnMetrics {
         if (expandedTransitions.size() == 0)
-          return 0;
+          return {};
 
         auto bufferLowerBound = (expandedTransitions.begin() + tauBufferOffset + 1);
         auto bufferUpperBound = expandedTransitions.end();
@@ -211,21 +264,6 @@ struct NStepUpdater
       updateValue(valueFunction, policy, target_policy, environment, discountRate, keyTau, discountedReturnG);
       // std::cout << "updating tau: " << tau << " with return: " << discountedReturnG << "\n";
     }
-  }
-
-  void updateValue(
-      VALUE_FUNCTION_T &valueFunction,
-      policy::isFinitePolicyValueFunctionMixin auto &policy,
-      policy::isFinitePolicyValueFunctionMixin auto &target_policy,
-      EnvironmentType &environment,
-      const PrecisionType &discountRate,
-      const KeyType &keyCurrent,
-      const PrecisionType &G) {
-
-    const auto alpha = 1.0F;
-    valueFunction[keyCurrent].value =
-        valueFunction.valueAt(keyCurrent) +
-        alpha * temporal_differenc_error(valueFunction.valueAt(keyCurrent), 0.0F, G, 0.0F);
   }
 
   std::pair<bool, ActionSpace> update(
