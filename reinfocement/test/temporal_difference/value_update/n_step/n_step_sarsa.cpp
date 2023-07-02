@@ -1,4 +1,5 @@
-#include "catch.hpp"
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_approx.hpp>
 #include <cmath>
 #include <iostream>
 
@@ -28,8 +29,6 @@ TEST_CASE("temporal_difference::NStepSarsa") {
   buffer.push_back(atom);
   buffer.push_back(atom);
   buffer.push_back(atom);
-
-  std::cout << "here: " << buffer.size() << std::endl;
 
   std::size_t T = 10;
   updater.observe(valueFunction, policySA, policySA, environ, a0, 1.0F, n, t, buffer);
@@ -67,7 +66,7 @@ TEST_CASE("temporal_difference::NStepSarsaOffPolicy") {
   buffer.push_back(atom);
   buffer.push_back(atom);
 
-  std::cout << "here: " << buffer.size() << std::endl;
+  // std::cout << "here: " << buffer.size() << std::endl;
 
   std::size_t T = 10;
   updater.observe(valueFunction, policySA, policySA, environ, a0, 1.0F, n, t, buffer);

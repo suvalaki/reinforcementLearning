@@ -5,6 +5,13 @@
 #include "temporal_difference/value_update/n_step/n_step_updater.hpp"
 #include "temporal_difference/value_update/sarsa.hpp"
 
+/**
+ * n-step policy return can be written recursively:
+ *
+ *    G_t = R_{t+1} + \gamma * ( rho_{t+1} G_{t+1 : h} + V_{h-1} (S_{t+1}) - rho_{t+1} Q_{h-1} (S_{t+1}, A_{t+1})  )
+ *
+ */
+
 namespace temporal_difference {
 
 template <typename CRTP>
@@ -18,7 +25,7 @@ struct OnPolicySarsaReturn {
   };
 
   ReturnMetrics calculateReturn(
-      const ValueFunctionType &valueFunction,
+      ValueFunctionType &valueFunction,
       policy::isFinitePolicyValueFunctionMixin auto &policy,
       policy::isFinitePolicyValueFunctionMixin auto &target_policy,
       EnvironmentType &environment,
@@ -27,15 +34,20 @@ struct OnPolicySarsaReturn {
       typename boost::circular_buffer<ExpandedStatefulUpdateResult>::iterator end) {
 
     auto G = std::accumulate(
-        start, end, 0.0F, [discountRate, &valueFunction, &environment](const auto &acc, const auto &itr) {
-          return acc + std::pow(discountRate, 1) * itr.reward;
+        start,
+        end,
+        0.0F,
+        [discountRate, &valueFunction, &environment, currentDiscountRate = 1.0F](
+            const auto &acc, const auto &itr) mutable {
+          currentDiscountRate *= discountRate;
+          return acc + currentDiscountRate * itr.reward;
         });
 
     const auto last = end - 1;
     if (last->isDone)
       return {
           G + discountRate *
-                  valueFunction(KeyMaker::make(environment, last->transition.state, last->transition.action)).value};
+                  valueFunction.valueAt(KeyMaker::make(environment, last->transition.state, last->transition.action))};
 
     return {G};
   }
@@ -90,7 +102,7 @@ struct OffPolicySarsaReturnCalculator {
   };
 
   ReturnMetrics calculateReturn(
-      const ValueFunctionType &valueFunction,
+      ValueFunctionType &valueFunction,
       policy::isFinitePolicyValueFunctionMixin auto &policy,
       policy::isFinitePolicyValueFunctionMixin auto &target_policy,
       EnvironmentType &environment,
@@ -98,20 +110,19 @@ struct OffPolicySarsaReturnCalculator {
       typename boost::circular_buffer<ExpandedStatefulUpdateResult>::iterator start,
       typename boost::circular_buffer<ExpandedStatefulUpdateResult>::iterator end) {
 
-    auto G = std::accumulate(start, end, 0.0F, [&discountRate](const auto &acc, const auto &itr) {
+    const auto G = std::accumulate(start, end, 0.0F, [&discountRate](const auto &acc, const auto &itr) {
       return acc + std::pow(discountRate, 1) * itr.reward;
     });
 
-    auto rho = start == end ? 1.0F : std::accumulate(start, (end - 1), 1.0F, [](const auto &acc, const auto &itr) {
-      return acc * itr.importanceRatio;
-    });
+    const auto rho =
+        start == end ? 1.0F : std::accumulate(start, (end - 1), 1.0F, [](const auto &acc, const auto &itr) {
+          return acc * itr.importanceRatio;
+        });
 
-    const auto last = end - 1;
-    if (last->isDone)
+    if (const auto last = end - 1; last->isDone)
       return {
-          .ret =
-              G + discountRate *
-                      valueFunction(KeyMaker::make(environment, last->transition.state, last->transition.action)).value,
+          .ret = G + discountRate * valueFunction.valueAt(
+                                        KeyMaker::make(environment, last->transition.state, last->transition.action)),
           .importanceRatio = rho};
 
     return {.ret = G, .importanceRatio = rho};
