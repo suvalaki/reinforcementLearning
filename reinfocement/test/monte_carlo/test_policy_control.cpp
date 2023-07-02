@@ -1,4 +1,5 @@
-#include "catch.hpp"
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_approx.hpp>
 #include <cmath>
 #include <iostream>
 
@@ -11,6 +12,8 @@
 #include "policy/finite/random_policy.hpp"
 #include "policy/greedy_policy.hpp"
 #include "policy/objectives/value_function_keymaker.hpp"
+
+using namespace Catch;
 
 using KeyMaker = policy::objectives::StateActionKeymaker<CoinEnviron>;
 using GreedyCoinPolicy = policy::FiniteGreedyPolicy<CoinFiniteStateActionValueFunction>;
@@ -39,7 +42,7 @@ TEST_CASE("monte_carlo::monte_carlo_on_policy_first_visit_control_with_exploring
 
     auto randomPolicy = RandomCoinPolicy();
     auto epsGreedyPolicy = EpsGreedyCoinPolicy{randomPolicy, {}, 0.2F};
-    std::cout << greedyPolicy.getProbability(environ, s0, a0) << "\n";
+    // std::cout << greedyPolicy.getProbability(environ, s0, a0) << "\n";
     epsGreedyPolicy.getProbability(environ, s0, a0);
 
     for (int i = 0; i < 10; ++i) {

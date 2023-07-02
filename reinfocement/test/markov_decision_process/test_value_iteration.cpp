@@ -1,5 +1,7 @@
-#include "catch.hpp"
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <iostream>
+#include <limits>
 
 #include "coin_mdp.hpp"
 #include "markov_decision_process/finite_transition_model.hpp"
@@ -8,6 +10,7 @@
 #include "policy/distribution_policy.hpp"
 #include "policy/random_policy.hpp"
 
+using namespace Catch;
 using namespace environment;
 using namespace markov_decision_process;
 using namespace markov_decision_process::value_iteration;
@@ -50,15 +53,15 @@ TEST_CASE("Coin MPD can undergo policy value iteration") {
 
     // these are the optimals after 1 iteration
     auto p00 = policy.getProbability(environ, s0, a0);
-    CHECK(p00 == Approx(0.0F));
+    REQUIRE_THAT(p00, Catch::Matchers::WithinAbs(0.0, std::numeric_limits<float>::epsilon()) );
 
     auto p01 = policy.getProbability(environ, s0, a1);
-    CHECK(p01 == Approx(1.0F));
+    REQUIRE_THAT(p01, Catch::Matchers::WithinAbs(1.0, std::numeric_limits<float>::epsilon()) );
 
     auto p10 = policy.getProbability(environ, s1, a0);
-    CHECK(p10 == Approx(1.0F));
+    REQUIRE_THAT(p10, Catch::Matchers::WithinAbs(1.0, std::numeric_limits<float>::epsilon()) );
 
     auto p11 = policy.getProbability(environ, s1, a1);
-    CHECK(p11 == Approx(0.0F));
+    REQUIRE_THAT(p11, Catch::Matchers::WithinAbs(0.0, std::numeric_limits<float>::epsilon()) );
   }
 }

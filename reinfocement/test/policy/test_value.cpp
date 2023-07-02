@@ -1,4 +1,5 @@
-#include "catch.hpp"
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_approx.hpp>
 #include <cmath>
 #include <iostream>
 
@@ -25,7 +26,6 @@ TEST_CASE("Test Value Function", "[policy][value]") {
   finiteStateActionValueFunction.initialize(environ);
   finiteActionValueFunction.initialize(environ);
 
-  std::cout << "here\n";
   finiteStateActionValueFunction.prettyPrint();
   finiteStateValueFunction.prettyPrint();
   finiteActionValueFunction.prettyPrint();

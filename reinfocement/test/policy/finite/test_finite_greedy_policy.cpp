@@ -1,4 +1,5 @@
-#include "catch.hpp"
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_approx.hpp>
 #include <iostream>
 #include <limits>
 
@@ -6,6 +7,7 @@
 #include "policy/finite/greedy_policy.hpp"
 #include "policy/objectives/value_function_keymaker.hpp"
 
+using namespace Catch;
 using namespace policy;
 using namespace fixtures;
 using namespace policy::objectives;

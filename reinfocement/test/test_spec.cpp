@@ -1,4 +1,4 @@
-#include "catch.hpp"
+#include <catch2/catch_test_macros.hpp>
 #include <cmath>
 #include <iostream>
 #include <tuple>
@@ -116,6 +116,7 @@ TEST_CASE("BoundedAarraySpec instantiation", "[spec][BoundedAarraySpec]") {
     }
   };
 
-  [&]<std::size_t... k>(std::index_sequence<k...>) { (testType_impl.template operator()<k>(), ...); }
-  (std::make_index_sequence<std::tuple_size_v<typesToCheck>>{});
+  [&]<std::size_t... k>(std::index_sequence<k...>) {
+    (testType_impl.template operator()<k>(), ...);
+  }(std::make_index_sequence<std::tuple_size_v<typesToCheck>>{});
 }

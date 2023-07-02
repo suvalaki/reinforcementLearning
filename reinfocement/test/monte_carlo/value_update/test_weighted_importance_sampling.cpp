@@ -1,4 +1,5 @@
-#include "catch.hpp"
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_approx.hpp>
 #include <cmath>
 #include <iostream>
 
@@ -7,6 +8,7 @@
 #include "monte_carlo/value.hpp"
 #include "monte_carlo/value_update/weighted_importance_sampling.hpp"
 
+using namespace Catch;
 using namespace monte_carlo;
 
 struct MockPolicyWithFixedRatio : CoinDistributionPolicy {

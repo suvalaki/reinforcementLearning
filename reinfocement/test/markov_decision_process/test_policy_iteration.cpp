@@ -1,4 +1,5 @@
-#include "catch.hpp"
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_approx.hpp>
 #include <iostream>
 
 #include "coin_mdp.hpp"
@@ -7,6 +8,7 @@
 #include "policy/distribution_policy.hpp"
 #include "policy/random_policy.hpp"
 
+using namespace Catch;
 using namespace environment;
 using namespace markov_decision_process;
 
@@ -55,8 +57,8 @@ TEST_CASE("Coin MPD can undergo policy improvement") {
     policy_evaluation(valueFunction, environ, policy, 1e-3F);
     auto updated = policy_improvement_step(valueFunction, environ, policy, s0);
     CHECK_FALSE(updated); // the policy updated
-    std::cout << policy.getProbability(environ, s0, a0) << "\n";
-    std::cout << policy.getProbability(environ, s0, a1) << "\n";
+    // std::cout << policy.getProbability(environ, s0, a0) << "\n";
+    // std::cout << policy.getProbability(environ, s0, a1) << "\n";
   }
 
   SECTION("Complete Policy improvement") {
