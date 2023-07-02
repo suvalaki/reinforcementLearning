@@ -37,7 +37,7 @@ template <typename REWARD_T>
 concept RewardProtocol = requires(REWARD_T t, const typename REWARD_T::TransitionType &tn) {
   // Reqyure that the Object implementing the reward protocol to implement
   // static PrecisionType reward(const TransitionType& t) {return 0.0F;}
-  {REWARD_T::reward(tn)};
+  { REWARD_T::reward(tn) };
   // Require Precision Type is inside REWARD_D
   typename REWARD_T::PrecisionType;
   // Require ActionSpace is inside REWARD_D - Rewards always act over an action
@@ -53,7 +53,7 @@ concept RewardType = RewardBaseType<T> && RewardProtocol<T>;
 template <RewardProtocol REWARD_T>
 struct Return {
 
-  using PrecisionType = REWARD_T::PrecisionType;
+  using PrecisionType = typename REWARD_T::PrecisionType;
   using RewardType = REWARD_T;
   using ActionSpace = typename RewardType::ActionSpace;
   using ActionSpecType = typename ActionSpace::SpecType;

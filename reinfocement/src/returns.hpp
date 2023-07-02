@@ -23,7 +23,7 @@ using transition::TransitionSequence;
 template <RewardProtocol REWARD_T>
 struct Return {
 
-  using PrecisionType = REWARD_T::PrecisionType;
+  using PrecisionType = typename REWARD_T::PrecisionType;
   using RewardType = REWARD_T;
   using ActionSpace = typename RewardType::ActionSpace;
   using ActionSpecType = typename ActionSpace::SpecType;

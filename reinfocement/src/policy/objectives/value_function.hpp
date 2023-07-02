@@ -10,6 +10,9 @@
 #include "policy/objectives/value_function_keymaker.hpp"
 
 #define VFT ValueFunction<KEYMAPPER_T, VALUE_T, INITIAL_VALUE, DISCOUNT_RATE>
+#define VFT_CONSTRAINTS                                                                                                \
+  template <isValueFunctionKeymaker KEYMAPPER_T, isValue VALUE_T, auto INITIAL_VALUE, auto DISCOUNT_RATE>              \
+  requires std::is_same_v<typename KEYMAPPER_T::EnvironmentType, typename VALUE_T::EnvironmentType>
 
 namespace policy::objectives {
 
@@ -55,11 +58,14 @@ concept isValueFunction = std::
     is_base_of_v<ValueFunction<typename T::KeyMaker, typename T::ValueType, T::initial_value, T::discount_rate>, T>;
 
 template <isValueFunctionKeymaker KEYMAPPER_T, isValue VALUE_T, auto INITIAL_VALUE, auto DISCOUNT_RATE>
-typename VFT::KeyType VFT::makeKey(const EnvironmentType &e, const StateType &s, const ActionSpace &a) {
+requires std::is_same_v<typename KEYMAPPER_T::EnvironmentType, typename VALUE_T::EnvironmentType>
+typename VFT::KeyType VFT::makeKey(
+    const typename VFT::EnvironmentType &e, const typename VFT::StateType &s, const typename VFT::ActionSpace &a) {
   return KeyMaker::make(e, s, a);
 }
 
 template <isValueFunctionKeymaker KEYMAPPER_T, isValue VALUE_T, auto INITIAL_VALUE, auto DISCOUNT_RATE>
+requires std::is_same_v<typename KEYMAPPER_T::EnvironmentType, typename VALUE_T::EnvironmentType>
 typename VFT::PrecisionType &VFT::valueAt(const KeyType &k) const {
   return this->operator()(k).getValue();
 }

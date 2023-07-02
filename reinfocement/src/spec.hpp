@@ -40,16 +40,14 @@ concept BoundedArraySpecType = requires {
   T::dims;
   T::nDim;
   T::isFinite;
-}
-&&(Number<typename T::ValueType>);
+} && (Number<typename T::ValueType>);
 
 template <typename T>
 concept BoundedArraySpecProtocol = requires(T t) {
-  {t.min};
-  {t.max};
-  {t.dims};
-}
-&&(Number<typename T::ValueType>);
+  { t.min };
+  { t.max };
+  { t.dims };
+} && (Number<typename T::ValueType>);
 
 template <typename T>
 concept isBoundedArraySpec = BoundedArraySpecType<T> && BoundedArraySpecProtocol<T>;
@@ -81,14 +79,12 @@ concept CategoricalArraySpecType = requires {
   T::dims;
   T::nDim;
   T::isFinite;
-}
-&&EnumType<typename T::ChoicesType>;
+} && EnumType<typename T::ChoicesType>;
 
 template <typename T>
 concept CategoricalArraySpecProtocol = requires(T t) {
-  {t.dims};
-}
-&&EnumType<typename T::ChoicesType>;
+  { t.dims };
+} && EnumType<typename T::ChoicesType>;
 
 template <typename T>
 concept isCategoricalArraySpec = CategoricalArraySpecType<T> && CategoricalArraySpecProtocol<T>;
@@ -101,7 +97,7 @@ concept AllElementsAnyArraySpecType = (AnyArraySpecType<T> && ...);
 
 template <typename T>
 struct type_getter_bound {
-  using type = T::ValueType;
+  using type = typename T::ValueType;
 };
 template <typename T>
 struct type_getter_cat {
@@ -142,8 +138,7 @@ struct CompositeArray : std::tuple<typename T::DataType...> {
       // xtensor == comparison returns a bool for the entire thing
       // https://xtensor.readthedocs.io/en/latest/quickref/operator.html
       return ((std::get<N>(lhs) == std::get<N>(rhs)) && ...);
-    }
-    (std::make_index_sequence<sizeof...(T)>());
+    }(std::make_index_sequence<sizeof...(T)>());
   }
 };
 
@@ -163,8 +158,7 @@ struct CompositeArraySpec : std::tuple<T...> {
     else if constexpr (isFinite) {
       return [&]<std::size_t... N>(std::index_sequence<N...>) {
         return ((std::tuple_element_t<N, tupleType>::max - std::tuple_element_t<N, tupleType>::min) * ...);
-      }
-      (std::make_index_sequence<sizeof...(T)>());
+      }(std::make_index_sequence<sizeof...(T)>());
     }
 
     else {
@@ -182,21 +176,24 @@ concept hasTupleType = requires {
 // isinstance of CompositeArraySpec only if check all tuple elements are
 // AnyArraySpecType
 template <typename T>
-concept CompositeArraySpecType = hasTupleType<T> &&[]<std::size_t... N>(std::index_sequence<N...>) {
+concept CompositeArraySpecType = hasTupleType<T> && []<std::size_t... N>(std::index_sequence<N...>) {
   return (AnyArraySpecType<std::tuple_element_t<N, typename T::tupleType>> && ...);
-}
-(std::make_index_sequence<std::tuple_size_v<typename T::tupleType>>());
+}(std::make_index_sequence<std::tuple_size_v<typename T::tupleType>>());
 
 // methods to return a default data type given the spec
 // For now we are using the min as the default
 
 template <isBoundedArraySpec T>
 requires isBoundedArraySpec<T>
-typename T::DataType default_spec_gen() { return T::min * xt::ones<typename T::ValueType>(T::shape); }
+typename T::DataType default_spec_gen() {
+  return T::min * xt::ones<typename T::ValueType>(T::shape);
+}
 
 template <isCategoricalArraySpec T>
 requires isCategoricalArraySpec<T>
-typename T::DataType default_spec_gen() { return T::min * xt::ones<double>(T::shape); }
+typename T::DataType default_spec_gen() {
+  return T::min * xt::ones<double>(T::shape);
+}
 
 template <CompositeArraySpecType T>
 typename T::DataType default_spec_gen() {
@@ -204,8 +201,7 @@ typename T::DataType default_spec_gen() {
   // Tuple of the random types
   return []<std::size_t... N>(std::index_sequence<N...>) {
     return typename T::DataType(default_spec_gen<std::tuple_element_t<N, typename T::tupleType>>()...);
-  }
-  (std::make_index_sequence<std::tuple_size_v<typename T::tupleType>>());
+  }(std::make_index_sequence<std::tuple_size_v<typename T::tupleType>>());
 }
 
 // Mechanism for a constant data for the spec
@@ -233,28 +229,27 @@ constant_spec_gen(const typename T::ValueType &value) {
 
 // Applies the same constant to all elements of the composite array
 template <CompositeArraySpecType T>
-requires CompositeArraySpecType<T> std::enable_if_t < CompositeArraySpecType<T>,
-typename T::DataType > constant_spec_gen(const double &value) {
+requires CompositeArraySpecType<T>
+std::enable_if_t<CompositeArraySpecType<T>, typename T::DataType> constant_spec_gen(const double &value) {
 
   // Tuple of the random types
   return [&value]<std::size_t... N>(std::index_sequence<N...>) {
     return typename T::DataType(constant_spec_gen<std::tuple_element_t<N, typename T::tupleType>>(
         static_cast<typename std::tuple_element_t<N, typename T::tupleValueType>>(value))...);
-  }
-  (std::make_index_sequence<std::tuple_size_v<typename T::tupleType>>());
+  }(std::make_index_sequence<std::tuple_size_v<typename T::tupleType>>());
 }
 
 // Specify each element for each eleemnt of the spec
 template <CompositeArraySpecType T>
-requires CompositeArraySpecType<T> std::enable_if_t < CompositeArraySpecType<T>,
-typename T::DataType > constant_spec_gen(const typename T::tupleValueType &value) {
+requires CompositeArraySpecType<T>
+std::enable_if_t<CompositeArraySpecType<T>, typename T::DataType>
+constant_spec_gen(const typename T::tupleValueType &value) {
 
   // Tuple of the random types
   return [&value]<std::size_t... N>(std::index_sequence<N...>) {
     return typename T::DataType(constant_spec_gen<std::tuple_element_t<N, typename T::tupleType>>(
         static_cast<typename std::tuple_element_t<N, typename T::tupleValueType>>(value))...);
-  }
-  (std::make_index_sequence<std::tuple_size_v<typename T::tupleType>>());
+  }(std::make_index_sequence<std::tuple_size_v<typename T::tupleType>>());
 }
 
 // Turn spec into a tuple
@@ -274,6 +269,6 @@ struct BoundedArray {
 namespace std {
 template <std::size_t I, spec::AllElementsAnyArraySpecType... T>
 decltype(auto) get(spec::CompositeArray<typename T::DataType...> &v) {
-  return std::get<I>(static_cast<spec::CompositeArray<typename T::DataType...>::tupleDataType &>(v));
+  return std::get<I>(static_cast<typename spec::CompositeArray<typename T::DataType...>::tupleDataType &>(v));
 }
 } // namespace std

@@ -13,7 +13,7 @@
 
 namespace action {
 
-using typename state::StateType;
+using state::StateType;
 
 template <StateType STATE_T, spec::CompositeArraySpecType T = spec::CompositeArraySpec<>>
 struct Action : T::DataType {
@@ -21,7 +21,7 @@ struct Action : T::DataType {
   using SpecType = T;
   using StateType = STATE_T;
   using PrecisionType = typename StateType::PrecisionType;
-  using DataType = T::DataType;
+  using DataType = typename T::DataType;
 
   // Add type which adheres to the spec
   Action() = default;
@@ -30,7 +30,7 @@ struct Action : T::DataType {
   // When an action modifies the state space impliment anew
   virtual StateType step(const StateType &state) const { return state; }
 
-  bool operator==(const Action &rhs) {
+  bool operator==(const Action &rhs) const {
     return static_cast<const typename T::DataType &>(*this) == static_cast<const typename T::DataType &>(rhs);
   }
 
