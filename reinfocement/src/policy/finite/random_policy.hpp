@@ -54,7 +54,7 @@ typename FRP::PrecisionType FRP::getNormalisationConstant(const EnvironmentType 
   return e.getReachableActions(s).size();
 }
 
-template <environment::EnvironmentType E>
+template <environment::FiniteEnvironmentType E>
 typename FRP::ActionSpace FRP::getArgmaxAction(const EnvironmentType &e, const StateType &s) const {
   throw std::logic_error("A purely random policy has no notion of a 'best' action.");
 }
