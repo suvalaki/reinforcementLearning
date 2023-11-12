@@ -73,6 +73,8 @@ requires(std::is_same_v<typename VALUE_FUNCTION_T::KeyMaker, typename POLICY_T0:
     // If the state does not appear in an earlier transition
     if (stop_condition.template operator()<typename EPISODE_GENERATOR_T::EpisodeType>(
             environment, episode.GetTransitions().begin(), (it + 1).base(), *it)) {
+      // Let the value for visiting this novel state be the discount return for all future rewards after
+      // this state (under the policy).  
       valueUpdater.update(valueFunction, policy, target_policy, environment, it->state, it->action, G);
     }
   }
