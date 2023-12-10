@@ -15,7 +15,8 @@
 
 namespace policy {
 
-template <environment::EnvironmentType E> struct DistributionPolicy : virtual PolicyDistributionMixin<E>, Policy<E> {
+template <environment::EnvironmentType E>
+struct DistributionPolicy : virtual PolicyDistributionMixin<E>, Policy<E> {
 
   using BaseType = Policy<E>;
   SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(BaseType::EnvironmentType));
@@ -27,8 +28,8 @@ template <environment::EnvironmentType E> struct DistributionPolicy : virtual Po
 };
 
 template <environment::EnvironmentType E>
-typename DistributionPolicy<E>::ActionSpace DistributionPolicy<E>::operator()(const EnvironmentType &e,
-                                                                              const StateType &s) const {
+typename DistributionPolicy<E>::ActionSpace
+DistributionPolicy<E>::operator()(const EnvironmentType &e, const StateType &s) const {
   return this->sampleAction(e, s);
 }
 

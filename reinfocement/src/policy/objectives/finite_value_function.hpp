@@ -43,6 +43,7 @@ public:
       typename FiniteValueFunctionMapGetter<typename VALUE_FUNCTION_T::KeyMaker, typename VALUE_FUNCTION_T::ValueType>::
           type;
   using StepSizeTaker = INCREMENTAL_STEPSIZE_T;
+  using ValueFunctionType = FiniteValueFunction<VALUE_FUNCTION_T, INCREMENTAL_STEPSIZE_T>;
 
   constexpr static auto iterations = 1000;
   typename ValueType::Factory valueFactory{};

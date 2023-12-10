@@ -15,9 +15,10 @@ namespace state {
 
 using spec::Float;
 
-template <Float TYPE_T,
-          spec::CompositeArraySpecType OBSERVABLE_SPEC_T = spec::CompositeArraySpec<>,
-          spec::CompositeArraySpecType HIDDEN_SPEC_T = spec::CompositeArraySpec<>>
+template <
+    Float TYPE_T,
+    spec::CompositeArraySpecType OBSERVABLE_SPEC_T = spec::CompositeArraySpec<>,
+    spec::CompositeArraySpecType HIDDEN_SPEC_T = spec::CompositeArraySpec<>>
 struct State {
   using PrecisionType = TYPE_T;
 

@@ -41,17 +41,13 @@ namespace markov_decision_process {
  * @return VALUE_FUNCTION_T::PrecisionType The expected value
  */
 template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T>
-typename VALUE_FUNCTION_T::PrecisionType
-value_from_state_action(VALUE_FUNCTION_T &valueFunction,
-                        const typename VALUE_FUNCTION_T::EnvironmentType &environment,
-                        const typename VALUE_FUNCTION_T::EnvironmentType::StateType &state,
-                        const typename VALUE_FUNCTION_T::EnvironmentType::ActionSpace &action) {
+typename VALUE_FUNCTION_T::PrecisionType value_from_state_action(
+    VALUE_FUNCTION_T &valueFunction,
+    const typename VALUE_FUNCTION_T::EnvironmentType &environment,
+    const typename VALUE_FUNCTION_T::EnvironmentType::StateType &state,
+    const typename VALUE_FUNCTION_T::EnvironmentType::ActionSpace &action) {
 
-  using EnvironmentType = typename VALUE_FUNCTION_T::EnvironmentType;
-  using PrecisionType = typename EnvironmentType::PrecisionType;
-  using RewardType = typename EnvironmentType::RewardType;
-  using StateType = typename EnvironmentType::StateType;
-  using TransitionType = typename EnvironmentType::TransitionType;
+  SETUP_TYPES_W_VALUE_FUNCTION(VALUE_FUNCTION_T);
 
   const auto &transitionModel = environment.transitionModel;
 
@@ -102,20 +98,11 @@ value_from_state_action(VALUE_FUNCTION_T &valueFunction,
  * @return VALUE_FUNCTION_T::PrecisionType The estimated value of the state
  */
 template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T, policy::isDistributionPolicy POLICY_T>
-typename VALUE_FUNCTION_T::PrecisionType
-policy_evaluation_step(VALUE_FUNCTION_T &valueFunction,
-                       const typename VALUE_FUNCTION_T::EnvironmentType &environment,
-                       const POLICY_T &policy,
-                       const typename VALUE_FUNCTION_T::StateType &state) {
-
-  using EnvironmentType = typename VALUE_FUNCTION_T::EnvironmentType;
-  using PrecisionType = typename EnvironmentType::PrecisionType;
-  using RewardType = typename EnvironmentType::RewardType;
-  using StateType = typename EnvironmentType::StateType;
-  using TransitionType = typename EnvironmentType::TransitionType;
-
-  using ValueFunctionKeyMaker = typename VALUE_FUNCTION_T::KeyMaker;
-  using PolicyKeyMaker = typename POLICY_T::KeyMaker;
+typename VALUE_FUNCTION_T::PrecisionType policy_evaluation_step(
+    VALUE_FUNCTION_T &valueFunction,
+    const typename VALUE_FUNCTION_T::EnvironmentType &environment,
+    const POLICY_T &policy,
+    const typename VALUE_FUNCTION_T::StateType &state) {
 
   const auto &transitionModel = environment.transitionModel;
   auto currentValueEstimate = valueFunction.valueAt(state);
@@ -152,10 +139,11 @@ policy_evaluation_step(VALUE_FUNCTION_T &valueFunction,
  * state changes by less than epsilon we have converged.
  */
 template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T, policy::isDistributionPolicy POLICY_T>
-void policy_evaluation(VALUE_FUNCTION_T &valueFunction,
-                       const typename POLICY_T::EnvironmentType &environment,
-                       POLICY_T &policy,
-                       const typename VALUE_FUNCTION_T::PrecisionType &epsilon) {
+void policy_evaluation(
+    VALUE_FUNCTION_T &valueFunction,
+    const typename POLICY_T::EnvironmentType &environment,
+    POLICY_T &policy,
+    const typename VALUE_FUNCTION_T::PrecisionType &epsilon) {
 
   assert(epsilon > 0.0F);
 
@@ -208,18 +196,12 @@ void policy_evaluation(VALUE_FUNCTION_T &valueFunction,
  * @return false If the policy was not improved
  */
 template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T, policy::isDistributionPolicy POLICY_T>
-bool policy_improvement_step(VALUE_FUNCTION_T &valueFunction,
-                             const typename VALUE_FUNCTION_T::EnvironmentType &environment,
-                             POLICY_T &policy,
-                             const typename VALUE_FUNCTION_T::EnvironmentType::StateType &state) {
+bool policy_improvement_step(
+    VALUE_FUNCTION_T &valueFunction,
+    const typename VALUE_FUNCTION_T::EnvironmentType &environment,
+    POLICY_T &policy,
+    const typename VALUE_FUNCTION_T::EnvironmentType::StateType &state) {
 
-  using EnvironmentType = typename VALUE_FUNCTION_T::EnvironmentType;
-  using PrecisionType = typename EnvironmentType::PrecisionType;
-  using RewardType = typename EnvironmentType::RewardType;
-  using StateType = typename EnvironmentType::StateType;
-  using TransitionType = typename EnvironmentType::TransitionType;
-
-  using ValueFunctionKeyMaker = typename VALUE_FUNCTION_T::KeyMaker;
   using PolicyKeyMaker = typename POLICY_T::KeyMaker;
 
   // using KeyMaker = typename POLICY_T::KeyMaker;
@@ -270,9 +252,8 @@ bool policy_improvement_step(VALUE_FUNCTION_T &valueFunction,
  * made)
  */
 template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T, policy::isDistributionPolicy POLICY_T>
-bool policy_improvement(VALUE_FUNCTION_T &valueFunction,
-                        const typename VALUE_FUNCTION_T::EnvironmentType &environment,
-                        POLICY_T &policy) {
+bool policy_improvement(
+    VALUE_FUNCTION_T &valueFunction, const typename VALUE_FUNCTION_T::EnvironmentType &environment, POLICY_T &policy) {
 
   bool policyStable = true;
 
@@ -298,10 +279,11 @@ bool policy_improvement(VALUE_FUNCTION_T &valueFunction,
  * @param epsilon The precision to use for the policy evaluation
  */
 template <policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T, policy::isDistributionPolicy POLICY_T>
-void policy_iteration(VALUE_FUNCTION_T &valueFunction,
-                      const typename VALUE_FUNCTION_T::EnvironmentType &environment,
-                      POLICY_T &policy,
-                      const typename VALUE_FUNCTION_T::PrecisionType &epsilon) {
+void policy_iteration(
+    VALUE_FUNCTION_T &valueFunction,
+    const typename VALUE_FUNCTION_T::EnvironmentType &environment,
+    POLICY_T &policy,
+    const typename VALUE_FUNCTION_T::PrecisionType &epsilon) {
 
   bool policyStable = true;
 

@@ -22,13 +22,9 @@ namespace policy {
 template <objectives::isFiniteValueFunction VALUE_FUNCTION_T>
 struct FiniteGreedyPolicy : GreedyPolicy<VALUE_FUNCTION_T>, FinitePolicyValueFunctionMixin<VALUE_FUNCTION_T> {
 
-  SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(VALUE_FUNCTION_T::EnvironmentType));
-  using ValueFunctionType = VALUE_FUNCTION_T;
+  SETUP_TYPES_W_VALUE_FUNCTION(VALUE_FUNCTION_T);
   using ValueFunctionBaseType = typename ValueFunctionType::ValueFunctionBaseType;
   using StepSizeTaker = typename VALUE_FUNCTION_T::StepSizeTaker;
-  using KeyMaker = typename VALUE_FUNCTION_T::KeyMaker;
-  using KeyType = typename KeyMaker::KeyType;
-  using ValueType = typename VALUE_FUNCTION_T::ValueType;
   using ValueTableType = typename objectives::FiniteValueFunction<ValueFunctionType>::ValueTableType;
 
   FiniteGreedyPolicy(auto &&...args);

@@ -34,33 +34,37 @@ concept isValueUpdater = requires(T t) {
 
   // Update the internal state of the Updater itself. When the Updater sees a new return it can perform
   // calculations like weighted averaging, incrementing support or importance sampling estimation.
-  t.updateReturns(std::declval<typename T::ValueFunctionType &>(),
-                  std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
-                  std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
-                  std::declval<typename T::EnvironmentType &>(),
-                  std::declval<typename T::StateType &>(),
-                  std::declval<typename T::ActionSpace &>(),
-                  std::declval<typename T::PrecisionType &>());
+  t.updateReturns(
+      std::declval<typename T::ValueFunctionType &>(),
+      std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
+      std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
+      std::declval<typename T::EnvironmentType &>(),
+      std::declval<typename T::StateType &>(),
+      std::declval<typename T::ActionSpace &>(),
+      std::declval<typename T::PrecisionType &>());
 
   // Using the newly updated state of the Updater, update the value function.
-  t.updateValue(std::declval<typename T::ValueFunctionType &>(),
-                std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
-                std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
-                std::declval<typename T::EnvironmentType &>(),
-                std::declval<typename T::StateType &>(),
-                std::declval<typename T::ActionSpace &>());
+  t.updateValue(
+      std::declval<typename T::ValueFunctionType &>(),
+      std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
+      std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
+      std::declval<typename T::EnvironmentType &>(),
+      std::declval<typename T::StateType &>(),
+      std::declval<typename T::ActionSpace &>());
 
   // Update the internal state of the Updater and then the value function.
-  t.update(std::declval<typename T::ValueFunctionType &>(),
-           std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
-           std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
-           std::declval<typename T::EnvironmentType &>(),
-           std::declval<typename T::StateType &>(),
-           std::declval<typename T::ActionSpace &>(),
-           std::declval<typename T::PrecisionType &>());
+  t.update(
+      std::declval<typename T::ValueFunctionType &>(),
+      std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
+      std::declval<policy::FiniteGreedyPolicy<typename T::ValueFunctionType> &>(),
+      std::declval<typename T::EnvironmentType &>(),
+      std::declval<typename T::StateType &>(),
+      std::declval<typename T::ActionSpace &>(),
+      std::declval<typename T::PrecisionType &>());
 };
 
-template <typename CRTP, policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T> struct ValueUpdaterBase {
+template <typename CRTP, policy::objectives::isFiniteStateValueFunction VALUE_FUNCTION_T>
+struct ValueUpdaterBase {
 
   void initialize(typename VALUE_FUNCTION_T::EnvironmentType &environment, VALUE_FUNCTION_T &valueFunction) {
     valueFunction.initialize(environment);
@@ -73,13 +77,14 @@ template <typename CRTP, policy::objectives::isFiniteStateValueFunction VALUE_FU
   }
 
   template <policy::isFinitePolicyValueFunctionMixin POLICY_T0, policy::isFinitePolicyValueFunctionMixin POLICY_T1>
-  void update(VALUE_FUNCTION_T &valueFunction,
-              POLICY_T0 &policy,
-              POLICY_T1 &target_policy,
-              typename VALUE_FUNCTION_T::EnvironmentType &environment,
-              const typename VALUE_FUNCTION_T::StateType &state,
-              const typename VALUE_FUNCTION_T::ActionSpace &action,
-              const typename VALUE_FUNCTION_T::PrecisionType &discountedReturn) {
+  void update(
+      VALUE_FUNCTION_T &valueFunction,
+      POLICY_T0 &policy,
+      POLICY_T1 &target_policy,
+      typename VALUE_FUNCTION_T::EnvironmentType &environment,
+      const typename VALUE_FUNCTION_T::StateType &state,
+      const typename VALUE_FUNCTION_T::ActionSpace &action,
+      const typename VALUE_FUNCTION_T::PrecisionType &discountedReturn) {
     static_cast<CRTP &>(*this).updateReturns(
         valueFunction, policy, target_policy, environment, state, action, discountedReturn);
     static_cast<CRTP &>(*this).updateValue(valueFunction, policy, target_policy, environment, state, action);

@@ -12,7 +12,8 @@ namespace step {
 using action::ActionType;
 using state::StateType;
 
-template <ActionType ACTION0> struct Step {
+template <ActionType ACTION0>
+struct Step {
   using StateType = typename ACTION0::StateType;
   using PrecisionType = typename StateType::PrecisionType;
   using ActionSpace = ACTION0;

@@ -10,6 +10,9 @@
 #include "policy/objectives/value_function_keymaker.hpp"
 
 #define VFT ValueFunction<KEYMAPPER_T, VALUE_T, INITIAL_VALUE, DISCOUNT_RATE>
+#define VFT_CONSTRAINTS                                                                                                \
+  template <isValueFunctionKeymaker KEYMAPPER_T, isValue VALUE_T, auto INITIAL_VALUE, auto DISCOUNT_RATE>              \
+  requires std::is_same_v<typename KEYMAPPER_T::EnvironmentType, typename VALUE_T::EnvironmentType>
 
 namespace policy::objectives {
 
@@ -20,10 +23,11 @@ namespace policy::objectives {
  * the domain for the value function. It could be the case that the number of
  * keys is much smaller than the number of state-action permutations.
  */
-template <isValueFunctionKeymaker KEYMAPPER_T,
-          isValue VALUE_T = Value<typename KEYMAPPER_T::EnvironmentType>,
-          auto INITIAL_VALUE = 0.0F,
-          auto DISCOUNT_RATE = 0.0F>
+template <
+    isValueFunctionKeymaker KEYMAPPER_T,
+    isValue VALUE_T = Value<typename KEYMAPPER_T::EnvironmentType>,
+    auto INITIAL_VALUE = 0.0F,
+    auto DISCOUNT_RATE = 0.0F>
 requires std::is_same_v<typename KEYMAPPER_T::EnvironmentType, typename VALUE_T::EnvironmentType>
 struct ValueFunction {
 
@@ -33,8 +37,8 @@ struct ValueFunction {
   using ValueType = VALUE_T;
   using ValueFactory = typename ValueType::Factory;
 
-  ValueFunction(const PrecisionType &initial_value = INITIAL_VALUE,
-                const PrecisionType &discount_rate = DISCOUNT_RATE) {}
+  ValueFunction(
+      const PrecisionType &initial_value = INITIAL_VALUE, const PrecisionType &discount_rate = DISCOUNT_RATE) {}
   ValueFunction(const ValueFunction &) = default;
 
   // The starting value estimate
@@ -50,16 +54,18 @@ struct ValueFunction {
 };
 
 template <typename T>
-concept isValueFunction =
-    std::is_base_of_v<ValueFunction<typename T::KeyMaker, typename T::ValueType, T::initial_value, T::discount_rate>,
-                      T>;
+concept isValueFunction = std::
+    is_base_of_v<ValueFunction<typename T::KeyMaker, typename T::ValueType, T::initial_value, T::discount_rate>, T>;
 
 template <isValueFunctionKeymaker KEYMAPPER_T, isValue VALUE_T, auto INITIAL_VALUE, auto DISCOUNT_RATE>
-typename VFT::KeyType VFT::makeKey(const EnvironmentType &e, const StateType &s, const ActionSpace &a) {
+requires std::is_same_v<typename KEYMAPPER_T::EnvironmentType, typename VALUE_T::EnvironmentType>
+typename VFT::KeyType VFT::makeKey(
+    const typename VFT::EnvironmentType &e, const typename VFT::StateType &s, const typename VFT::ActionSpace &a) {
   return KeyMaker::make(e, s, a);
 }
 
 template <isValueFunctionKeymaker KEYMAPPER_T, isValue VALUE_T, auto INITIAL_VALUE, auto DISCOUNT_RATE>
+requires std::is_same_v<typename KEYMAPPER_T::EnvironmentType, typename VALUE_T::EnvironmentType>
 typename VFT::PrecisionType &VFT::valueAt(const KeyType &k) const {
   return this->operator()(k).getValue();
 }
@@ -68,10 +74,11 @@ typename VFT::PrecisionType &VFT::valueAt(const KeyType &k) const {
  * is required when the transition model isnt present (as is the case for
  * monte carlo model free approximation).
  */
-template <environment::EnvironmentType E,
-          auto INITIAL_VALUE = 0.0F,
-          auto DISCOUNT_RATE = 0.0F,
-          template <typename> typename VALUE_T = Value>
+template <
+    environment::EnvironmentType E,
+    auto INITIAL_VALUE = 0.0F,
+    auto DISCOUNT_RATE = 0.0F,
+    template <typename> typename VALUE_T = Value>
 requires isValueTemplate<VALUE_T>
 using StateActionValueFunction = ValueFunction<StateActionKeymaker<E>, VALUE_T<E>, INITIAL_VALUE, DISCOUNT_RATE>;
 
@@ -83,10 +90,11 @@ concept isStateActionValueFunction =
  * known this is enough to calculcate future expected returns under a given
  * policy ( as is the case in MDP).
  */
-template <environment::EnvironmentType E,
-          auto INITIAL_VALUE = 0.0F,
-          auto DISCOUNT_RATE = 0.0F,
-          template <typename> typename VALUE_T = Value>
+template <
+    environment::EnvironmentType E,
+    auto INITIAL_VALUE = 0.0F,
+    auto DISCOUNT_RATE = 0.0F,
+    template <typename> typename VALUE_T = Value>
 requires isValueTemplate<VALUE_T>
 using StateValueFunction = ValueFunction<StateKeymaker<E>, VALUE_T<E>, INITIAL_VALUE, DISCOUNT_RATE>;
 
@@ -96,16 +104,25 @@ concept isStateValueFunction =
 
 /** @brief A mapping of actions to valus : a -> q(a)
  */
-template <environment::EnvironmentType E,
-          auto INITIAL_VALUE = 0.0F,
-          auto DISCOUNT_RATE = 0.0F,
-          template <typename> typename VALUE_T = Value>
+template <
+    environment::EnvironmentType E,
+    auto INITIAL_VALUE = 0.0F,
+    auto DISCOUNT_RATE = 0.0F,
+    template <typename> typename VALUE_T = Value>
 requires isValueTemplate<VALUE_T>
 using ActionValueFunction = ValueFunction<ActionKeymaker<E>, VALUE_T<E>, INITIAL_VALUE, DISCOUNT_RATE>;
 
 template <typename T>
 concept isActionValueFunction =
     isValueFunction<T> && std::is_same_v<typename T::KeyMaker, ActionValueFunction<typename T::EnvironmentType>>;
+
+#define SETUP_TYPES_W_VALUE_FUNCTION(VALUE_FUNCTION_T)                                                                 \
+  SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(VALUE_FUNCTION_T::EnvironmentType));                                      \
+  using ValueFunctionType = VALUE_FUNCTION_T;                                                                          \
+  using KeyMaker = typename VALUE_FUNCTION_T::KeyMaker;                                                                \
+  using KeyType = typename VALUE_FUNCTION_T::KeyType;                                                                  \
+  using ValueType = typename VALUE_FUNCTION_T::ValueType;                                                              \
+  using ValueFactory = typename VALUE_FUNCTION_T::ValueFactory;
 
 } // namespace policy::objectives
 

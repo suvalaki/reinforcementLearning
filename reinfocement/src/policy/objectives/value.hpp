@@ -11,8 +11,10 @@ namespace policy::objectives {
 
 /** @brief  A generic factory to create the value type (in order to give starting values)
  */
-template <typename VALUE_TYPE, typename... FIELDS> struct ValueFactory;
-template <typename VALUE_TYPE, typename... FIELDS> struct ValueFactory<VALUE_TYPE, std::tuple<FIELDS...>> {
+template <typename VALUE_TYPE, typename... FIELDS>
+struct ValueFactory;
+template <typename VALUE_TYPE, typename... FIELDS>
+struct ValueFactory<VALUE_TYPE, std::tuple<FIELDS...>> {
   using ValueType = VALUE_TYPE;
   using FieldTypes = std::tuple<FIELDS...>;
   using PrecisionType = typename ValueType::PrecisionType;
@@ -33,7 +35,8 @@ concept isValueFactory = requires(T t) {
 
 /** @brief  The base class for all state action values. For a given environment type E, the value
  */
-template <environment::EnvironmentType E> struct Value {
+template <environment::EnvironmentType E>
+struct Value {
 
   SETUP_TYPES_FROM_ENVIRON(SINGLE_ARG(E))
   using FieldTypes = std::tuple<PrecisionType>;

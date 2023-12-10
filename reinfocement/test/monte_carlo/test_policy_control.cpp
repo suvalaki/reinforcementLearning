@@ -1,4 +1,5 @@
-#include "catch.hpp"
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_approx.hpp>
 #include <cmath>
 #include <iostream>
 
@@ -11,6 +12,8 @@
 #include "policy/finite/random_policy.hpp"
 #include "policy/greedy_policy.hpp"
 #include "policy/objectives/value_function_keymaker.hpp"
+
+using namespace Catch;
 
 using KeyMaker = policy::objectives::StateActionKeymaker<CoinEnviron>;
 using GreedyCoinPolicy = policy::FiniteGreedyPolicy<CoinFiniteStateActionValueFunction>;
@@ -30,15 +33,16 @@ TEST_CASE("monte_carlo::monte_carlo_on_policy_first_visit_control_with_exploring
     monte_carlo::monte_carlo_on_policy_first_visit_control_with_exploring_starts<10>(greedyPolicy, environ, 15);
 
     // No garuntee that the stat action pair is selected, but at least one should be.
-    auto values = std::vector<float>{greedyPolicy[{s0, a0}].value,
-                                     greedyPolicy[{s1, a0}].value,
-                                     greedyPolicy[{s0, a1}].value,
-                                     greedyPolicy[{s1, a1}].value};
+    auto values = std::vector<float>{
+        greedyPolicy[{s0, a0}].value,
+        greedyPolicy[{s1, a0}].value,
+        greedyPolicy[{s0, a1}].value,
+        greedyPolicy[{s1, a1}].value};
     CHECK(std::any_of(values.begin(), values.end(), [](auto v) { return v != Approx(0.0); }));
 
     auto randomPolicy = RandomCoinPolicy();
     auto epsGreedyPolicy = EpsGreedyCoinPolicy{randomPolicy, {}, 0.2F};
-    std::cout << greedyPolicy.getProbability(environ, s0, a0) << "\n";
+    // std::cout << greedyPolicy.getProbability(environ, s0, a0) << "\n";
     epsGreedyPolicy.getProbability(environ, s0, a0);
 
     for (int i = 0; i < 10; ++i) {
@@ -51,10 +55,11 @@ TEST_CASE("monte_carlo::monte_carlo_on_policy_first_visit_control_with_exploring
     // Prior to running the policy the estimates are all zero.
     monte_carlo::monte_carlo_on_policy_first_visit_control_with_exploring_starts<10>(epsGreedyPolicy, environ, 50);
 
-    auto valuesEps = std::vector<float>{epsGreedyPolicy[{s0, a0}].value,
-                                        epsGreedyPolicy[{s1, a0}].value,
-                                        epsGreedyPolicy[{s0, a1}].value,
-                                        epsGreedyPolicy[{s1, a1}].value};
+    auto valuesEps = std::vector<float>{
+        epsGreedyPolicy[{s0, a0}].value,
+        epsGreedyPolicy[{s1, a0}].value,
+        epsGreedyPolicy[{s0, a1}].value,
+        epsGreedyPolicy[{s1, a1}].value};
     CHECK(std::any_of(valuesEps.begin(), valuesEps.end(), [](auto v) { return v != Approx(0.0); }));
   }
 
@@ -81,10 +86,11 @@ TEST_CASE("monte_carlo::monte_carlo_on_policy_first_visit_control_with_exploring
           environ,
           5);
 
-      auto values = std::vector<float>{greedyPolicy[{s0, a0}].value,
-                                       greedyPolicy[{s1, a0}].value,
-                                       greedyPolicy[{s0, a1}].value,
-                                       greedyPolicy[{s1, a1}].value};
+      auto values = std::vector<float>{
+          greedyPolicy[{s0, a0}].value,
+          greedyPolicy[{s1, a0}].value,
+          greedyPolicy[{s0, a1}].value,
+          greedyPolicy[{s1, a1}].value};
       CHECK(std::any_of(values.begin(), values.end(), [](auto v) { return v != Approx(0.0); }));
     }
 
@@ -97,10 +103,11 @@ TEST_CASE("monte_carlo::monte_carlo_on_policy_first_visit_control_with_exploring
       monte_carlo::monte_carlo_off_policy_importance_sampling_every_visit_control_with_exploring_starts<10>(
           epsGreedyPolicy, greedyPolicy, environ, 5);
 
-      auto values = std::vector<float>{greedyPolicy[{s0, a0}].value,
-                                       greedyPolicy[{s1, a0}].value,
-                                       greedyPolicy[{s0, a1}].value,
-                                       greedyPolicy[{s1, a1}].value};
+      auto values = std::vector<float>{
+          greedyPolicy[{s0, a0}].value,
+          greedyPolicy[{s1, a0}].value,
+          greedyPolicy[{s0, a1}].value,
+          greedyPolicy[{s1, a1}].value};
       CHECK(std::any_of(values.begin(), values.end(), [](auto v) { return v != Approx(0.0); }));
     }
   }

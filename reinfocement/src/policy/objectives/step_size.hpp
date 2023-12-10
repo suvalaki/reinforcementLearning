@@ -29,7 +29,10 @@ concept step_size_taker = requires(T t) {
   { T::getStepSize(std::declval<typename T::StateValueType>()) } -> std::same_as<typename T::PrecisionType>;
 };
 
-template <auto X> inline constexpr bool admissible_is_between() { return 0.0F < X and 1.0F > X; };
+template <auto X>
+inline constexpr bool admissible_is_between() {
+  return 0.0F < X and 1.0F > X;
+};
 
 /**
  * @brief A concept that checks if the step size is a floating point type and
@@ -66,11 +69,12 @@ struct constant_step_size_taker {
 };
 
 template <template <typename> typename T>
-concept isConstantStepSizeTemplate =
-    std::is_same_v<T<FiniteValue<environment::dummy::DummyFiniteEnvironment>>,
-                   constant_step_size_taker<FiniteValue<environment::dummy::DummyFiniteEnvironment>>>;
+concept isConstantStepSizeTemplate = std::is_same_v<
+    T<FiniteValue<environment::dummy::DummyFiniteEnvironment>>,
+    constant_step_size_taker<FiniteValue<environment::dummy::DummyFiniteEnvironment>>>;
 
-template <isFiniteValue VALUE_T> struct weighted_average_step_size_taker {
+template <isFiniteValue VALUE_T>
+struct weighted_average_step_size_taker {
   // sample average step size
   using StateValueType = VALUE_T;
   using PrecisionType = typename StateValueType::PrecisionType;
@@ -80,9 +84,9 @@ template <isFiniteValue VALUE_T> struct weighted_average_step_size_taker {
 };
 
 template <template <typename> typename T>
-concept isWeightedAverageStepSizeTemplate =
-    std::is_same_v<T<FiniteValue<environment::dummy::DummyFiniteEnvironment>>,
-                   weighted_average_step_size_taker<FiniteValue<environment::dummy::DummyFiniteEnvironment>>>;
+concept isWeightedAverageStepSizeTemplate = std::is_same_v<
+    T<FiniteValue<environment::dummy::DummyFiniteEnvironment>>,
+    weighted_average_step_size_taker<FiniteValue<environment::dummy::DummyFiniteEnvironment>>>;
 
 template <template <typename> typename T>
 concept isStepSizeTemplate = isConstantStepSizeTemplate<T> || isWeightedAverageStepSizeTemplate<T>;

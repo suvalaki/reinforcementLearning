@@ -1,20 +1,19 @@
-#include "catch.hpp"
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_approx.hpp>
+
 #include <iostream>
 
 #include "xtensor/xio.hpp"
-#include <xtensor/xrandom.hpp>
-// XTensor View:
 #include "xtensor/xview.hpp"
+#include <xtensor/xrandom.hpp>
 
 #include "examples/blackjack.hpp"
 
 #include "monte_carlo/policy_control.hpp"
-#include "policy/epsilon_greedy_policy.hpp"
 #include "policy/finite/epsilon_greedy_policy.hpp"
 #include "policy/finite/greedy_policy.hpp"
 #include "policy/finite/random_policy.hpp"
 #include "policy/objectives/value_function_keymaker.hpp"
-#include "policy/random_policy.hpp"
 
 using namespace examples::blackjack;
 
@@ -22,7 +21,7 @@ TEST_CASE("blackjack") {
 
   auto state = BlackjackState();
   using EnvT = BlackjackEnvironment<BlackjackReward, BlackjackReturn>;
-  auto environment = BlackjackEnvironment<BlackjackReward, BlackjackReturn>();
+  auto environment = EnvT();
   environment.reset();
 
   auto action = BlackjackAction(1);
@@ -37,7 +36,7 @@ TEST_CASE("blackjack") {
   using BlackjackGreedy = policy::FiniteGreedyPolicy<BlackjackValueFunction>;
   auto explorPolicy = BlackjackRandom();
   auto epsilonGreedy = policy::FiniteEpsilonGreedyPolicy<BlackjackRandom, BlackjackGreedy>{explorPolicy, {}, 0.2F};
-  std::cout << "EPSILON GREEDY ACTIONS\n";
+  // std::cout << "EPSILON GREEDY ACTIONS\n";
   for (int i = 0; i < 10; i++) {
     auto recommendedAction = epsilonGreedy(environment, environment.state);
     auto transition = environment.step(recommendedAction);

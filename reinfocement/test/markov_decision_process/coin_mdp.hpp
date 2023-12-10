@@ -36,6 +36,7 @@ struct CoinReward : reward::Reward<CoinAction> {
 };
 
 using CoinReturn = returns::Return<CoinReward>;
+using DiscountCoinReturn = returns::DiscountReturn<CoinReward, 0.5F>;
 
 using BaseEnviron = environment::FiniteEnvironment<CoinStep, CoinReward, CoinReturn>;
 
@@ -45,9 +46,9 @@ using P = typename BaseEnviron::PrecisionType;
 static CoinState s0 = CoinState{0.0F, {}};
 static CoinState s1 = CoinState{1.0F, {}};
 
-struct CoinEnviron : environment::MarkovDecisionEnvironment<CoinStep, CoinReward, CoinReturn> {
+struct CoinEnviron : environment::MarkovDecisionEnvironment<CoinStep, CoinReward, DiscountCoinReturn> {
 
-  SETUP_TYPES(SINGLE_ARG(environment::MarkovDecisionEnvironment<CoinStep, CoinReward, CoinReturn>));
+  SETUP_TYPES(SINGLE_ARG(environment::MarkovDecisionEnvironment<CoinStep, CoinReward, DiscountCoinReturn>));
   // using EnvironmentType = typename EnvironmentType::EnvironmentType;
   using BaseType::BaseType;
 
@@ -101,31 +102,45 @@ struct CoinModelDataFixture {
 
   CoinModelDataFixture() { policy.initialize(environ); }
 
-  using TypeList = std::tuple<CoinState,
-                              CoinState,
-                              CoinAction,
-                              CoinAction,
-                              CoinTransitionModel,
-                              CoinEnviron,
-                              CoinDistributionPolicy,
-                              CoinDistributionPolicyState,
-                              CoinDistributionPolicyAction,
-                              CoinFiniteStateActionValueFunction,
-                              CoinFiniteStateValueFunction,
-                              CoinFiniteActionValueFunction>;
+  using TypeList = std::tuple<
+      CoinState,
+      CoinState,
+      CoinAction,
+      CoinAction,
+      CoinTransitionModel,
+      CoinEnviron,
+      CoinDistributionPolicy,
+      CoinDistributionPolicyState,
+      CoinDistributionPolicyAction,
+      CoinFiniteStateActionValueFunction,
+      CoinFiniteStateValueFunction,
+      CoinFiniteActionValueFunction>;
 
   constexpr static std::size_t typeListSize = std::tuple_size_v<typename CoinModelDataFixture::TypeList>;
 
-  template <std::size_t Index> auto &&get() & { return get_helper<Index>(*this); }
+  template <std::size_t Index>
+  auto &&get() & {
+    return get_helper<Index>(*this);
+  }
 
-  template <std::size_t Index> auto &&get() && { return get_helper<Index>(*this); }
+  template <std::size_t Index>
+  auto &&get() && {
+    return get_helper<Index>(*this);
+  }
 
-  template <std::size_t Index> auto &&get() const & { return get_helper<Index>(*this); }
+  template <std::size_t Index>
+  auto &&get() const & {
+    return get_helper<Index>(*this);
+  }
 
-  template <std::size_t Index> auto &&get() const && { return get_helper<Index>(*this); }
+  template <std::size_t Index>
+  auto &&get() const && {
+    return get_helper<Index>(*this);
+  }
 
 private:
-  template <std::size_t Index, typename T> auto &&get_helper(T &&t) {
+  template <std::size_t Index, typename T>
+  auto &&get_helper(T &&t) {
     static_assert(Index < typeListSize, "Index out of bounds for CoinModelDataFixture");
     if constexpr (Index == 0)
       return std::forward<T>(t).s0;
@@ -161,7 +176,8 @@ namespace std {
 template <>
 struct tuple_size<::CoinModelDataFixture> : integral_constant<size_t, CoinModelDataFixture::typeListSize> {};
 
-template <std::size_t N> struct tuple_element<N, CoinModelDataFixture> {
+template <std::size_t N>
+struct tuple_element<N, CoinModelDataFixture> {
   using type = decltype(std::declval<CoinModelDataFixture>().get<N>());
 };
 

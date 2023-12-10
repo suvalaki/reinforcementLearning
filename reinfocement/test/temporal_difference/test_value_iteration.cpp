@@ -1,4 +1,5 @@
-#include "catch.hpp"
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_approx.hpp>
 #include <cmath>
 #include <iostream>
 
@@ -6,6 +7,7 @@
 #include "temporal_difference/value_iteration.hpp"
 #include "temporal_difference/value_update/td0_updater.hpp"
 
+using namespace Catch;
 using namespace temporal_difference;
 
 TEST_CASE("temporal_difference::one_step_valueEstimate_episode") {
@@ -17,13 +19,14 @@ TEST_CASE("temporal_difference::one_step_valueEstimate_episode") {
   // auto returns = monte_carlo::n_visit_returns_initialisation(valueFunction, environ);
   auto updater = TD0Updater<std::decay_t<decltype(valueFunction)>>();
   updater.initialize(environ, valueFunction);
-  one_step_valueEstimate_episode(valueFunction,
-                                 environ,
-                                 policySA,
-                                 policySA, // This does nothing under this updater. Because this updater is on-policy
-                                 updater,
-                                 0.5F, // discount rate
-                                 1000);
+  one_step_valueEstimate_episode(
+      valueFunction,
+      environ,
+      policySA,
+      policySA, // This does nothing under this updater. Because this updater is on-policy
+      updater,
+      0.5F, // discount rate
+      1000);
 
   // Value update should make the result non-zero. The values start at zero
   REQUIRE(valueFunction.valueAt(s0) != Approx(0.0));

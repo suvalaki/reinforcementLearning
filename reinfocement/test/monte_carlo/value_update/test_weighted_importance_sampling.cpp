@@ -1,4 +1,5 @@
-#include "catch.hpp"
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_approx.hpp>
 #include <cmath>
 #include <iostream>
 
@@ -7,15 +8,14 @@
 #include "monte_carlo/value.hpp"
 #include "monte_carlo/value_update/weighted_importance_sampling.hpp"
 
+using namespace Catch;
 using namespace monte_carlo;
 
 struct MockPolicyWithFixedRatio : CoinDistributionPolicy {
   using Base = CoinDistributionPolicy;
   using Base::Base;
-  PrecisionType importanceSamplingRatio(const EnvironmentType &environment,
-                                        const StateType &state,
-                                        const ActionSpace &action,
-                                        const Base &other) const {
+  PrecisionType importanceSamplingRatio(
+      const EnvironmentType &environment, const StateType &state, const ActionSpace &action, const Base &other) const {
     return 2;
   }
 };

@@ -58,8 +58,8 @@ struct MarkovDecisionEnvironment : FiniteEnvironment<STEP_T, REWARD_T, RETURN_T>
     return TransitionType{this->state, action, nextState};
   }
 
-  std::unordered_set<TransitionType, typename TransitionType::Hash> getTransitions(const StateType &s,
-                                                                                   const ActionSpace &a) const {
+  std::unordered_set<TransitionType, typename TransitionType::Hash>
+  getTransitions(const StateType &s, const ActionSpace &a) const {
     std::unordered_set<TransitionType, typename TransitionType::Hash> transitions;
     for (const auto &t : transitionModel.transitions) {
       if (t.first.state == s and t.first.action == a) {
@@ -78,8 +78,8 @@ struct MarkovDecisionEnvironment : FiniteEnvironment<STEP_T, REWARD_T, RETURN_T>
     return actions;
   }
 
-  std::unordered_set<StateType, typename StateType::Hash> getReachableStates(const StateType &s,
-                                                                             const ActionSpace &a) const override {
+  std::unordered_set<StateType, typename StateType::Hash>
+  getReachableStates(const StateType &s, const ActionSpace &a) const override {
     std::unordered_set<StateType, typename StateType::Hash> states;
     for (const auto &t : transitionModel.transitions) {
       if (t.first.state == s and t.first.action == a) {
@@ -99,8 +99,9 @@ struct MarkovDecisionEnvironment : FiniteEnvironment<STEP_T, REWARD_T, RETURN_T>
     return probabilities;
   }
 
-  StateType sample(const std::unordered_set<StateType, typename StateType::Hash> &states,
-                   const std::vector<PrecisionType> &probabilities) {
+  StateType sample(
+      const std::unordered_set<StateType, typename StateType::Hash> &states,
+      const std::vector<PrecisionType> &probabilities) {
     std::discrete_distribution<size_t> distribution(probabilities.begin(), probabilities.end());
     return *std::next(states.begin(), distribution(gen));
   }
@@ -124,9 +125,11 @@ struct MarkovDecisionEnvironment : FiniteEnvironment<STEP_T, REWARD_T, RETURN_T>
 };
 
 template <typename ENVIRON_T>
-concept MarkovDecisionEnvironmentType = std::is_base_of_v<MarkovDecisionEnvironment<typename ENVIRON_T::StepType,
-                                                                                    typename ENVIRON_T::RewardType,
-                                                                                    typename ENVIRON_T::ReturnType>,
-                                                          ENVIRON_T>;
+concept MarkovDecisionEnvironmentType = std::is_base_of_v<
+    MarkovDecisionEnvironment<
+        typename ENVIRON_T::StepType,
+        typename ENVIRON_T::RewardType,
+        typename ENVIRON_T::ReturnType>,
+    ENVIRON_T>;
 
 } // namespace environment

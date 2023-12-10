@@ -20,9 +20,10 @@ using transition::TransitionSequence;
 
 // Return differs from reward. Reward is immediate whilst return discounts
 // the future (or estimated future) under a given action
-template <RewardProtocol REWARD_T> struct Return {
+template <RewardProtocol REWARD_T>
+struct Return {
 
-  using PrecisionType = REWARD_T::PrecisionType;
+  using PrecisionType = typename REWARD_T::PrecisionType;
   using RewardType = REWARD_T;
   using ActionSpace = typename RewardType::ActionSpace;
   using ActionSpecType = typename ActionSpace::SpecType;
@@ -50,18 +51,21 @@ template <RewardProtocol REWARD_T> struct Return {
 template <typename RETURN_T>
 concept ReturnType = std::is_base_of_v<Return<typename RETURN_T::RewardType>, RETURN_T>;
 
-template <RewardProtocol REWARD_T, float DISCOUNT = 0.8F> struct DiscountReturn : Return<REWARD_T> {
+template <RewardProtocol REWARD_T, float DISCOUNT = 0.8F>
+struct DiscountReturn : Return<REWARD_T> {
 
   using BaseType = Return<REWARD_T>;
+  using RewardType = typename BaseType::RewardType;
+  using PrecisionType = typename BaseType::PrecisionType;
   constexpr static REWARD_T::PrecisionType discountRate = DISCOUNT;
 
   template <std::size_t SEQUENCE_LENGTH>
-  static BaseType::PrecisionType
-  value(const TransitionSequence<SEQUENCE_LENGTH, typename BaseType::RewardType::ActionSpace> &t) {
-    auto arr = BaseType::future_value(t);
+  static BaseType::PrecisionType value(
+      const TransitionSequence<SEQUENCE_LENGTH, typename BaseType::RewardType::ActionSpace> &t,
+      const PrecisionType &discountRate = DISCOUNT) {
     typename BaseType::PrecisionType result = 0.0F;
     for (int i = 0; i < SEQUENCE_LENGTH; i++) {
-      result += arr[i] * static_cast<typename BaseType::PrecisionType>(std::pow(discountRate, i));
+      result += RewardType::reward(t[i]) * static_cast<typename BaseType::PrecisionType>(std::pow(discountRate, i));
     }
     return result;
   }

@@ -10,9 +10,11 @@
 
 namespace monte_carlo {
 
-template <typename T, std::size_t N = 0> class Episode;
+template <typename T, std::size_t N = 0>
+class Episode;
 
-template <environment::EnvironmentType ENVIRONMENT_T> class Episode<ENVIRONMENT_T> {
+template <environment::EnvironmentType ENVIRONMENT_T>
+class Episode<ENVIRONMENT_T> {
 public:
   using EnvironmentType = ENVIRONMENT_T;
   using DataContainer = std::vector<typename ENVIRONMENT_T::TransitionType>;
@@ -54,10 +56,10 @@ concept isEpisode = requires(T t) {
 };
 
 template <environment::EnvironmentType ENVIRONMENT_T, policy::implementsPolicy POLICY_T>
-Episode<ENVIRONMENT_T>
-generate_episode_base(ENVIRONMENT_T &environment,
-                      POLICY_T &policy,
-                      const std::function<bool(const typename ENVIRONMENT_T::TransitionType &)> &stop_condition) {
+Episode<ENVIRONMENT_T> generate_episode_base(
+    ENVIRONMENT_T &environment,
+    POLICY_T &policy,
+    const std::function<bool(const typename ENVIRONMENT_T::TransitionType &)> &stop_condition) {
   auto episode = Episode<ENVIRONMENT_T>{};
   auto state = environment.reset();
   while (true) {
@@ -121,9 +123,10 @@ generate_episode(ENVIRONMENT_T &environment, POLICY_T &policy, const bool reset 
   return episode;
 }
 
-template <std::size_t max_episode_length_n,
-          environment::EnvironmentType ENVIRONMENT_T,
-          policy::implementsPolicy POLICY_T>
+template <
+    std::size_t max_episode_length_n,
+    environment::EnvironmentType ENVIRONMENT_T,
+    policy::implementsPolicy POLICY_T>
 struct EpisodeGenerator {
 
   static std::size_t constexpr max_episode_length = max_episode_length_n;
@@ -150,8 +153,7 @@ struct EpisodeGenerator {
 };
 
 template <typename T>
-concept isEpisodeGenerator =
-    std::is_base_of<EpisodeGenerator<T::max_episode_length, typename T::EnvironmentType, typename T::PolicyType>,
-                    T>::value;
+concept isEpisodeGenerator = std::
+    is_base_of<EpisodeGenerator<T::max_episode_length, typename T::EnvironmentType, typename T::PolicyType>, T>::value;
 
 } // namespace monte_carlo

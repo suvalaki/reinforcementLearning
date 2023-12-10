@@ -26,13 +26,8 @@ struct FinitePolicyValueFunctionMixin : virtual PolicyDistributionMixin<typename
                                         PolicyValueFunctionMixin<VALUE_FUNCTION_T> {
 
   using BaseType = VALUE_FUNCTION_T;
-
-  SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(VALUE_FUNCTION_T::EnvironmentType));
-  using ValueFunctionType = VALUE_FUNCTION_T;
+  SETUP_TYPES_W_VALUE_FUNCTION(VALUE_FUNCTION_T);
   using ValueFunctionBaseType = typename ValueFunctionType::ValueFunctionBaseType;
-  using KeyMaker = typename ValueFunctionType::KeyMaker;
-  using KeyType = typename ValueFunctionType::KeyType;
-  using ValueType = typename ValueFunctionType::ValueType;
   using StepSizeTaker = typename ValueFunctionType::StepSizeTaker;
 
   FinitePolicyValueFunctionMixin(auto &&...args);

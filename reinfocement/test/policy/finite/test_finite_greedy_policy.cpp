@@ -1,4 +1,5 @@
-#include "catch.hpp"
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_approx.hpp>
 #include <iostream>
 #include <limits>
 
@@ -6,6 +7,7 @@
 #include "policy/finite/greedy_policy.hpp"
 #include "policy/objectives/value_function_keymaker.hpp"
 
+using namespace Catch;
 using namespace policy;
 using namespace fixtures;
 using namespace policy::objectives;
@@ -32,8 +34,9 @@ TEST_CASE("FiniteGreedyPolicy", "[policy][finite][greedy]") {
     REQUIRE(policy.getProbability(env, env.stateFromIndex(0), env.actionFromIndex(3)) == Approx(0.0));
 
     REQUIRE(policy.getLogProbability(env, env.stateFromIndex(0), env.actionFromIndex(1)) == 0.0);
-    REQUIRE(policy.getLogProbability(env, env.stateFromIndex(0), env.actionFromIndex(0)) ==
-            -std::numeric_limits<float>::infinity());
+    REQUIRE(
+        policy.getLogProbability(env, env.stateFromIndex(0), env.actionFromIndex(0)) ==
+        -std::numeric_limits<float>::infinity());
   }
 
   // Change the value for action0 to be above action1 and validate that the policy returns action0
@@ -49,8 +52,9 @@ TEST_CASE("FiniteGreedyPolicy", "[policy][finite][greedy]") {
     REQUIRE(policy.getProbability(env, env.stateFromIndex(0), env.actionFromIndex(1)) == Approx(0.0));
     REQUIRE(policy.getProbability(env, env.stateFromIndex(0), env.actionFromIndex(0)) == Approx(1.0));
 
-    REQUIRE(policy.getLogProbability(env, env.stateFromIndex(0), env.actionFromIndex(1)) ==
-            -std::numeric_limits<float>::infinity());
+    REQUIRE(
+        policy.getLogProbability(env, env.stateFromIndex(0), env.actionFromIndex(1)) ==
+        -std::numeric_limits<float>::infinity());
     REQUIRE(policy.getLogProbability(env, env.stateFromIndex(0), env.actionFromIndex(0)) == 0.0);
   }
 }

@@ -19,10 +19,8 @@ namespace policy {
 // implicit in the epsilon selection criteria.
 
 template <implementsPolicy EXPLORE_POLICY, implementsPolicy EXPLOIT_POLICY, class E = xt::random::default_engine_type>
-requires(std::is_same_v<typename EXPLORE_POLICY::EnvironmentType,
-                        typename EXPLOIT_POLICY::EnvironmentType>) struct EpsilonSoftPolicy
-    : EXPLOIT_POLICY,
-      virtual PolicyDistributionMixin<typename EXPLORE_POLICY::EnvironmentType> {
+requires(std::is_same_v<typename EXPLORE_POLICY::EnvironmentType, typename EXPLOIT_POLICY::EnvironmentType>)
+struct EpsilonSoftPolicy : EXPLOIT_POLICY, virtual PolicyDistributionMixin<typename EXPLORE_POLICY::EnvironmentType> {
 
   SETUP_TYPES_FROM_NESTED_ENVIRON(SINGLE_ARG(EXPLORE_POLICY::EnvironmentType));
   using ExploreType = EXPLORE_POLICY;
@@ -33,10 +31,11 @@ requires(std::is_same_v<typename EXPLORE_POLICY::EnvironmentType,
   PrecisionType epsilon = 0.1;
   EngineType &engine;
 
-  EpsilonSoftPolicy(const ExploreType &explorePolicy,
-                    const ExploitType &exploitPolicy,
-                    PrecisionType epsilon = 0.1,
-                    E &engine = xt::random::get_default_random_engine())
+  EpsilonSoftPolicy(
+      const ExploreType &explorePolicy,
+      const ExploitType &exploitPolicy,
+      PrecisionType epsilon = 0.1,
+      E &engine = xt::random::get_default_random_engine())
       : EXPLOIT_POLICY(exploitPolicy), explorePolicy(explorePolicy), epsilon(epsilon), engine(engine) {}
 
   ActionSpace explore(const EnvironmentType &e, const StateType &s) const;
@@ -54,21 +53,25 @@ requires(std::is_same_v<typename EXPLORE_POLICY::EnvironmentType,
 };
 
 template <implementsPolicy EXPLORE_POLICY, implementsPolicy EXPLOIT_POLICY, class E>
+requires(std::is_same_v<typename EXPLORE_POLICY::EnvironmentType, typename EXPLOIT_POLICY::EnvironmentType>)
 typename EGP::ActionSpace EGP::explore(const EnvironmentType &e, const StateType &s) const {
   return this->explorePolicy(e, s);
 }
 
 template <implementsPolicy EXPLORE_POLICY, implementsPolicy EXPLOIT_POLICY, class E>
+requires(std::is_same_v<typename EXPLORE_POLICY::EnvironmentType, typename EXPLOIT_POLICY::EnvironmentType>)
 typename EGP::ActionSpace EGP::exploit(const EnvironmentType &e, const StateType &s) const {
   return ExploitType::operator()(e, s);
 }
 
 template <implementsPolicy EXPLORE_POLICY, implementsPolicy EXPLOIT_POLICY, class E>
+requires(std::is_same_v<typename EXPLORE_POLICY::EnvironmentType, typename EXPLOIT_POLICY::EnvironmentType>)
 typename EGP::ActionSpace EGP::operator()(const EnvironmentType &e, const StateType &s) const {
   return this->sampleAction(e, s);
 }
 
 template <implementsPolicy EXPLORE_POLICY, implementsPolicy EXPLOIT_POLICY, class E>
+requires(std::is_same_v<typename EXPLORE_POLICY::EnvironmentType, typename EXPLOIT_POLICY::EnvironmentType>)
 typename EGP::PrecisionType
 EGP::getProbability(const EnvironmentType &e, const StateType &s, const ActionSpace &action) const {
 
@@ -96,12 +99,14 @@ EGP::getProbability(const EnvironmentType &e, const StateType &s, const ActionSp
 }
 
 template <implementsPolicy EXPLORE_POLICY, implementsPolicy EXPLOIT_POLICY, class E>
+requires(std::is_same_v<typename EXPLORE_POLICY::EnvironmentType, typename EXPLOIT_POLICY::EnvironmentType>)
 typename EGP::PrecisionType
 EGP::getLogProbability(const EnvironmentType &e, const StateType &s, const ActionSpace &action) const {
   return std::log(getProbability(e, s, action));
 }
 
 template <implementsPolicy EXPLORE_POLICY, implementsPolicy EXPLOIT_POLICY, class E>
+requires(std::is_same_v<typename EXPLORE_POLICY::EnvironmentType, typename EXPLOIT_POLICY::EnvironmentType>)
 typename EGP::PrecisionType
 EGP::getKernel(const EnvironmentType &e, const StateType &s, const ActionSpace &action) const {
   throw std::runtime_error("EpsilonSoftPolicy does not have a kernel. You will need to cast this to the appropriate "
@@ -109,6 +114,7 @@ EGP::getKernel(const EnvironmentType &e, const StateType &s, const ActionSpace &
 }
 
 template <implementsPolicy EXPLORE_POLICY, implementsPolicy EXPLOIT_POLICY, class E>
+requires(std::is_same_v<typename EXPLORE_POLICY::EnvironmentType, typename EXPLOIT_POLICY::EnvironmentType>)
 typename EGP::PrecisionType EGP::getNormalisationConstant(const EnvironmentType &e, const StateType &s) const {
   throw std::runtime_error(
       "EpsilonSoftPolicy does not have a normalisation constant. You will need to cast this to the appropriate "
@@ -116,6 +122,7 @@ typename EGP::PrecisionType EGP::getNormalisationConstant(const EnvironmentType 
 }
 
 template <implementsPolicy EXPLORE_POLICY, implementsPolicy EXPLOIT_POLICY, class E>
+requires(std::is_same_v<typename EXPLORE_POLICY::EnvironmentType, typename EXPLOIT_POLICY::EnvironmentType>)
 typename EGP::ActionSpace EGP::sampleAction(const EnvironmentType &e, const typename EGP::StateType &s) const {
   if (xt::random::rand<double>(xt::xshape<1>{}, 0, 1, engine)[0] < epsilon) {
     return this->explore(e, s);
@@ -124,6 +131,7 @@ typename EGP::ActionSpace EGP::sampleAction(const EnvironmentType &e, const type
 }
 
 template <implementsPolicy EXPLORE_POLICY, implementsPolicy EXPLOIT_POLICY, class E>
+requires(std::is_same_v<typename EXPLORE_POLICY::EnvironmentType, typename EXPLOIT_POLICY::EnvironmentType>)
 typename EGP::ActionSpace EGP::getArgmaxAction(const EnvironmentType &e, const StateType &s) const {
 
   // TODO?: Make this robust to any epsilon and pick the actual action with biggest probability between the two policies

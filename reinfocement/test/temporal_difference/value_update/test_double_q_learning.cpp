@@ -1,4 +1,5 @@
-#include "catch.hpp"
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_approx.hpp>
 #include <cmath>
 #include <iostream>
 
@@ -10,6 +11,7 @@
 #include "temporal_difference/value_iteration.hpp"
 #include "temporal_difference/value_update/double_q_learning.hpp"
 
+using namespace Catch;
 using namespace temporal_difference;
 
 TEST_CASE("temporal_difference::DoubleQLearningUpdater") {
