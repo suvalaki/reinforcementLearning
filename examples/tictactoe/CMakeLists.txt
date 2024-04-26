@@ -36,14 +36,13 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(saucer)
 
-#find_package(Boost 1.65.1 REQUIRED COMPONENTS system)
+find_package(Boost 1.65.1 REQUIRED COMPONENTS system)
 
 set(SOURCES
-    #test.cpp
     main.cpp
-    #server.cpp
-    #game.cpp
-    #bindings.cpp
+    server.cpp
+    game.cpp
+    bindings.cpp
     # Add other source files here
 )
 
@@ -51,4 +50,4 @@ add_executable(MyProject ${SOURCES})
 
 # Boost::system
 
-target_link_libraries(MyProject PRIVATE saucer::saucer)
+target_link_libraries(MyProject PRIVATE Boost::system saucer::saucer)

@@ -89,43 +89,55 @@ class GameState {
 const board = document.querySelector('.board');
 const cells = board.querySelectorAll('.cell');
 
-var socket = new WebSocket("ws://0.0.0.0:2222");
-var gameState = new GameState(socket, board, cells);
 
+var gameState = null;
+var socket = null
 
-cells.forEach((cell, flatIndex) => {
-    cell.addEventListener('click', async () => {
-        const { row, col } = gameState.fromFlatIndex(flatIndex);
+var port = window.saucer.call('get_port', [])
+console.log(port);
+port.then((port) => {
 
-        if (gameState.isGameOver()) {
-            return;
-        }
+    console.log(port);
 
-        await gameState.sendMove(row, col);
-        render();
-    });
-});
+    socket = new WebSocket(`ws://0.0.0.0:${port}`);
+    gameState = new GameState(socket, board, cells);
 
-
-function render() {
 
     cells.forEach((cell, flatIndex) => {
-        const { row, col } = gameState.fromFlatIndex(flatIndex);
-        cell.textContent = gameState.board[row][col];
-        cell.classList.toggle('cell-x', gameState.board[row][col] === 'X');
-        cell.classList.toggle('cell-o', gameState.board[row][col] === 'O');
+        cell.addEventListener('click', async () => {
+            const { row, col } = gameState.fromFlatIndex(flatIndex);
+
+            if (gameState.isGameOver()) {
+                return;
+            }
+
+            await gameState.sendMove(row, col);
+            render();
+        });
     });
 
-    const winner = gameState.getWinner();
-    if (winner) {
-        alert(`Player ${winner} wins!`);
-    } else if (gameState.isBoardFull()) {
-        alert('It\'s a draw!');
+
+    function render() {
+
+        cells.forEach((cell, flatIndex) => {
+            const { row, col } = gameState.fromFlatIndex(flatIndex);
+            cell.textContent = gameState.board[row][col];
+            cell.classList.toggle('cell-x', gameState.board[row][col] === 'X');
+            cell.classList.toggle('cell-o', gameState.board[row][col] === 'O');
+        });
+
+        const winner = gameState.getWinner();
+        if (winner) {
+            alert(`Player ${winner} wins!`);
+        } else if (gameState.isBoardFull()) {
+            alert('It\'s a draw!');
+        }
     }
-}
 
 
-document.querySelector('.reset-button').addEventListener('click', () => {
-    gameState.reset();
-    render();
+    document.querySelector('.reset-button').addEventListener('click', () => {
+        gameState.reset();
+        render();
+    });
+
 });

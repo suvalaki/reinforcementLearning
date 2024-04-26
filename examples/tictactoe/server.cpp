@@ -1,98 +1,123 @@
-#include <boost/beast/core.hpp>
-#include <boost/beast/websocket.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <thread>
-#include <cstdlib>
-#include <iostream>
-#include <string>
+#include "server.hpp"
 
-#include "bindings.hpp"
 
-namespace beast = boost::beast;         // from <boost/beast.hpp>
-namespace net = boost::asio;             // from <boost/asio.hpp>
-using tcp = boost::asio::ip::tcp;        // from <boost/asio/ip/tcp.hpp>
+namespace server {
 
-int main(int argc, char* argv[])
-{
-    try
+ConnectionClosedError::ConnectionClosedError(const std::string& message)
+    : std::runtime_error(message) {}
+
+ReadError::ReadError(const std::string& message)
+        : std::runtime_error(message) {}
+
+WriteError::WriteError(const std::string& message)
+        : std::runtime_error(message) {}
+
+
+unsigned short getAvailablePort() {
+    boost::asio::io_context ioc;
+    boost::asio::ip::tcp::acceptor acceptor(ioc);
+    acceptor.open(boost::asio::ip::tcp::v4());
+    acceptor.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 0));
+    unsigned short port = acceptor.local_endpoint().port();
+    return port;
+}
+
+void readMessage(beast::websocket::stream<beast::tcp_stream>& ws, beast::flat_buffer& buffer) {
+    beast::error_code ec;
+    ws.read(buffer, ec);
+
+    if(ec == beast::websocket::error::closed)
     {
-        // Check command line arguments.
-        if (argc != 3)
-        {
-            std::cerr << "Usage: websocket-server <address> <port>\n";
-            return EXIT_FAILURE;
+        ws.close(beast::websocket::close_code::normal, ec);
+        throw ConnectionClosedError("Connection closed by client");
+    }
+    else if(ec)
+    {
+        throw ReadError("Read Error: " + ec.message());
+    }
+}
+
+void sendMessage(beast::websocket::stream<beast::tcp_stream>& ws, const std::string& message) {
+    beast::error_code write_ec;
+    ws.write(boost::asio::buffer(message), write_ec);
+    if(write_ec)
+    {
+        throw WriteError("Write Error: " + write_ec.message());
+    }
+}
+
+void processWebSocketMessages(beast::websocket::stream<beast::tcp_stream>& ws) {
+    beast::flat_buffer buffer;
+    auto gameState = tictactoe::GameState();
+
+    while(ws.is_open())
+    {
+        buffer.consume(buffer.size());
+
+        try {
+            readMessage(ws, buffer);
+        } catch(const ConnectionClosedError& e) {
+            std::cerr << "Connection closed by client: " << e.what() << '\n';
+            break;
+        } catch(const ReadError& e) {
+            std::cerr << "Read error: " << e.what() << '\n';
+            break;
         }
-        auto const address = net::ip::make_address(argv[1]);
-        auto const port = static_cast<unsigned short>(std::atoi(argv[2]));
 
-        // The io_context is required for all I/O
+        std::string request = beast::buffers_to_string(buffer.data());
+        auto response = tictactoe::bindings::handleRequest(gameState, request);
+        std::cout << response << std::endl;
+
+        try {
+            sendMessage(ws, response);
+        } catch(const WriteError& e) {
+            std::cerr << "Write error: " << e.what() << '\n';
+            break;
+        }
+    }
+}
+
+void launchWebSocketSessionThread(net::io_context& ioc, tcp::socket socket) {
+    std::thread{[&ioc](tcp::socket socket)
+    {
+        beast::websocket::stream<beast::tcp_stream> ws{std::move(socket)};
+        ws.accept();
+        processWebSocketMessages(ws);
+    }, std::move(socket)}.detach();
+}
+
+void acceptConnection(tcp::acceptor& acceptor, net::io_context& ioc) {
+    tcp::socket socket{ioc};
+    boost::system::error_code ec;
+
+    acceptor.accept(socket, ec);
+    if (ec) {
+        throw std::runtime_error("Accept error: " + ec.message());
+    }
+
+    launchWebSocketSessionThread(ioc, std::move(socket));
+}
+
+void startWebSocketServer(const net::ip::address& address, unsigned short port) {
+    try {
         net::io_context ioc;
-
-        // The acceptor receives incoming connections
         tcp::acceptor acceptor{ioc, {address, port}};
-        for(;;)
-        {
-            // This will receive the new connection
-            tcp::socket socket{ioc};
+        std::cout << "Server is listening on port " << port << "\n";
 
-            // Block until we get a connection
-            acceptor.accept(socket);
-
-            // Launch the session, transferring ownership of the socket
-            std::thread{[&ioc](tcp::socket socket)
-            {
-                beast::websocket::stream<beast::tcp_stream> ws{std::move(socket)};
-                ws.accept();
-
-                beast::flat_buffer buffer;
-
-                auto gameState = tictactoe::GameState();
-
-                // Keep reading messages until connection is closed by the client
-                while(ws.is_open())
-                {
-                    // Clear the buffer
-                    buffer.consume(buffer.size());
-
-                    // Read a message
-                    beast::error_code ec;
-                    ws.read(buffer, ec);
-
-                    // If a close frame is received, close the connection
-                    if(ec == beast::websocket::error::closed)
-                    {
-                        ws.close(beast::websocket::close_code::normal, ec);
-                        break;
-                    }
-                    else if(ec)
-                    {
-                        std::cerr << "Error: " << ec.message() << '\n';
-                        break;
-                    }
-
-                    // Print the message
-                    //std::cout << beast::make_printable(buffer.data()) << std::endl;
-                    std::string request = beast::buffers_to_string(buffer.data());
-                    auto ret = tictactoe::bindings::handleRequest(gameState, request);
-                    std::cout << ret << std::endl;
-
-                    // Send the payload back to the client
-                    beast::error_code write_ec;
-                    ws.write(boost::asio::buffer(ret), write_ec);
-                    if(write_ec)
-                    {
-                        std::cerr << "Write Error: " << write_ec.message() << '\n';
-                        break;
-                    }
-
-                }
-
-            }, std::move(socket)}.detach();
+        while(true) {
+            acceptConnection(acceptor, ioc);
         }
     }
     catch(const std::exception& e)
     {
         std::cerr << "Error: " << e.what() << '\n';
-        return EXIT_FAILURE;
     }
 }
+
+std::pair<unsigned short, std::thread> launchWebSocketServerInNewThread(const net::ip::address& address) {
+    unsigned short port = getAvailablePort();
+    std::thread serverThread(startWebSocketServer, address, port);
+    return std::make_pair(port, std::move(serverThread));
+}
+
+}; // namespace server
