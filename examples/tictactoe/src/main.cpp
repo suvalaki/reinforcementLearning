@@ -37,6 +37,8 @@ int main()
   saucer::smartview webview;
   webview.set_size(500, 600);
 
+
+    // Requires you to run the executable with these files handy
   std::string indexHtmlContents = readFileIntoString("index.html");
   webview.embed({{"index.html", convertStringToEmbeddedFile(indexHtmlContents, "text/html") }});
 
