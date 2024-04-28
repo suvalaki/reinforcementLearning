@@ -12,16 +12,13 @@
 /reinforcement/coverage.info
 /reinforcement/coverage.xml
 /reinforcement/tests
+/reinforce/build
+/reinforce/MultiArmedBandit
+/reinforce/Blackjack
+.DS_Store
+cmake_install.cmake
+*./CMakeFiles
+examples/tic_tac_toe/build
+CMakeCache.txt
+CMakeFiles/
 
-reinfocement/CTestTestfile.cmake
-reinfocement/libReinforcementLearning.so.0
-reinfocement/libReinforcementLearning.so.0.1
-reinfocement/log.log
-reinfocement/Makefile
-reinfocement/MultiArmedBandit
-reinfocement/Testing/Temporary/CTestCostData.txt
-reinfocement/Testing/Temporary/LastTest.log
-reinfocement/cmake_install.cmake
-reinfocement/CMakeCache.txt
-reinfocement/tests
-multi_armed_bandit/lib/Catch2

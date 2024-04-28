@@ -1,0 +1,84 @@
+ <!DOCTYPE html>
+<html>
+    <head>
+    </head>
+
+<body>
+    <div class="game">
+        <h1>Tic-Tac-Toe</h1>
+        <div class="board">
+            <div id="row-0" class="row">
+                <div id="cell-00" class="cell empty" ></div>
+                <div id="cell-01" class="cell empty" ></div>
+                <div id="cell-02" class="cell empty" ></div>
+            </div>
+            <div id="row-1" class="row">
+                <div id="cell-10" class="cell empty" ></div>
+                <div id="cell-11" class="cell empty" ></div>
+                <div id="cell-12" class="cell empty" ></div>
+            </div>
+            <div id="row-2" class="row">
+                <div id="cell-20" class="cell empty" ></div>
+                <div id="cell-21" class="cell empty" ></div>
+                <div id="cell-22" class="cell empty" ></div>
+            </div>
+        </div>
+        <button id="reset" class="reset-button">Reset Game</button>
+    </div>
+  
+    <script src="./client.js"></script>
+
+    <style>
+        .game {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .board {
+            display: flex;
+            flex-direction: column;
+            border: 1px solid black;
+        }
+
+        .row {
+            display: flex;
+        }
+
+        .cell {
+            width: 100px;
+            height: 100px;
+            border: 1px solid rgb(112, 112, 112);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            cursor: pointer;
+        }
+
+        .empty {
+            background-color: #d1d1d1;
+        }
+
+        .cell-x {
+            color: blue;
+        }
+
+        .cell-o {
+            color: red;
+        }
+
+        .reset-button {
+            margin-top: 20px;
+            padding: 10px;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+
+    </style>
+
+  </body>
+
+</html>
