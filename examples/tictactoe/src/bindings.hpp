@@ -14,6 +14,9 @@ using Request = std::variant<Move, VoidRequestType>;
 
 std::string to_json(const tictactoe::Player &player);
 std::string to_json(const GameState &state);
+std::string to_json(const tictactoe::Move &mv);
+std::string to_json(const StateAction &trajectory);
+std::string to_json(const Trajectory &trajectory);
 
 tictactoe::Player from_json_player(const std::string &json);
 tictactoe::Player from_json_Player(const std::string &json);

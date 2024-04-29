@@ -1,4 +1,6 @@
 #pragma once
+#include <utility>
+#include <vector>
 
 namespace tictactoe {
 
@@ -27,6 +29,15 @@ struct GameState {
   bool isFull() const;
   bool isGameOver() const;
   Player getWinner() const;
+};
+
+struct StateAction {
+  GameState state;
+  Move action;
+};
+
+struct Trajectory {
+  std::vector<StateAction> trajectory;
 };
 
 } // namespace tictactoe

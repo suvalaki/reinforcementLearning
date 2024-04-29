@@ -18,20 +18,29 @@ project(TicTacToe)
 include(FetchContent)
 find_package(Boost 1.65.1 REQUIRED COMPONENTS system)
 find_package(Qt5 COMPONENTS Core)
+find_package(SQLite3)
 
 FetchContent_Declare(
   saucer
   GIT_REPOSITORY https://github.com/saucer/saucer
   GIT_TAG        v2.1.0
 )
-
 FetchContent_MakeAvailable(saucer)
+
+FetchContent_Declare(
+  zxorm
+  GIT_REPOSITORY https://github.com/crabmandable/zxorm.git
+  GIT_TAG 0.1.3
+)
+FetchContent_MakeAvailable(zxorm)
 
 set(SOURCES
     src/main.cpp
     src/server.cpp
     src/game.cpp
     src/bindings.cpp
+    src/tracing.cpp
 )
 add_executable(${PROJECT_NAME} ${SOURCES})
-target_link_libraries(${PROJECT_NAME} PRIVATE Boost::system saucer::saucer)
+target_include_directories(${PROJECT_NAME} PRIVATE ${SQLite3_INCLUDE_DIRS} ${zxorm_SOURCE_DIR}/include)
+target_link_libraries(${PROJECT_NAME} PRIVATE Boost::system saucer::saucer ${SQLite3_LIBRARIES})

@@ -17,7 +17,10 @@ unsigned short getAvailablePort() {
   return port;
 }
 
-void readMessage(beast::websocket::stream<beast::tcp_stream> &ws, beast::flat_buffer &buffer) {
+WebSocketSession::WebSocketSession(tcp::socket &socket)
+    : ws(beast::websocket::stream<beast::tcp_stream>(std::move(socket))), buffer(beast::flat_buffer{}) {}
+
+void WebSocketSession::readMessage() {
   beast::error_code ec;
   ws.read(buffer, ec);
 
@@ -29,7 +32,7 @@ void readMessage(beast::websocket::stream<beast::tcp_stream> &ws, beast::flat_bu
   }
 }
 
-void sendMessage(beast::websocket::stream<beast::tcp_stream> &ws, const std::string &message) {
+void WebSocketSession::sendMessage(const std::string &message) {
   beast::error_code write_ec;
   ws.write(boost::asio::buffer(message), write_ec);
   if (write_ec) {
@@ -37,15 +40,14 @@ void sendMessage(beast::websocket::stream<beast::tcp_stream> &ws, const std::str
   }
 }
 
-void processWebSocketMessages(beast::websocket::stream<beast::tcp_stream> &ws) {
-  beast::flat_buffer buffer;
+void WebSocketSession::processMessages() {
   auto gameState = tictactoe::GameState();
 
   while (ws.is_open()) {
     buffer.consume(buffer.size());
 
     try {
-      readMessage(ws, buffer);
+      readMessage();
     } catch (const ConnectionClosedError &e) {
       std::cerr << "Connection closed by client: " << e.what() << '\n';
       break;
@@ -59,7 +61,7 @@ void processWebSocketMessages(beast::websocket::stream<beast::tcp_stream> &ws) {
     std::cout << response << std::endl;
 
     try {
-      sendMessage(ws, response);
+      sendMessage(response);
     } catch (const WriteError &e) {
       std::cerr << "Write error: " << e.what() << '\n';
       break;
@@ -67,18 +69,10 @@ void processWebSocketMessages(beast::websocket::stream<beast::tcp_stream> &ws) {
   }
 }
 
-void launchWebSocketSessionThread(net::io_context &ioc, tcp::socket socket) {
-  std::thread{
-      [&ioc](tcp::socket socket) {
-        beast::websocket::stream<beast::tcp_stream> ws{std::move(socket)};
-        ws.accept();
-        processWebSocketMessages(ws);
-      },
-      std::move(socket)}
-      .detach();
-}
+WebSocketServer::WebSocketServer(const net::ip::address &address, unsigned short port)
+    : address(address), port(port), ioc(net::io_context()), acceptor(ioc, {address, port}) {}
 
-void acceptConnection(tcp::acceptor &acceptor, net::io_context &ioc) {
+void WebSocketServer::acceptConnection() {
   tcp::socket socket{ioc};
   boost::system::error_code ec;
 
@@ -87,27 +81,56 @@ void acceptConnection(tcp::acceptor &acceptor, net::io_context &ioc) {
     throw std::runtime_error("Accept error: " + ec.message());
   }
 
-  launchWebSocketSessionThread(ioc, std::move(socket));
+  // sessions.emplace_back(WebSocketSession(socket));
+  auto &item = sessions.emplace_back(std::thread(
+      [](tcp::socket socket) {
+        auto session = WebSocketSession(socket);
+        session.ws.accept();
+        session.processMessages();
+      },
+      std::move(socket)));
+  item.detach();
 }
 
-void startWebSocketServer(const net::ip::address &address, unsigned short port) {
+void WebSocketServer::start() {
   try {
-    net::io_context ioc;
-    tcp::acceptor acceptor{ioc, {address, port}};
     std::cout << "Server is listening on port " << port << "\n";
 
     while (true) {
-      acceptConnection(acceptor, ioc);
+      acceptConnection();
+      cleanupThreads();
     }
   } catch (const std::exception &e) {
     std::cerr << "Error: " << e.what() << '\n';
   }
 }
 
-std::pair<unsigned short, std::thread> launchWebSocketServerInNewThread(const net::ip::address &address) {
-  unsigned short port = getAvailablePort();
-  std::thread serverThread(startWebSocketServer, address, port);
-  return std::make_pair(port, std::move(serverThread));
+void WebSocketServer::cleanupThreads() {
+  sessions.erase(
+      std::remove_if(
+          sessions.begin(),
+          sessions.end(),
+          [](std::thread &s) {
+            if (s.joinable()) {
+              s.join();
+              return true;
+            }
+            return false;
+          }),
+      sessions.end());
+}
+
+void WebSocketServer::startInNewThread() {
+  std::thread([this] { start(); }).detach();
+}
+
+std::thread launchWebSocketServerThread(net::ip::address address, unsigned short port) {
+  auto serverThread = std::thread([address, port] {
+    auto server = WebSocketServer(address, port);
+    server.start();
+  });
+  serverThread.detach();
+  return serverThread;
 }
 
 }; // namespace server

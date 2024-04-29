@@ -42,6 +42,26 @@ std::string tictactoe::bindings::to_json(const GameState &state) {
   return result.str();
 }
 
+std::string tictactoe::bindings::to_json(const tictactoe::Move &move) {
+  return "{\"player\":" + to_json(move.player) + ",\"row\":" + std::to_string(move.row) +
+         ",\"column\":" + std::to_string(move.column) + "}";
+}
+
+std::string tictactoe::bindings::to_json(const tictactoe::StateAction &stateAction) {
+  return "{\"state\":" + to_json(stateAction.state) + ",\"action\":" + to_json(stateAction.action) + "}";
+}
+
+std::string tictactoe::bindings::to_json(const tictactoe::Trajectory &trajectory) {
+  std::stringstream result;
+  result << "[";
+  for (const auto &stateAction : trajectory.trajectory) {
+    result << to_json(stateAction);
+    result << ",";
+  }
+  result << "]";
+  return "{ \"trajectory\": " + result.str() + "}";
+}
+
 tictactoe::Player tictactoe::bindings::from_json_player(const std::string &json) {
   if (json == "X") {
     return Player::X;

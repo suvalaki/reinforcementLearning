@@ -7,6 +7,7 @@
 #include <boost/beast/websocket.hpp>
 #include <cstdlib>
 #include <iostream>
+#include <optional>
 #include <string>
 #include <thread>
 #include <utility>
@@ -36,19 +37,35 @@ public:
 
 unsigned short getAvailablePort();
 
-void readMessage(beast::websocket::stream<beast::tcp_stream> &ws, beast::flat_buffer &buffer);
+struct WebSocketSession {
+  beast::websocket::stream<beast::tcp_stream> ws;
+  beast::flat_buffer buffer;
 
-void sendMessage(beast::websocket::stream<beast::tcp_stream> &ws, const std::string &message);
+  WebSocketSession(tcp::socket &socket);
 
-void processWebSocketMessages(beast::websocket::stream<beast::tcp_stream> &ws);
+  void readMessage();
+  void sendMessage(const std::string &message);
+  void processMessages();
+};
 
-void launchWebSocketSessionThread(net::io_context &ioc, tcp::socket socket);
+class WebSocketServer {
+private:
+  const net::ip::address address;
+  unsigned short port;
+  net::io_context ioc;
+  tcp::acceptor acceptor;
+  std::vector<std::thread> sessions = {};
 
-void acceptConnection(tcp::acceptor &acceptor, net::io_context &ioc);
+public:
+  WebSocketServer(const net::ip::address &address, unsigned short port);
 
-void startWebSocketServer(const net::ip::address &address, unsigned short port);
+  void acceptConnection();
+  void start();
+  void cleanupThreads();
+  void startInNewThread();
+};
 
-std::pair<unsigned short, std::thread> launchWebSocketServerInNewThread(const net::ip::address &address);
+std::thread launchWebSocketServerThread(net::ip::address address, unsigned short port);
 
 } // namespace server
 

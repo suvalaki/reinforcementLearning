@@ -1,10 +1,13 @@
 #include <saucer/smartview.hpp>
 
 #include <fstream>
+#include <iostream>
+#include <memory>
 #include <sstream>
 #include <string>
 
 #include "server.hpp"
+#include "tracing.hpp"
 
 #define LOCALHOST_IP "0.0.0.0"
 #define LOOPBACK_IP "127.0.0.1"
@@ -28,8 +31,15 @@ saucer::embedded_file convertStringToEmbeddedFile(const std::string &content, co
 
 int main() {
 
+  // Create database
+  std::shared_ptr<tictactoe::connection_t> my_conn;
+  auto created_conn = tictactoe::connection_t("test.db", 0, 0, nullptr);
+  my_conn = std::make_shared<tictactoe::connection_t>(std::move(created_conn));
+  auto logger = tictactoe::DatabaseLogger(my_conn);
+
   // Start the game
-  auto [port, server] = server::launchWebSocketServerInNewThread(boost::asio::ip::make_address(LOCALHOST_IP));
+  auto port = server::getAvailablePort();
+  auto server = server::launchWebSocketServerThread(boost::asio::ip::make_address(LOCALHOST_IP), port);
 
   saucer::smartview webview;
   webview.set_size(500, 600);
