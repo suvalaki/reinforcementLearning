@@ -40,8 +40,9 @@ unsigned short getAvailablePort();
 struct WebSocketSession {
   beast::websocket::stream<beast::tcp_stream> ws;
   beast::flat_buffer buffer;
+  const std::unique_ptr<tictactoe::bindings::GameControl> gameControl;
 
-  WebSocketSession(tcp::socket &socket);
+  WebSocketSession(tcp::socket &socket, const tictactoe::bindings::game_control_factory_t &gameControlFactory);
 
   void readMessage();
   void sendMessage(const std::string &message);
@@ -55,9 +56,13 @@ private:
   net::io_context ioc;
   tcp::acceptor acceptor;
   std::vector<std::thread> sessions = {};
+  tictactoe::bindings::game_control_factory_t gameControlFactory;
 
 public:
-  WebSocketServer(const net::ip::address &address, unsigned short port);
+  WebSocketServer(
+      const net::ip::address &address,
+      unsigned short port,
+      const tictactoe::bindings::game_control_factory_t &gameControlFactory);
 
   void acceptConnection();
   void start();
@@ -65,7 +70,10 @@ public:
   void startInNewThread();
 };
 
-std::thread launchWebSocketServerThread(net::ip::address address, unsigned short port);
+std::thread launchWebSocketServerThread(
+    net::ip::address address,
+    unsigned short port,
+    const tictactoe::bindings::game_control_factory_t &gameControlFactory);
 
 } // namespace server
 

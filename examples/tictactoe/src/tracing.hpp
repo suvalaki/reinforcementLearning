@@ -17,9 +17,10 @@ struct Episode {
 using episode_t = zxorm::Table<
     "epsiode",
     Episode,
-    zxorm::Column<"id", &Episode::id, zxorm::PrimaryKey<zxorm::conflict_t::abort>>,
-    zxorm::Column<"createdAt", &Episode::createdAt, zxorm::NotNull<>, zxorm::Unique<>>,
-    zxorm::Column<"trajectory", &Episode::trajectory, zxorm::NotNull<>, zxorm::Unique<>>>;
+    zxorm::Column<"id", &Episode::id, zxorm::PrimaryKey<>>,
+    zxorm::Column<"createdAt", &Episode::createdAt>,
+    zxorm::Column<"trajectory", &Episode::trajectory>,
+    zxorm::Column<"gameOver", &Episode::gameOver>>;
 
 using connection_t = zxorm::Connection<episode_t>;
 

@@ -17,8 +17,10 @@ unsigned short getAvailablePort() {
   return port;
 }
 
-WebSocketSession::WebSocketSession(tcp::socket &socket)
-    : ws(beast::websocket::stream<beast::tcp_stream>(std::move(socket))), buffer(beast::flat_buffer{}) {}
+WebSocketSession::WebSocketSession(
+    tcp::socket &socket, const tictactoe::bindings::game_control_factory_t &gameControlFactory)
+    : ws(beast::websocket::stream<beast::tcp_stream>(std::move(socket))), buffer(beast::flat_buffer{}),
+      gameControl(gameControlFactory()) {}
 
 void WebSocketSession::readMessage() {
   beast::error_code ec;
@@ -41,7 +43,6 @@ void WebSocketSession::sendMessage(const std::string &message) {
 }
 
 void WebSocketSession::processMessages() {
-  auto gameState = tictactoe::GameState();
 
   while (ws.is_open()) {
     buffer.consume(buffer.size());
@@ -57,7 +58,7 @@ void WebSocketSession::processMessages() {
     }
 
     std::string request = beast::buffers_to_string(buffer.data());
-    auto response = tictactoe::bindings::handleRequest(gameState, request);
+    auto response = gameControl->handleRequest(request);
     std::cout << response << std::endl;
 
     try {
@@ -69,8 +70,12 @@ void WebSocketSession::processMessages() {
   }
 }
 
-WebSocketServer::WebSocketServer(const net::ip::address &address, unsigned short port)
-    : address(address), port(port), ioc(net::io_context()), acceptor(ioc, {address, port}) {}
+WebSocketServer::WebSocketServer(
+    const net::ip::address &address,
+    unsigned short port,
+    const tictactoe::bindings::game_control_factory_t &gameControlFactory)
+    : address(address), port(port), ioc(net::io_context()), acceptor(ioc, {address, port}),
+      gameControlFactory(gameControlFactory) {}
 
 void WebSocketServer::acceptConnection() {
   tcp::socket socket{ioc};
@@ -83,8 +88,8 @@ void WebSocketServer::acceptConnection() {
 
   // sessions.emplace_back(WebSocketSession(socket));
   auto &item = sessions.emplace_back(std::thread(
-      [](tcp::socket socket) {
-        auto session = WebSocketSession(socket);
+      [this](tcp::socket socket) {
+        auto session = WebSocketSession(socket, gameControlFactory);
         session.ws.accept();
         session.processMessages();
       },
@@ -124,9 +129,12 @@ void WebSocketServer::startInNewThread() {
   std::thread([this] { start(); }).detach();
 }
 
-std::thread launchWebSocketServerThread(net::ip::address address, unsigned short port) {
-  auto serverThread = std::thread([address, port] {
-    auto server = WebSocketServer(address, port);
+std::thread launchWebSocketServerThread(
+    net::ip::address address,
+    unsigned short port,
+    const tictactoe::bindings::game_control_factory_t &gameControlFactory) {
+  auto serverThread = std::thread([address, port, gameControlFactory] {
+    auto server = WebSocketServer(address, port, gameControlFactory);
     server.start();
   });
   serverThread.detach();

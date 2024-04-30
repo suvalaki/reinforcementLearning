@@ -11,6 +11,7 @@ std::string tictactoe::bindings::to_json(const tictactoe::Player &Player) {
   case Player::O:
     return "\"O\"";
   }
+  return "null";
 }
 
 std::string tictactoe::bindings::to_json(const GameState &state) {
@@ -54,9 +55,11 @@ std::string tictactoe::bindings::to_json(const tictactoe::StateAction &stateActi
 std::string tictactoe::bindings::to_json(const tictactoe::Trajectory &trajectory) {
   std::stringstream result;
   result << "[";
-  for (const auto &stateAction : trajectory.trajectory) {
-    result << to_json(stateAction);
-    result << ",";
+  for (auto it = trajectory.trajectory.begin(); it != trajectory.trajectory.end(); ++it) {
+    result << to_json(*it);
+    if (std::next(it) != trajectory.trajectory.end()) {
+      result << ",";
+    }
   }
   result << "]";
   return "{ \"trajectory\": " + result.str() + "}";
@@ -123,7 +126,7 @@ std::string tictactoe::bindings::checkWinner(const GameState &state, const Reque
   }
 }
 
-std::string tictactoe::bindings::handleRequest(GameState &state, const std::string &json) {
+std::string tictactoe::bindings::GameControl::handleRequest(const std::string &json) {
   Request request = from_json_request(json);
   if (std::holds_alternative<Move>(request)) {
     return update(state, request);
@@ -131,6 +134,40 @@ std::string tictactoe::bindings::handleRequest(GameState &state, const std::stri
     auto parsedRequest = std::get<VoidRequestType>(request);
     switch (parsedRequest) {
     case VoidRequestType::RESET:
+      state.reset();
+      return to_json(state);
+    case VoidRequestType::CHECK_WINNER:
+      return checkWinner(state, request);
+    default:
+      throw std::invalid_argument("Invalid request");
+    }
+  }
+  return "";
+}
+
+std::string tictactoe::bindings::LoggedGameControl::handleRequest(const std::string &json) {
+  Request request = from_json_request(json);
+  if (std::holds_alternative<Move>(request)) {
+    auto updated = update(state, request);
+    // if the history in the logger is not empty then we need to check if the game was already over
+    // We only log when this is admissible.
+    if (!logger.currentTrajectory.trajectory.empty()) {
+      if (!logger.currentTrajectory.trajectory.back().state.isGameOver()) {
+        logger.currentTrajectory.trajectory.push_back({state, std::get<Move>(request)});
+        if (state.isGameOver()) {
+          logger.save();
+        }
+      }
+    } else {
+      logger.currentTrajectory.trajectory.push_back({state, std::get<Move>(request)});
+    }
+    return updated;
+
+  } else if (std::holds_alternative<VoidRequestType>(request)) {
+    auto parsedRequest = std::get<VoidRequestType>(request);
+    switch (parsedRequest) {
+    case VoidRequestType::RESET:
+      logger.currentTrajectory.trajectory.clear();
       state.reset();
       return to_json(state);
     case VoidRequestType::CHECK_WINNER:

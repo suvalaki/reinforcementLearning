@@ -1,7 +1,11 @@
 #pragma once
-#include "game.hpp"
+#include <functional>
+#include <optional>
 #include <string>
 #include <variant>
+
+#include "game.hpp"
+#include "tracing.hpp"
 
 namespace tictactoe::bindings {
 
@@ -26,6 +30,24 @@ tictactoe::Move from_json_move(const std::string &json);
 Request from_json_request(const std::string &json);
 std::string update(GameState &state, const Request &request);
 std::string checkWinner(const GameState &state, const Request &request);
-std::string handleRequest(GameState &state, const std::string &json);
+
+struct GameControl {
+
+  GameState state = tictactoe::GameState();
+  virtual std::string handleRequest(const std::string &json);
+};
+
+using game_control_factory_t = std::function<std::unique_ptr<GameControl>()>;
+
+inline game_control_factory_t defaultGameControlFactory =
+    std::function([]() { return std::make_unique<GameControl>(); });
+
+struct LoggedGameControl : public GameControl {
+
+  tictactoe::DatabaseLogger logger;
+
+  LoggedGameControl(DatabaseLogger &logger) : logger(logger) {}
+  virtual std::string handleRequest(const std::string &json) override;
+};
 
 } // namespace tictactoe::bindings

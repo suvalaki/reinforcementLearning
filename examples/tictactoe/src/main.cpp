@@ -32,14 +32,18 @@ saucer::embedded_file convertStringToEmbeddedFile(const std::string &content, co
 int main() {
 
   // Create database
-  std::shared_ptr<tictactoe::connection_t> my_conn;
-  auto created_conn = tictactoe::connection_t("test.db", 0, 0, nullptr);
-  my_conn = std::make_shared<tictactoe::connection_t>(std::move(created_conn));
-  auto logger = tictactoe::DatabaseLogger(my_conn);
 
   // Start the game
+  const auto logGameControlFactory = []() {
+    std::shared_ptr<tictactoe::connection_t> my_conn;
+    auto created_conn = tictactoe::connection_t("test.db", 0, 0, nullptr);
+    my_conn = std::make_shared<tictactoe::connection_t>(std::move(created_conn));
+    auto logger = tictactoe::DatabaseLogger(my_conn);
+    return std::make_unique<tictactoe::bindings::LoggedGameControl>(logger);
+  };
   auto port = server::getAvailablePort();
-  auto server = server::launchWebSocketServerThread(boost::asio::ip::make_address(LOCALHOST_IP), port);
+  auto server =
+      server::launchWebSocketServerThread(boost::asio::ip::make_address(LOCALHOST_IP), port, logGameControlFactory);
 
   saucer::smartview webview;
   webview.set_size(500, 600);

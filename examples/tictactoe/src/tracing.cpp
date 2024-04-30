@@ -15,7 +15,8 @@ void Logger::reset() { currentTrajectory.trajectory.clear(); }
 void DatabaseLogger::save() const {
   if (not currentTrajectory.trajectory.empty()) {
     Episode episode;
-    episode.createdAt = time(nullptr);
+    episode.id = -1; // -1 for auto increment
+    episode.createdAt = time(0);
     episode.trajectory = bindings::to_json(currentTrajectory);
     episode.gameOver = currentTrajectory.trajectory.back().state.isGameOver();
     connection->insert_record(episode);
